@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Suite complète : tous les extras installés, DuckLake et S3 (moto) couverts.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sync with all extras and dev group
+        run: uv sync --all-extras
+
+      - name: Run pytest
+        run: uv run pytest
+
+  # Installation nue : le socle doit s'importer sans aucun extra.
+  bare-imports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      # Environnement nu : ni extras ni groupe dev, on cible directement .venv.
+      - name: Install the bare package (no extras)
+        run: |
+          uv venv
+          uv pip install . pytest
+
+      - name: Verify base imports
+        run: .venv/bin/python -c "import statflows, statflows.core, statflows.sources, statflows.storage"
+
+      # tests/unit tourne sur une install nue : imports + I/O locale JSON ;
+      # les tests DuckLake / S3 sont ignorés (importorskip) faute d'extras.
+      - name: Run the unit suite (no extras)
+        run: .venv/bin/python -m pytest tests/unit
