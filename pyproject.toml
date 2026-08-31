@@ -1,0 +1,49 @@
+[project]
+name = "statflows"
+version = "0.1.0"
+description = "Downloaders and storage backends for international trade and economic statistics"
+requires-python = ">=3.13"
+dependencies = [
+    "comtradeapicall>=1.3.2",
+    "pandas>=2.3.3",
+    "pyarrow>=24.0.0",
+    "pyyaml>=6.0.3",
+    "requests>=2.32.5",
+]
+
+[project.optional-dependencies]
+s3 = [
+    "boto3>=1.43.34",
+    "s3fs>=0.4.2",
+]
+ducklake = [
+    "dt-ducklake-manager",
+    "duckdb>=1.4",
+]
+all = [
+    "boto3>=1.43.34",
+    "dt-ducklake-manager",
+    "duckdb>=1.4",
+    "s3fs>=0.4.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+dt-ducklake-manager = { git = "https://github.com/qbolliet/dt-ducklake-manager", tag = "v0.3.0" }
+
+[dependency-groups]
+dev = [
+    "moto[s3]>=5.2.3",
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning",
+]
