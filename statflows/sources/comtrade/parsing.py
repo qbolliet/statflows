@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 # Chargement des paramètres 
-with open(Path(__file__).parents[4] / "parameters" / "comtrade.json", "r", encoding="utf-8") as f:
+with open(Path(__file__).parents[2] / "parameters" / "comtrade.json", "r", encoding="utf-8") as f:
     PARAMETERS: Dict[str, Any] = json.load(f)
 
 

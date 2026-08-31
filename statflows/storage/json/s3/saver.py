@@ -3,11 +3,11 @@ from json import dumps
 from typing import Optional
 
 # Importation du module de connection
-from ._connection import _S3Connection
+from ..._connection import S3Connection
 
 
 # Classe de sauvegarde de données JSON sur un Bucket S3
-class S3Saver(_S3Connection):
+class S3Saver(S3Connection):
     """Save JSON data to Amazon S3 buckets.
 
     Args:

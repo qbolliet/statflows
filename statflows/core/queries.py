@@ -1,8 +1,8 @@
 """Shared SDMX query request base.
 
 Provider-agnostic parent of the provider query DTOs
-(:class:`~macroforecast.datasets.sources.oecd.queries.OECDQueryRequest`,
-:class:`~macroforecast.datasets.sources.eurostat.queries.EurostatQueryRequest`).
+(:class:`~statflows.sources.oecd.queries.OECDQueryRequest`,
+:class:`~statflows.sources.eurostat.queries.EurostatQueryRequest`).
 It mutualises the logic that was previously duplicated across providers:
 ``to_dict`` / ``from_dict`` (round-trip serialisation), ``identity_key`` (the
 download-registry primary key) and ``get_dataflow_key``.
@@ -106,7 +106,7 @@ class SDMXQueryRequest:
         fields that define which series is fetched (agency, dataflow, version,
         dimensions) — not presentation options such as ``format`` — so that
         re-running the same logical query reuses its registry entry. See
-        :func:`macroforecast.datasets.core.sdmx.build_identity_key`.
+        :func:`statflows.core.sdmx.build_identity_key`.
 
         Returns:
             Stable identity string.

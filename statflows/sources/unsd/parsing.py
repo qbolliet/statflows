@@ -1,7 +1,7 @@
 """UNSD correspondence-table parsing helpers.
 
 Pure functions normalising the UNSD correspondence workbooks onto the canonical
-schema :data:`~macroforecast.datasets.sources.unsd.formats.CANONICAL_COLUMNS`.
+schema :data:`~statflows.sources.unsd.formats.CANONICAL_COLUMNS`.
 Kept free of any HTTP or client state so they can be unit-tested from a local
 workbook, mirroring ``comtrade.parsing``.
 
@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 
 # Chargement des paramètres
-with open(Path(__file__).parents[4] / "parameters" / "unsd.json", "r", encoding="utf-8") as f:
+with open(Path(__file__).parents[2] / "parameters" / "unsd.json", "r", encoding="utf-8") as f:
     PARAMETERS: Dict[str, Any] = json.load(f)
 
 

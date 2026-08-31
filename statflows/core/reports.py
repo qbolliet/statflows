@@ -9,10 +9,10 @@ without parsing logs, and the logging itself stays what it is: the
 human-readable counterpart.
 
 The module is deliberately **self-contained**: it depends on nothing outside
-``macroforecast.datasets``, so the sub-package stays extractable as a standalone,
-shareable package. :func:`flatten_metrics` duplicates a couple of dozen lines of
-``macroforecast.tracking.base`` for that very reason — the alternative would be a
-cross-package dependency the extraction is meant to avoid.
+``statflows``, keeping the package importable without heavy optional
+dependencies. :func:`flatten_metrics` duplicates a couple of dozen lines of a
+consuming project's tracking helper for that very reason — the alternative would
+be a cross-package dependency this package is meant to avoid.
 """
 # Importation des modules
 from __future__ import annotations

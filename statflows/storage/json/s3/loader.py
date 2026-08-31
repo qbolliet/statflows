@@ -3,11 +3,11 @@ import json
 from typing import Optional
 
 # Importation du module de connection
-from ._connection import _S3Connection
+from ..._connection import S3Connection
 
 
 # Classe de chargement de données depuis S3
-class S3Loader(_S3Connection):
+class S3Loader(S3Connection):
     """Load JSON data from Amazon S3 buckets.
 
     Args:

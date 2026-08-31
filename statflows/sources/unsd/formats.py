@@ -3,7 +3,7 @@
 UNSD publishes its classification correspondence tables as plain Excel
 workbooks on a static file server: there is neither a DSD nor a structure
 endpoint, so this module plays the role that ``formats.py`` plays for
-:mod:`~macroforecast.datasets.sources.comtrade` — it gathers every
+:mod:`~statflows.sources.comtrade` — it gathers every
 provider-specific constant the client and the parser share:
 
 * the response formats (the four file extensions UNSD publishes);

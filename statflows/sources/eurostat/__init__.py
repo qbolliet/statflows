@@ -2,7 +2,7 @@
 
 Re-exports the public Eurostat API so that
 ``from ..sources.eurostat import EurostatClient`` (and the higher-level
-``macroforecast.datasets`` re-exports) keep working after the split into
+``statflows`` re-exports) keep working after the split into
 submodules.
 """
 # Importation des éléments d'intérêt du sous-package

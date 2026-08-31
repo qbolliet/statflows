@@ -338,9 +338,9 @@ class AbstractSDMXClient(ABC):
         if not self.PROVIDER_CONFIG_NAME:
             return None
         try:
-            # Construction du chemin vers parameters/{provider}.json (racine du repo)
+            # Construction du chemin vers parameters/{provider}.json (données du package)
             params_path = (
-                Path(__file__).parents[3]
+                Path(__file__).parents[1]
                 / "parameters"
                 / f"{self.PROVIDER_CONFIG_NAME}.json"
             )
@@ -474,7 +474,7 @@ class AbstractSDMXClient(ABC):
         """Fetch the data for a query, incrementally when possible.
 
         Provider seam used by the download orchestrator
-        (:class:`~macroforecast.datasets.core.download.SDMXDownloader`). This
+        (:class:`~statflows.core.download.SDMXDownloader`). This
         is where each provider encodes *how* to retrieve only the newly
         published observations:
 

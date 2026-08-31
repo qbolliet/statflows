@@ -1,10 +1,8 @@
 """Shared DuckLake table helpers.
 
-Gathers the create-then-upsert logic that every result-producing step of the
-pipeline used to duplicate: the download orchestrator
-(:mod:`macroforecast.datasets.core.download`), the vulnerability runner
-(:mod:`macroforecast.trade.vulnerabilities.runner`) and the BACI processing
-scripts.
+Gathers the create-then-upsert logic that every result-producing step of a
+consuming pipeline used to duplicate: the download orchestrator
+(:mod:`statflows.core.download`) and the downstream metric-computation steps.
 
 Both helpers take an **already-open** DuckDB connection.
 
@@ -148,7 +146,7 @@ def write_dataframe(
     except ImportError as exc:
         raise ImportError(
             "write_dataframe requires the optional 'dt-ducklake-manager' "
-            "dependency. Install it with: pip install 'macroforecast[ducklake]'"
+            "dependency. Install it with: pip install 'statflows[ducklake]'"
         ) from exc
 
     # Préfixe de journalisation : identifie le jeu de données écrit

@@ -1,7 +1,7 @@
 """OECD SDMX client package.
 
 Re-exports the public OECD API so that ``from ..sources.oecd import OECDClient``
-(and the higher-level ``macroforecast.datasets`` re-exports) keep working
+(and the higher-level ``statflows`` re-exports) keep working
 after the split into submodules.
 """
 # Importation des éléments d'intérêt du sous-package

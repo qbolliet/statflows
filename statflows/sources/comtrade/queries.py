@@ -2,8 +2,8 @@
 
 DTO encapsulating the parameters of a :meth:`ComtradeClient.get_data` call,
 mirroring the SDMX provider query objects
-(:class:`~macroforecast.datasets.sources.oecd.queries.OECDQueryRequest`,
-:class:`~macroforecast.datasets.sources.eurostat.queries.EurostatQueryRequest`)
+(:class:`~statflows.sources.oecd.queries.OECDQueryRequest`,
+:class:`~statflows.sources.eurostat.queries.EurostatQueryRequest`)
 so the download orchestration can treat every provider uniformly.
 
 UN Comtrade is not an SDMX provider: its data selection is expressed through

@@ -1,7 +1,7 @@
 """Construction helpers for SDMX clients and query objects.
 
 Shared factory helpers used by the download orchestration entry points (CLI
-script, Kedro nodes, notebooks). Kept at the package root so the relative
+script, Kedro nodes, notebooks). Kept in :mod:`statflows.core` so the relative
 imports of the provider clients and query DTOs resolve correctly and the logic
 is reusable rather than duplicated in each script.
 """
@@ -12,10 +12,10 @@ from typing import Any, Dict, Iterable, List, Optional, Type
 
 import yaml
 
-from .core.client import AbstractSDMXClient
-from .core.queries import SDMXQueryRequest
-from .sources.eurostat.queries import EurostatQueryRequestV30
-from .sources.oecd.queries import OECDQueryRequest
+from .client import AbstractSDMXClient
+from .queries import SDMXQueryRequest
+from ..sources.eurostat.queries import EurostatQueryRequestV30
+from ..sources.oecd.queries import OECDQueryRequest
 
 # Initialisation du logger
 logger = logging.getLogger(__name__)
@@ -43,11 +43,11 @@ def build_client(provider: str) -> AbstractSDMXClient:
     """
     # Sélection paresseuse du client selon le provider
     if provider == "eurostat":
-        from .sources.eurostat.client import EurostatClient
+        from ..sources.eurostat.client import EurostatClient
 
         return EurostatClient()
     if provider == "oecd":
-        from .sources.oecd.client import OECDClient
+        from ..sources.oecd.client import OECDClient
 
         return OECDClient()
     raise ValueError(f"Unknown provider '{provider}'")
@@ -60,7 +60,7 @@ def build_queries(
     """Build provider query objects from a list of JSON specifications.
 
     Each specification is passed to the provider query DTO
-    :meth:`~macroforecast.datasets.core.queries.SDMXQueryRequest.from_dict`,
+    :meth:`~statflows.core.queries.SDMXQueryRequest.from_dict`,
     which ignores keys not matching a DTO field (e.g. a human-readable
     ``"description"``) and coerces a textual ``"format"`` value into the
     provider enum.

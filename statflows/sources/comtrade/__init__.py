@@ -1,7 +1,7 @@
 """UN Comtrade client package.
 
 Re-exports the public Comtrade API so that ``from ..sources.comtrade import
-ComtradeClient`` (and the higher-level ``macroforecast.datasets`` re-exports)
+ComtradeClient`` (and the higher-level ``statflows`` re-exports)
 work consistently with the SDMX provider packages.
 """
 # Importation des éléments d'intérêt du sous-package

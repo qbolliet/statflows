@@ -5,7 +5,7 @@ converting responses to pandas DataFrames. Unlike Eurostat and OECD, UN
 Comtrade does not follow the SDMX conventions, so this client wraps the
 official ``comtradeapicall`` library rather than building SDMX endpoints.
 
-It inherits from :class:`~macroforecast.datasets.core.client.APIClient` for the
+It inherits from :class:`~statflows.core.client.APIClient` for the
 shared HTTP plumbing (retry session, ``close``) and mirrors the SDMX clients'
 shape: configuration (rate limiter, structures) is loaded from
 ``parameters/comtrade.json``, and the automated bulk download lives in a
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 
 # Chargement des paramètres 
-with open(Path(__file__).parents[4] / "parameters" / "comtrade.json", "r", encoding="utf-8") as f:
+with open(Path(__file__).parents[2] / "parameters" / "comtrade.json", "r", encoding="utf-8") as f:
     PARAMETERS: Dict[str, Any] = json.load(f)
 
 
@@ -877,7 +877,7 @@ class ComtradeClient(APIClient):
         """Fetch the data for a query, incrementally when possible.
 
         Provider seam consumed by the download orchestrator
-        (:class:`~macroforecast.datasets.core.download.SDMXDownloader`). It
+        (:class:`~statflows.core.download.SDMXDownloader`). It
         encodes Comtrade's incremental strategy:
 
         - First download (``since`` is ``None``) → retrieve the full slice.

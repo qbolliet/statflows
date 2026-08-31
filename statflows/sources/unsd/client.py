@@ -7,7 +7,7 @@ not follow the SDMX conventions: there is neither a DSD nor a structure
 endpoint, only static files on a web server, so the catalogue of published
 tables is declared in ``parameters/unsd.json``.
 
-It inherits from :class:`~macroforecast.datasets.core.client.APIClient` for the
+It inherits from :class:`~statflows.core.client.APIClient` for the
 shared HTTP plumbing (retry session, ``close``) and mirrors the other clients'
 shape. Caching is deliberately left out: the tables are invariant once
 published, and the pipeline caches the normalised tables to Parquet on the
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 
 # Chargement des paramètres
-with open(Path(__file__).parents[4] / "parameters" / "unsd.json", "r", encoding="utf-8") as f:
+with open(Path(__file__).parents[2] / "parameters" / "unsd.json", "r", encoding="utf-8") as f:
     PARAMETERS: Dict[str, Any] = json.load(f)
 
 

@@ -242,7 +242,7 @@ class RateLimiter:
         were granted and how much wall-clock time they cost.
 
         Returns:
-            A :class:`~macroforecast.datasets.core.reports.RateLimitStats`
+            A :class:`~statflows.core.reports.RateLimitStats`
             snapshot.
 
         Example:
@@ -357,7 +357,7 @@ class CompositeRateLimiter:
         """Aggregate the execution counters of every wrapped limiter.
 
         Returns:
-            A :class:`~macroforecast.datasets.core.reports.RateLimitStats` whose
+            A :class:`~statflows.core.reports.RateLimitStats` whose
             acquisitions are the maximum over the limiters — they are acquired in
             turn, once per request — and whose waits are summed, sequential
             acquisition making the total wait additive.

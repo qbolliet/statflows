@@ -10,7 +10,7 @@ from urllib3 import disable_warnings
 
 
 # Classe parent gérant la connection au bucket pour les loaders et savers
-class _S3Connection:
+class S3Connection:
     """Base class for managing connections to Amazon S3 buckets.
 
     This class provides the foundational functionality for connecting to S3 buckets
@@ -29,14 +29,14 @@ class _S3Connection:
 
     Examples:
         Using boto3:
-        >>> conn = _S3Connection()
+        >>> conn = S3Connection()
         >>> conn._connect(
         ...     aws_access_key_id='YOUR_KEY',
         ...     aws_secret_access_key='YOUR_SECRET'
         ... )
 
         Using s3fs with custom endpoint:
-        >>> conn = _S3Connection(s3_package='s3fs')
+        >>> conn = S3Connection(s3_package='s3fs')
         >>> conn._connect(endpoint_url='https://custom.endpoint')
 
     Notes:
@@ -84,7 +84,7 @@ class _S3Connection:
             **kwargs: Additional arguments passed to boto3.client or S3FileSystem
 
         Returns:
-            _S3Connection: Self, with initialized s3 attribute
+            S3Connection: Self, with initialized s3 attribute
 
         Raises:
             ValueError: If s3_package is invalid

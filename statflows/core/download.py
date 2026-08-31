@@ -12,7 +12,7 @@ Production entry point that, for a list of provider queries:
 
 The orchestration is provider-agnostic: *how* to fetch the incremental data is
 delegated to each client through
-:meth:`~macroforecast.datasets.core.client.AbstractSDMXClient.fetch_updates`
+:meth:`~statflows.core.client.AbstractSDMXClient.fetch_updates`
 """
 # Importation des modules
 from __future__ import annotations
@@ -29,9 +29,9 @@ import duckdb
 import pandas as pd
 
 # Importation des modules de connexion
-from macroforecast.storage import Loader, Saver
+from ..storage.json import Loader, Saver
 # Helper DuckLake partagé (création puis upsert de la table de faits)
-from macroforecast.storage2.tables import write_dataframe
+from ..storage.ducklake.tables import write_dataframe
 
 from dt_ducklake_manager import DuckLakeConnector
 
@@ -614,7 +614,7 @@ class SDMXDownloader:
 
         Resolves the primary keys from the dataflow structure, then delegates the
         create-then-upsert logic to the shared
-        :func:`macroforecast.storage2.write_dataframe`.
+        :func:`statflows.storage.ducklake.tables.write_dataframe`.
 
         Args:
             conn: Open DuckLake connection.
