@@ -2,11 +2,10 @@
 # Modules de base
 from pathlib import Path
 from typing import Any, Optional, Union
-# Module de gestion des erreurs S3
-from botocore.exceptions import ClientError
 # Module de chargement de fichiers en local
 from .local.loader import load_local
-# Module de chargement de fichiers depuis S3
+# Module de chargement de fichiers depuis S3 : ne tire pas ``boto3`` au chargement,
+# la dépendance de l'extra « s3 » n'est requise qu'à l'établissement de la connexion
 from .s3.loader import S3Loader
 
 
@@ -124,7 +123,11 @@ class Loader(S3Loader):
             # Utilise la méthode de chargement depuis S3 du parent
             if not missing_ok:
                 return super().load(bucket=bucket, key=key, **kwargs)
-            # Absence d'objet détectée via l'exception du client (NoSuchKey/404)
+            # Absence d'objet détectée via l'exception du client (NoSuchKey/404).
+            # Import différé : ``botocore`` arrive avec l'extra « s3 », déjà
+            # installé si l'on atteint cette branche (la connexion a réussi).
+            from botocore.exceptions import ClientError
+
             try:
                 return super().load(bucket=bucket, key=key, **kwargs)
             except ClientError:

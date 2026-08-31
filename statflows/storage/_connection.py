@@ -3,10 +3,11 @@
 import os
 from typing import Literal, Optional
 
-# Modules S3
-from boto3 import client
-from s3fs import S3FileSystem
-from urllib3 import disable_warnings
+# Message d'aide commun quand l'extra « s3 » n'est pas installé
+_S3_EXTRA_HINT = (
+    "S3 storage requires the optional 's3' dependencies. "
+    "Install them with: pip install 'statflows[s3]'"
+)
 
 
 # Classe parent gérant la connection au bucket pour les loaders et savers
@@ -87,6 +88,8 @@ class S3Connection:
             S3Connection: Self, with initialized s3 attribute
 
         Raises:
+            ImportError: If the optional 's3' dependencies (``boto3`` / ``s3fs``)
+                are not installed.
             ValueError: If s3_package is invalid
             botocore.exceptions.ClientError: If connection fails
 
@@ -94,6 +97,18 @@ class S3Connection:
             If credentials are not provided, they will be read from environment
             variables.
         """
+        # Dépendances de l'extra « s3 » : importées à la connexion seulement, pour
+        # que le module reste importable sans « s3 » (usage local exclusif).
+        try:
+            from urllib3 import disable_warnings
+
+            if self.s3_package == "boto3":
+                from boto3 import client
+            else:
+                from s3fs import S3FileSystem
+        except ImportError as exc:
+            raise ImportError(_S3_EXTRA_HINT) from exc
+
         # Désactive les warnings en raison de la non vérification du certificat (non recommandé)
         disable_warnings()
         # Cas où le gestionnaire est boto3
