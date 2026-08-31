@@ -25,7 +25,14 @@ jobs:
         run: uv sync --all-extras
 
       - name: Run pytest
-        run: uv run pytest
+        run: uv run pytest --cov --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          fail_ci_if_error: false
 
   # Installation nue : le socle doit s'importer sans aucun extra.
   bare-imports:

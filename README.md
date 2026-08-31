@@ -1,5 +1,11 @@
 # statflows
 
+[![CI](https://github.com/qbolliet/statflows/actions/workflows/ci.yml/badge.svg)](https://github.com/qbolliet/statflows/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/qbolliet/statflows/branch/main/graph/badge.svg)](https://codecov.io/gh/qbolliet/statflows)
+[![Python](https://img.shields.io/badge/python-3.13%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+
 Ce package contient un ensemble de clients d'API statistiques (Eurostat, OCDE, COMTRADE, UNSD), et un orchestrateur de téléchargement incrémental permettant d'industrialiser le téléchargement et le suivi de la mise à jour de bases de données. Pour les fournisseurs de données utilisant SDMX, une structure logicielle commune est utilisée et est adaptée pour les autres fournisseurs de données.
 
 ## Ce que fait le package
@@ -150,6 +156,8 @@ uv sync --all-extras
 uv run pytest                        # toute la suite
 uv run pytest tests/unit             # unitaires seuls (tournent sur une install nue)
 uv run pytest -m "not integration"   # exclut les tests contre services simulés
+uv run pytest --cov                  # avec le rapport de couverture (terminal)
+uv run pytest --cov --cov-report=html   # rapport HTML dans htmlcov/
 ```
 
 Arborescence des tests :
