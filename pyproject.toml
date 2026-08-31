@@ -42,7 +42,11 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-ra"
+markers = [
+    "integration: bout-en-bout contre des services simulés (moto S3, catalogue DuckLake fichier)",
+]
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::FutureWarning",
