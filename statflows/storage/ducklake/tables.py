@@ -14,8 +14,7 @@ the optional ``ducklake`` extra.
 from __future__ import annotations
 # Modules de base
 import logging
-from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 # Module de manipulation de la base de données : usage purement annotatif, donc
 # importé au seul typage (annotations différées par `from __future__`)
@@ -27,42 +26,6 @@ logger = logging.getLogger(__name__)
 
 # Nom de la table de faits DuckLake (convention dt_ducklake_manager)
 FACT_TABLE = "fact_table"
-
-
-# Gestionnaire de contexte de positionnement de la connexion sur un catalogue
-@contextmanager
-def _current_catalog(
-    conn: duckdb.DuckDBPyConnection, catalog_alias: str
-) -> Iterator[None]:
-    """Temporarily make ``catalog_alias`` the connection's current catalog.
-
-    Some ``dt_ducklake_manager`` writers qualify their DDL with the schema only,
-    which resolves against whichever catalog the connection currently points at.
-    This context manager pins that catalog for the duration of the block and
-    restores the previous ``catalog.schema`` position afterwards, so the caller's
-    session is left exactly as it was found.
-
-    Args:
-        conn: Open DuckDB connection.
-        catalog_alias: Alias of the catalog to activate.
-
-    Yields:
-        ``None``, with the connection positioned on ``catalog_alias``.
-    """
-    # Position courante, restaurée en sortie de bloc
-    previous_catalog, previous_schema = conn.execute(
-        "SELECT current_database(), current_schema()"
-    ).fetchone()
-    # Court-circuit : la connexion est déjà sur le bon catalogue
-    if previous_catalog == catalog_alias:
-        yield
-        return
-
-    conn.execute(f"USE {catalog_alias}")
-    try:
-        yield
-    finally:
-        conn.execute(f"USE {previous_catalog}.{previous_schema}")
 
 
 # Fonction de détection de l'existence de la table de faits d'un schéma
@@ -152,47 +115,42 @@ def write_dataframe(
     # Préfixe de journalisation : identifie le jeu de données écrit
     prefix = f"{label}: " if label else ""
 
-    # Les écrivains de dt_ducklake_manager ne qualifient leurs identifiants que
-    # du schéma : leurs requêtes se résolvent donc dans le catalogue *courant*
-    # de la connexion, pas dans `catalog_alias` (que DatabaseUpdater ne consulte
-    # que pour ses appels de maintenance). Positionnement explicite sur le
-    # catalogue cible, restauré en sortie, pour que l'argument fasse autorité.
-    with _current_catalog(conn, catalog_alias):
-        # Mise à jour de la table si elle existe déjà
-        if fact_table_exists(conn, catalog_alias, schema):
-            # Mise à jour incrémentale (upsert par clé primaire) : ne touche que
-            # les lignes fournies, le reste de la table est préservé.
-            updater = DatabaseUpdater(
-                connection=conn,
-                categorical_threshold=categorical_threshold,
-                ducklake_catalog_alias=catalog_alias,
-                schema=schema,
-            )
-            success = updater.update_database(
-                data,
-                use_transaction=True,
-                compact_after_update=True,
-            )
-
-            # Vérification de la bonne réalisation de la mise à jour
-            if not success:
-                raise ValueError(
-                    f"{prefix}DatabaseUpdater reported failure for schema '{schema}'"
-                )
-
-            # Logging
-            logger.info(f"{prefix}Upserted {len(data)} rows into '{schema}'")
-            return False
-
-        # Première construction : métadonnées, dimensions et table de faits
-        builder = DuckLakeTablesBuilder(
-            data,
-            categorical_threshold=categorical_threshold,
-            primary_keys=list(primary_keys),
+    # Mise à jour de la table si elle existe déjà
+    if fact_table_exists(conn, catalog_alias, schema):
+        # Mise à jour incrémentale (upsert par clé primaire) : ne touche que
+        # les lignes fournies, le reste de la table est préservé.
+        updater = DatabaseUpdater(
             connection=conn,
+            categorical_threshold=categorical_threshold,
+            catalog_alias=catalog_alias,
             schema=schema,
         )
-        builder.build_schema()
+        success = updater.update_database(
+            data,
+            use_transaction=True,
+            compact_after_update=True,
+        )
+
+        # Vérification de la bonne réalisation de la mise à jour
+        if not success:
+            raise ValueError(
+                f"{prefix}DatabaseUpdater reported failure for schema '{schema}'"
+            )
+
+        # Logging
+        logger.info(f"{prefix}Upserted {len(data)} rows into '{schema}'")
+        return False
+
+    # Première construction : métadonnées, dimensions et table de faits
+    builder = DuckLakeTablesBuilder(
+        data,
+        categorical_threshold=categorical_threshold,
+        primary_keys=list(primary_keys),
+        connection=conn,
+        schema=schema,
+        catalog_alias=catalog_alias,
+    )
+    builder.build_schema()
 
     # Logging
     logger.info(
