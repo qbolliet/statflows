@@ -32,7 +32,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-dt-ducklake-manager = { git = "https://github.com/qbolliet/dt-ducklake-manager", tag = "v0.3.0" }
+dt-ducklake-manager = { git = "https://github.com/qbolliet/dt-ducklake-manager", tag = "v0.3.1" }
 
 [dependency-groups]
 dev = [
