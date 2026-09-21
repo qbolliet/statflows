@@ -49,7 +49,7 @@ pip install "statflows[all] @ git+https://github.com/qbolliet/statflows"
 
 | Extra        | Contenu                     | Requis pour                                                              |
 |--------------|-----------------------------|-------------------------------------------------------------------------|
-| *(base)*     | `requests`, `pandas`, `pyarrow`, `pyyaml`, `comtradeapicall` | clients, requêtes ponctuelles, parsing, registres JSON **en local** |
+| *(base)*     | `requests`, `pandas`, `pyarrow`, `pyyaml` | clients, requêtes ponctuelles, parsing, registres JSON **en local** |
 | `s3`         | `boto3`, `s3fs`             | lecture/écriture des registres JSON **sur un bucket** (`Loader`/`Saver` avec `bucket=...`, `download_updates` avec `bucket=...`) |
 | `ducklake`   | `duckdb`, `dt-ducklake-manager` | `statflows.storage.ducklake.tables` (écriture), `statflows.core.download` |
 | `all`        | union                       | —                                                                       |

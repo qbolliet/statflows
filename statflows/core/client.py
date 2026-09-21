@@ -103,6 +103,9 @@ class APIClient:
             backoff_factor=backoff_factor,
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["HEAD", "GET", "OPTIONS"],
+            # Retries épuisés : renvoi de la dernière réponse plutôt qu'un RetryError,
+            # afin que raise_for_status() lève un HTTPError portant le statut HTTP
+            raise_on_status=False,
         )
         # Ajout de la stratégie à la session
         adapter = HTTPAdapter(max_retries=retry_strategy)

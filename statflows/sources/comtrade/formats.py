@@ -7,7 +7,7 @@ bridges the three naming systems Comtrade exposes:
 
 * the friendly names used as :meth:`ComtradeClient.get_data` arguments
   (``flows``, ``products``, ``reporters``…);
-* the request-argument names of ``comtradeapicall._getTarifflineData``
+* the request-argument names of the ``getTariffline`` endpoint
   (``flowCode``, ``cmdCode``, ``reporterCode``…);
 * the structure-dimension / response-column names (``flowDesc``, ``cmdCode``,
   ``reporterISO``…) declared in ``parameters/comtrade.json``.
@@ -35,7 +35,7 @@ class ComtradeResponseFormat(SDMXResponseFormat):
     """Response formats supported by the UN Comtrade API.
 
     Attributes:
-        JSON: JSON response (default for ``comtradeapicall``).
+        JSON: JSON response (default).
         CSV: CSV response.
     """
     JSON = "json"
@@ -47,7 +47,7 @@ class ComtradeResponseFormat(SDMXResponseFormat):
 # ──────────────────────────────────────────────────────────────────────
 
 # Mapping des dimensions subdivisibles : nom convivial (argument de get_data) →
-#   - api_arg       : nom de l'argument correspondant de _getTarifflineData ;
+#   - api_arg       : nom de l'argument correspondant de l'endpoint getTariffline ;
 #   - structure_dim : nom de la dimension de structure / colonne de réponse ;
 #   - category      : catégorie de métadonnées pour récupérer les codes valides
 #                     (None ⇒ codes non énumérables, ex. les périodes).
@@ -78,13 +78,13 @@ SUBDIVISION_ORDER: List[str] = [
 
 # Fonction d'extraction de l'argument API associé à un nom convivial
 def api_arg_for(name: str) -> str:
-    """Return the ``_getTarifflineData`` argument name of a friendly dimension.
+    """Return the ``getTariffline`` argument name of a friendly dimension.
 
     Args:
         name: Friendly dimension name (a key of :data:`DIMENSIONS`).
 
     Returns:
-        The corresponding ``_getTarifflineData`` argument name.
+        The corresponding ``getTariffline`` argument name.
 
     Raises:
         KeyError: If ``name`` is not a known dimension.

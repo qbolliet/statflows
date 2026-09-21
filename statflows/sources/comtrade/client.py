@@ -2,8 +2,8 @@
 
 High-level client for querying UN Comtrade international-trade data and
 converting responses to pandas DataFrames. Unlike Eurostat and OECD, UN
-Comtrade does not follow the SDMX conventions, so this client wraps the
-official ``comtradeapicall`` library rather than building SDMX endpoints.
+Comtrade does not follow the SDMX conventions, so this client calls the
+Comtrade REST endpoints directly rather than building SDMX endpoints.
 
 It inherits from :class:`~statflows.core.client.APIClient` for the
 shared HTTP plumbing (retry session, ``close``) and mirrors the SDMX clients'
@@ -16,8 +16,6 @@ https://comtradeapi.un.org/files/v1/app/wiki/MethodologyGuideforComtradePlus.pdf
 """
 # Importation des modules
 # Modules de base
-import contextlib
-import io
 import json
 import logging
 import os
@@ -26,10 +24,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 
-# Module de l'API UN Comtrade
-import comtradeapicall
+# Modules externes
 import numpy as np
 import pandas as pd
+import requests
 
 # Modules du package
 from ...core.client import APIClient
@@ -57,6 +55,20 @@ with open(Path(__file__).parents[2] / "parameters" / "comtrade.json", "r", encod
     PARAMETERS: Dict[str, Any] = json.load(f)
 
 
+# Exception levée lorsqu'un appel à l'API UN Comtrade échoue
+class ComtradeAPIError(RuntimeError):
+    """Raised when a UN Comtrade API call fails.
+
+    Args:
+        message: Error message (includes the HTTP status when available).
+        status_code: HTTP status code, ``None`` for network errors.
+    """
+
+    def __init__(self, message: str, status_code: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
 # Classe de récupération des données de commerce international du UN Comtrade
 class ComtradeClient(APIClient):
     """High-level client for UN Comtrade international-trade data.
@@ -67,11 +79,11 @@ class ComtradeClient(APIClient):
 
     Args:
         base_url: UN Comtrade API base URL (used for the inherited HTTP
-            session; ``comtradeapicall`` builds its own request URLs).
+            session used for every call).
         timeout: Request timeout in seconds.
         subscription_key: Comtrade subscription key. Falls back to the
             ``COMTRADE_SUBSCRIPTION_KEY`` environment variable when ``None``.
-        proxy: Proxy to use through the comtradeapicall API.
+        proxy: Proxy (``host:port``) used by the HTTP session.
         structure_registry: Optional registry for dataflow structures. When
             ``None`` a new registry is created and populated from the
             ``STRUCTURES`` section of ``parameters/comtrade.json``.
@@ -101,6 +113,9 @@ class ComtradeClient(APIClient):
     # URL de base par défaut de l'API UN Comtrade
     DEFAULT_BASE_URL = "https://comtradeapi.un.org"
 
+    # URL du registre des fichiers de référence (métadonnées)
+    REFERENCES_URL = "https://comtradeapi.un.org/files/v1/app/reference/ListofReferences.json"
+
     # Initialisation
     def __init__(
         self,
@@ -129,8 +144,10 @@ class ComtradeClient(APIClient):
             else os.getenv("COMTRADE_SUBSCRIPTION_KEY")
         )
 
-        # Proxy optionnel (hôte:port) propagé à comtradeapicall
+        # Proxy optionnel (hôte:port) propagé à la session HTTP
         self.proxy = proxy
+        if self._proxy_url is not None:
+            self.session.proxies.update({"http": self._proxy_url, "https": self._proxy_url})
 
         # Rate limiter (argument ou chargement automatique depuis la configuration)
         if auto_load_rate_limit and rate_limiter is None:
@@ -189,14 +206,78 @@ class ComtradeClient(APIClient):
             logger.warning(f"Could not load rate limiter: {e}")
             return None
 
-    # Propriété d'URL de proxy formatée pour comtradeapicall
+    # Propriété d'URL de proxy formatée pour la session HTTP
     @property
     def _proxy_url(self) -> Optional[str]:
-        """Proxy URL passed to ``comtradeapicall`` (``None`` when unset)."""
+        """Proxy URL set on the HTTP session (``None`` when unset)."""
         # Aucun proxy → None ; sinon préfixe http://
         if self.proxy is None:
             return None
         return f"http://{self.proxy}"
+
+    # Méthode auxiliaire de résolution de l'endpoint et des headers d'authentification
+    def _auth(self, path: str) -> Tuple[str, Optional[Dict[str, str]]]:
+        """Return the endpoint and headers for an authenticated-or-public call.
+
+        With a subscription key the ``/data/`` endpoint is used and the key is
+        sent as a header (so that it never appears in URLs, logs or
+        exceptions); without key the ``/public/`` endpoint is used.
+
+        Args:
+            path: Path below the access prefix (e.g. ``"v1/getDa/C/A/HS"``).
+
+        Returns:
+            Tuple ``(endpoint, headers)``.
+        """
+        if self.subscription_key is not None:
+            return f"/data/{path}", {"Ocp-Apim-Subscription-Key": self.subscription_key}
+        return f"/public/{path}", None
+
+    # Méthode auxiliaire d'appel JSON à l'API
+    def _get_json(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        context: str = "Comtrade API call",
+    ) -> Any:
+        """GET ``endpoint`` and return the decoded JSON payload.
+
+        Args:
+            endpoint: Endpoint path or absolute URL.
+            params: Query parameters (``None`` values are omitted).
+            headers: Additional headers.
+            context: Prefix of the error message.
+
+        Returns:
+            Decoded JSON payload.
+
+        Raises:
+            ComtradeAPIError: On a non-200 response (with its HTTP status) or
+                a network error.
+        """
+        # Omission des paramètres non renseignés
+        if params is not None:
+            params = {key: value for key, value in params.items() if value is not None}
+
+        try:
+            response = self.get(endpoint, params=params, headers=headers)
+        except requests.exceptions.HTTPError as e:
+            # Remontée du statut HTTP et du corps (souvent vide sur une 500)
+            status = e.response.status_code if e.response is not None else None
+            reason = e.response.reason if e.response is not None else ""
+            body = e.response.text.strip() if e.response is not None else ""
+            raise ComtradeAPIError(
+                f"{context} failed: HTTP {status} {reason}"
+                f"{' - ' + body[:500] if body else ' (empty response body)'}",
+                status_code=status,
+            ) from e
+        except requests.exceptions.RequestException as e:
+            # Erreur réseau : pas de statut HTTP
+            raise ComtradeAPIError(f"{context} failed: {e}") from e
+
+        # Décodage (utf-8-sig : certains fichiers de référence ont un BOM)
+        return json.loads(response.content.decode("utf-8-sig"))
 
     # Méthode auxiliaire d'application du rate limiter avant un appel API
     def _acquire(self) -> None:
@@ -416,29 +497,106 @@ class ComtradeClient(APIClient):
         return periods
 
 
+    # Méthode auxiliaire d'un appel unique à l'API tariffline
+    def _request_tariffline(
+        self,
+        typeCode: str,
+        freqCode: str,
+        clCode: str,
+        maxRecords: Optional[int] = None,
+        format_output: str = "JSON",
+        countOnly: Optional[bool] = None,
+        includeDesc: Optional[bool] = None,
+        **api_kwargs: Union[str, None],
+    ) -> pd.DataFrame:
+        """Issue a single tariffline request and return it as a DataFrame.
+
+        Builds the ``getTariffline`` request (``previewTariffline`` without
+        subscription key) and sends it through :meth:`_get_json`, so failures
+        raise with their HTTP status and are counted in ``stats_``.
+
+        Args:
+            typeCode: Trade type (``"C"`` or ``"S"``).
+            freqCode: Frequency (``"A"`` or ``"M"``).
+            clCode: Classification code (``"HS"``, …).
+            maxRecords: Maximum number of records returned.
+            format_output: Response format (only ``"JSON"`` is supported).
+            countOnly: When ``True``, return only the record count.
+            includeDesc: Whether to include the variables' descriptions.
+            **api_kwargs: Flow dimensions keyed by their API argument name.
+
+        Returns:
+            DataFrame of the returned records (or of the count).
+
+        Raises:
+            ValueError: If ``format_output`` is not ``"JSON"``.
+            ComtradeAPIError: On a non-200 response or a network error.
+        """
+        # Seul le JSON est supporté
+        if (format_output or "JSON").upper() != "JSON":
+            raise ValueError(
+                f"Only JSON output is supported, got format_output={format_output!r}"
+            )
+
+        # Endpoint : données authentifiées avec clé, aperçu public sinon
+        if self.subscription_key is not None:
+            endpoint = f"/data/v1/getTariffline/{typeCode}/{freqCode}/{clCode}"
+            # Clé transmise en header pour ne pas apparaître dans l'URL (logs, exceptions)
+            headers = {"Ocp-Apim-Subscription-Key": self.subscription_key}
+        else:
+            endpoint = f"/public/v1/previewTariffline/{typeCode}/{freqCode}/{clCode}"
+            headers = None
+
+        # Paramètres de requête (noms attendus par l'API, valeurs None omises)
+        query = {
+            "reportercode": api_kwargs.get("reporterCode"),
+            "flowCode": api_kwargs.get("flowCode"),
+            "period": api_kwargs.get("period"),
+            "cmdCode": api_kwargs.get("cmdCode"),
+            "partnerCode": api_kwargs.get("partnerCode"),
+            "partner2Code": api_kwargs.get("partner2Code"),
+            "motCode": api_kwargs.get("motCode"),
+            "customsCode": api_kwargs.get("customsCode"),
+            "maxRecords": maxRecords,
+            "format": "JSON",
+            "countOnly": countOnly,
+            "includeDesc": includeDesc,
+        }
+
+        # Requête (erreurs converties en ComtradeAPIError avec le statut HTTP)
+        payload = self._get_json(
+            endpoint,
+            params=query,
+            headers=headers,
+            context=f"Comtrade tariffline call for period {query['period']}",
+        )
+
+        # Conversion de la réponse JSON en DataFrame
+        if countOnly:
+            return pd.DataFrame([{"count": payload["count"]}])
+        return pd.json_normalize(payload["data"])
+
     # Méthode auxiliaire d'appel à l'API tariffline, période par période
     def _fetch_tariffline(
         self, api_kwargs: Dict[str, Union[str, None]], **params: Any
     ) -> Tuple[pd.DataFrame, bool]:
-        """Call ``comtradeapicall.getTarifflineData`` once per requested period.
+        """Call :meth:`_request_tariffline` once per requested period.
 
-        ``comtradeapicall._getTarifflineData`` loops over the periods itself,
-        which bypasses the rate limiter (bursts of calls → HTTP 429) and
-        silently drops failed calls: on a non-200 response the library only
-        prints the error body and returns ``None``. Looping here applies the
-        rate limiter before every HTTP call and turns failures into exceptions.
+        Issuing one call per period applies the rate limiter before every HTTP
+        call (a single multi-period call would be split server-side into
+        bursts of calls → HTTP 429).
 
         Args:
             api_kwargs: Flow dimensions keyed by their API argument name
                 (``period`` holds comma-separated periods or ``None``).
-            **params: Remaining ``getTarifflineData`` arguments.
+            **params: Remaining :meth:`_request_tariffline` arguments.
 
         Returns:
             Tuple ``(DataFrame, truncated)`` where ``truncated`` is ``True``
             when at least one call reached the per-call record limit.
 
         Raises:
-            RuntimeError: If the API returns an error for any period.
+            ComtradeAPIError: If the API returns an error for any period.
         """
         # Découpage des périodes (None → un seul appel sans filtre de période)
         periods = api_kwargs.get("period")
@@ -449,24 +607,11 @@ class ComtradeClient(APIClient):
             # Application du rate limiter avant chaque appel HTTP
             self._acquire()
 
-            # Capture de la sortie standard : la lib y imprime le message d'erreur
-            buffer = io.StringIO()
-            with contextlib.redirect_stdout(buffer):
-                df = comtradeapicall.getTarifflineData(
-                    self.subscription_key,
-                    proxy_url=self._proxy_url,
-                    **{**api_kwargs, "period": period},
-                    **params,
-                )
-            # Incrément du compteur d'appels API
-            self.api_calls += 1
-
-            # Réponse non-200 ou erreur réseau → la lib renvoie None
-            if df is None:
-                raise RuntimeError(
-                    f"Comtrade API call failed for period {period}: "
-                    f"{buffer.getvalue().strip() or 'no response'}"
-                )
+            try:
+                df = self._request_tariffline(**{**api_kwargs, "period": period}, **params)
+            finally:
+                # Incrément du compteur d'appels API (y compris en cas d'échec)
+                self.api_calls += 1
 
             truncated |= len(df) >= PARAMETERS["LIMIT"]
             frames.append(df)
@@ -496,10 +641,10 @@ class ComtradeClient(APIClient):
     ) -> Tuple[pd.DataFrame, dict]:
         """Fetch tariffline data from UN Comtrade.
 
-        Issues a single ``comtradeapicall._getTarifflineData`` request and, when
+        Issues one tariffline request per period (cf. :meth:`_fetch_tariffline`) and, when
         the response hits the per-call record limit (``LIMIT``), recursively
         subdivides it over any flow-defining dimension declared in
-        :data:`DIMENSIONS` until each chunk fits. All ``_getTarifflineData``
+        :data:`DIMENSIONS` until each chunk fits. All ``getTariffline``
         arguments are exposed (with sensible defaults) so callers are not boxed
         into a narrow set of requests.
 
@@ -579,7 +724,7 @@ class ComtradeClient(APIClient):
             "include_desc": include_desc,
         }
 
-        # Traduction des noms conviviaux vers les arguments de getTarifflineData
+        # Traduction des noms conviviaux vers les arguments de getTariffline
         api_kwargs = {api_arg_for(name): value for name, value in selection.items()}
 
         # Requête des données tariffline via la lib officielle (un appel par période)
@@ -664,8 +809,8 @@ class ComtradeClient(APIClient):
             DataFrame with the metadata for the requested category.
 
         Raises:
-            ValueError: If ``category`` is invalid or the data cannot be
-                retrieved.
+            ValueError: If ``category`` is invalid.
+            ComtradeAPIError: If the reference files cannot be retrieved.
 
         Examples:
             >>> categories = client.get_metadata()  # doctest: +SKIP
@@ -675,41 +820,31 @@ class ComtradeClient(APIClient):
         self._acquire()
 
         # Chargement du registre des références
-        metadata_index = comtradeapicall.listReference(
-            category=category,
-            proxy_url=self._proxy_url,
+        metadata_index = pd.json_normalize(
+            self._get_json(
+                self.REFERENCES_URL, context="Comtrade reference list call"
+            )["results"]
         )
-
-        # Jeu de données vide → erreur avec les modalités valides
-        if metadata_index.empty:
-            # Requête de l'ensemble des possibilités
-            metadata_options = comtradeapicall.listReference(
-                category=None,
-                proxy_url=self._proxy_url,
-            )
-            raise ValueError(
-                f"Invalid 'category' : {category}. To get further information, "
-                f"run with category=None. 'category' should be in "
-                f"{metadata_options['category'].tolist()}."
-            )
 
         # Catégorie non spécifiée → registre des méta-données
         if category is None:
             return metadata_index
 
-        # Requête du fichier de la catégorie (session HTTP héritée d'APIClient)
-        response = self.session.get(metadata_index["fileuri"].iloc[0])
-
-        # Disjonction de cas suivant le statut de la requête
-        if response.status_code == 200:
-            # Extraction et normalisation des données
-            data = response.json()
-            return pd.json_normalize(data["results"])
-        else:
+        # Catégorie inconnue → erreur avec les modalités valides
+        matches = metadata_index[metadata_index["category"] == category]
+        if matches.empty:
             raise ValueError(
-                f"Failed to retrieve data for category : {category}. "
-                f"Status code: {response.status_code}"
+                f"Invalid 'category' : {category}. To get further information, "
+                f"run with category=None. 'category' should be in "
+                f"{metadata_index['category'].tolist()}."
             )
+
+        # Requête du fichier de la catégorie
+        data = self._get_json(
+            matches["fileuri"].iloc[0],
+            context=f"Comtrade reference call for category {category}",
+        )
+        return pd.json_normalize(data["results"])
 
     # Méthode auxiliaire de validation du format d'une période
     def _validate_date(self, period: Union[str, int]) -> str:
@@ -816,8 +951,8 @@ class ComtradeClient(APIClient):
     # Seam de téléchargement incrémental 
     # ──────────────────────────────────────────────────────────────────
 
-    # Méthode de récupération de la disponibilité finale des données
-    def get_final_data_availability(
+    # Méthode de récupération de la disponibilité des données tariffline
+    def get_tariffline_data_availability(
         self,
         reporters: Optional[Union[List[int], List[str], int, str, None]] = None,
         periods: Optional[Union[List[str], str, None]] = None,
@@ -825,11 +960,11 @@ class ComtradeClient(APIClient):
         type_code: str = "C",
         classification: str = "HS",
     ) -> pd.DataFrame:
-        """Fetch the final-data availability for reporters and periods.
+        """Fetch the tariffline-data availability for reporters and periods.
 
-        Wraps ``comtradeapicall.getFinalDataAvailability``. Used by the download
-        script to compare each release's ``lastReleased`` date with the last
-        recorded download and decide whether a (reporter, period) couple must be
+        Calls the ``getDaTariffline`` endpoint. Used by :meth:`fetch_updates`
+        to compare each release's ``lastReleased`` date with the last recorded
+        download and decide whether a (reporter, period) couple must be
         refreshed.
 
         Args:
@@ -840,7 +975,11 @@ class ComtradeClient(APIClient):
             classification: Classification code (``'HS'``, ...).
 
         Returns:
-            DataFrame returned by ``getFinalDataAvailability``.
+            DataFrame with one row per available (reporter, period) dataset
+            (``period``, ``reporterCode``, ``lastReleased``, ...).
+
+        Raises:
+            ComtradeAPIError: If the API returns an error.
         """
         # Preprocessing des codes
         reporters = self._preprocess_codes(codes=reporters)
@@ -850,23 +989,30 @@ class ComtradeClient(APIClient):
         # Application du rate limiter avant l'appel API
         self._acquire()
 
-        # Requête de la disponibilité finale des données
-        return comtradeapicall.getFinalDataAvailability(
-            subscription_key=self.subscription_key,
-            typeCode=type_code,
-            freqCode="A" if frequency == "annual" else "M",
-            clCode=classification,
-            reporterCode=reporters,
-            period=periods,
+        # Requête de la disponibilité des données tariffline
+        freq_code = "A" if frequency == "annual" else "M"
+        endpoint, headers = self._auth(
+            f"v1/getDaTariffline/{type_code}/{freq_code}/{classification}"
         )
-    
+        try:
+            payload = self._get_json(
+                endpoint,
+                params={"reportercode": reporters, "period": periods},
+                headers=headers,
+                context="Comtrade tariffline availability call",
+            )
+        finally:
+            # Incrément du compteur d'appels API (y compris en cas d'échec)
+            self.api_calls += 1
+        return pd.json_normalize(payload["data"])
+
     # Méthode de résolution de la date de dernière publication d'une période
     def _period_last_released(
         self, query: "ComtradeQueryRequest"
     ) -> Optional[datetime]:
         """Return the most recent ``lastReleased`` date for a query's period.
 
-        Wraps :meth:`get_final_data_availability` and memoises the result per
+        Wraps :meth:`get_tariffline_data_availability` and memoises the result per
         availability signature (period, frequency, type, classification,
         reporters). As the signature is independent of the product batch, the
         many (period, product-batch) queries sharing a period trigger a single
@@ -893,8 +1039,8 @@ class ComtradeClient(APIClient):
             return self._availability_cache[cache_key]
 
         try:
-            # Disponibilité finale (tous les reporters de la requête) pour la période
-            availability = self.get_final_data_availability(
+            # Disponibilité tariffline (tous les reporters de la requête) pour la période
+            availability = self.get_tariffline_data_availability(
                 reporters=query.reporters,
                 periods=query.periods,
                 frequency=query.frequency,

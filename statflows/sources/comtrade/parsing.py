@@ -13,6 +13,9 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+# Modules externes
+import pandas as pd
+
 # Modules du package
 from ...core.structures import DataflowStructure
 
@@ -108,18 +111,30 @@ def parse_availability_last_released(
 ) -> Dict[str, Optional[str]]:
     """Map each period to its ``lastReleased`` date from an availability frame.
 
-    Reads the DataFrame returned by ``getFinalDataAvailability`` and produces a
+    Reads the DataFrame returned by ``getDaTariffline`` and produces a
     ``{period: lastReleased}`` mapping used by the download script to decide
-    whether a (reporter, period) couple must be refreshed.
+    whether a (reporter, period) couple must be refreshed. The availability
+    has one row per (reporter, period) dataset, so each period is mapped to
+    the most recent ``lastReleased`` across its reporters: a republication by
+    any reporter is thus never masked by an older one.
 
     Args:
         availability: DataFrame returned by
-            ``ComtradeClient.get_final_data_availability`` (expects ``period``
+            ``ComtradeClient.get_tariffline_data_availability`` (expects ``period``
             and ``lastReleased`` columns).
 
     Returns:
-        Mapping of period (as ``str``) to its last-released date (``str`` or
-        ``None``). Empty when the input is empty or lacks the columns.
+        Mapping of period (as ``str``) to its most recent last-released date
+        (``str``, ``None`` when no reporter has a valid date). Empty when the
+        input is empty or lacks the columns.
+
+    Examples:
+        >>> import pandas as pd
+        >>> parse_availability_last_released(pd.DataFrame({
+        ...     "period": [2022, 2022, 2021],
+        ...     "lastReleased": ["2026-02-06T10:18:40.23", "2025-08-14T08:57:07.4733333", None],
+        ... }))
+        {'2022': '2026-02-06T10:18:40.23', '2021': None}
     """
     # Court-circuit si le jeu de données est vide ou incomplet
     if (
@@ -130,10 +145,23 @@ def parse_availability_last_released(
     ):
         return {}
 
-    # Construction du dictionnaire période → date de dernière publication
+    # Construction du dictionnaire période → date de publication la plus récente
+    # (plusieurs reporters par période : comparaison sur les dates parsées, les
+    # chaînes brutes n'ayant pas toutes la même précision)
+    latest: Dict[str, Optional[Any]] = {}
+    for period, released in zip(availability["period"], availability["lastReleased"]):
+        period = str(period)
+        parsed = pd.to_datetime(released, errors="coerce")
+        # Date absente ou invalide : la période est conservée sans date
+        if pd.isna(parsed):
+            latest.setdefault(period, None)
+            continue
+        current = latest.get(period)
+        if current is None or parsed > current[0]:
+            latest[period] = (parsed, str(released))
+
+    # Renvoi de la chaîne d'origine de la date la plus récente
     return {
-        str(period): (None if released is None or released != released else str(released))
-        for period, released in zip(
-            availability["period"], availability["lastReleased"]
-        )
+        period: None if value is None else value[1]
+        for period, value in latest.items()
     }

@@ -7,11 +7,12 @@ work consistently with the SDMX provider packages.
 # Importation des éléments d'intérêt du sous-package
 from .formats import ComtradeResponseFormat
 from .queries import ComtradeQueryRequest
-from .client import ComtradeClient
+from .client import ComtradeAPIError, ComtradeClient
 
 # Réexport des éléments d'intérêt du sous-package
 __all__ = [
     "ComtradeResponseFormat",
     "ComtradeQueryRequest",
     "ComtradeClient",
+    "ComtradeAPIError",
 ]

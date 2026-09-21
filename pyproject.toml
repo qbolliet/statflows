@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Downloaders and storage backends for international trade and economic statistics"
 requires-python = ">=3.13"
 dependencies = [
-    "comtradeapicall>=1.3.2",
     "pandas>=2.3.3",
     "pyarrow>=24.0.0",
     "pyyaml>=6.0.3",
