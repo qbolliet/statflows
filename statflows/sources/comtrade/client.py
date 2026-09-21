@@ -16,6 +16,8 @@ https://comtradeapi.un.org/files/v1/app/wiki/MethodologyGuideforComtradePlus.pdf
 """
 # Importation des modules
 # Modules de base
+import contextlib
+import io
 import json
 import logging
 import os
@@ -414,6 +416,63 @@ class ComtradeClient(APIClient):
         return periods
 
 
+    # Méthode auxiliaire d'appel à l'API tariffline, période par période
+    def _fetch_tariffline(
+        self, api_kwargs: Dict[str, Union[str, None]], **params: Any
+    ) -> Tuple[pd.DataFrame, bool]:
+        """Call ``comtradeapicall.getTarifflineData`` once per requested period.
+
+        ``comtradeapicall._getTarifflineData`` loops over the periods itself,
+        which bypasses the rate limiter (bursts of calls → HTTP 429) and
+        silently drops failed calls: on a non-200 response the library only
+        prints the error body and returns ``None``. Looping here applies the
+        rate limiter before every HTTP call and turns failures into exceptions.
+
+        Args:
+            api_kwargs: Flow dimensions keyed by their API argument name
+                (``period`` holds comma-separated periods or ``None``).
+            **params: Remaining ``getTarifflineData`` arguments.
+
+        Returns:
+            Tuple ``(DataFrame, truncated)`` where ``truncated`` is ``True``
+            when at least one call reached the per-call record limit.
+
+        Raises:
+            RuntimeError: If the API returns an error for any period.
+        """
+        # Découpage des périodes (None → un seul appel sans filtre de période)
+        periods = api_kwargs.get("period")
+        period_list = periods.split(",") if periods else [periods]
+
+        frames, truncated = [], False
+        for period in period_list:
+            # Application du rate limiter avant chaque appel HTTP
+            self._acquire()
+
+            # Capture de la sortie standard : la lib y imprime le message d'erreur
+            buffer = io.StringIO()
+            with contextlib.redirect_stdout(buffer):
+                df = comtradeapicall.getTarifflineData(
+                    self.subscription_key,
+                    proxy_url=self._proxy_url,
+                    **{**api_kwargs, "period": period},
+                    **params,
+                )
+            # Incrément du compteur d'appels API
+            self.api_calls += 1
+
+            # Réponse non-200 ou erreur réseau → la lib renvoie None
+            if df is None:
+                raise RuntimeError(
+                    f"Comtrade API call failed for period {period}: "
+                    f"{buffer.getvalue().strip() or 'no response'}"
+                )
+
+            truncated |= len(df) >= PARAMETERS["LIMIT"]
+            frames.append(df)
+
+        return pd.concat(frames, ignore_index=True), truncated
+
     # Méthode principale de récupération des données tariffline
     def get_data(
         self,
@@ -520,15 +579,12 @@ class ComtradeClient(APIClient):
             "include_desc": include_desc,
         }
 
-        # Application du rate limiter avant l'appel API
-        self._acquire()
-
-        # Traduction des noms conviviaux vers les arguments de _getTarifflineData
+        # Traduction des noms conviviaux vers les arguments de getTarifflineData
         api_kwargs = {api_arg_for(name): value for name, value in selection.items()}
 
-        # Requête des données tariffline via la lib officielle
-        df = comtradeapicall._getTarifflineData(
-            self.subscription_key,
+        # Requête des données tariffline via la lib officielle (un appel par période)
+        df, truncated = self._fetch_tariffline(
+            api_kwargs=api_kwargs,
             typeCode=type_code,
             freqCode="A" if frequency == "annual" else "M",
             clCode=classification,
@@ -536,14 +592,10 @@ class ComtradeClient(APIClient):
             format_output=format_output,
             countOnly=count_only,
             includeDesc=include_desc,
-            proxy_url=self._proxy_url,
-            **api_kwargs,
         )
-        # Incrément du compteur d'appels API
-        self.api_calls += 1
 
         # Si la limite du nombre d'observations est atteinte, subdivision de la requête
-        if len(df) >= PARAMETERS["LIMIT"]:
+        if truncated:
             # Première dimension divisible dans l'ordre de préférence
             subdivision = next(
                 (
@@ -964,8 +1016,16 @@ class ComtradeClient(APIClient):
 
         # Dans la documentation de comtrade, il est spécifié que les duplicats n'en sont pas vraiment et peuvent être agrégés (cf https://uncomtrade.org/docs/what-is-tariffline-data/)
         # Agrégation selon les clés primaires du flux
+        # Réponse vide (aucune donnée publiée) : rien à agréger, pas de colonnes
+        if df.empty:
+            return df
         # Extraction des noms de colonnes correspondant aux clés primaires
-        dimension_keys = [d.name for d in self.resolve_query_structure(query=query).dimensions]
+        # (les colonnes *Desc sont absentes lorsque include_desc=False)
+        dimension_keys = [
+            d.name
+            for d in self.resolve_query_structure(query=query).dimensions
+            if d.name in df.columns
+        ]
         # Agrégation
         df = df.groupby(dimension_keys, sort=False, as_index=False, dropna=False).sum()
 
