@@ -56,7 +56,7 @@ class Loader(S3Loader):
         filepath: str | Path,
         bucket: str | None = None,
         missing_ok: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> Any:
         """Load a JSON file from S3 or local storage.
 
@@ -146,7 +146,7 @@ class Loader(S3Loader):
         self,
         directory: str | Path,
         bucket: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[str]:
         """List the ``.json`` files directly under a directory or S3 prefix.
 

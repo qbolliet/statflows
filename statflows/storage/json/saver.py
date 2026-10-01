@@ -3,7 +3,7 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 # Modules de package
 from .local.saver import save_local
@@ -57,7 +57,7 @@ class Saver(S3Saver):
         obj: object | None = None,
         bucket: str | None = None,
         atomic: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Save a JSON-serialisable object to S3 or local storage.
 

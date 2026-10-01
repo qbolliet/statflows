@@ -64,6 +64,11 @@ dev = [
     "types-pyyaml>=6.0",
     "types-requests>=2.32",
 ]
+docs = [
+    "mkdocs>=1.6.1,<2",
+    "mkdocs-material>=9.5.49,<10",
+    "mkdocstrings-python>=2.0.4",
+]
 
 # Les JSON de parameters/ sont des données d'exécution : hatchling embarque tous
 # les fichiers du paquet dans la wheel, mais on l'explicite pour l'sdist.

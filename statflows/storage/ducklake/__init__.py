@@ -1,6 +1,6 @@
-"""Persistance DuckLake (extra ``ducklake``).
+"""DuckLake persistence (``ducklake`` extra).
 
-Sous-paquet volontairement vide au chargement : :mod:`statflows.storage.ducklake.tables`
-importe ``dt_ducklake_manager`` paresseusement et n'est accessible que par import
-explicite.
+Subpackage deliberately empty on load: :mod:`statflows.storage.ducklake.tables`
+imports ``dt_ducklake_manager`` lazily and is only reachable through an explicit
+import.
 """

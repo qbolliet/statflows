@@ -1,9 +1,9 @@
-"""Test d'intégration — ``write_dataframe`` sur un catalogue DuckLake fichier.
+"""Integration test — ``write_dataframe`` on a file-based DuckLake catalog.
 
-Comportement figé : création de la table de faits au premier appel (→ ``True``),
-upsert par clé primaire au second (→ ``False``), lignes non fournies préservées.
+Frozen behaviour: creation of the fact table on the first call (→ ``True``),
+upsert by primary key on the second (→ ``False``), rows not provided preserved.
 
-Requiert l'extra « ducklake » : la fixture ``ducklake_conn`` skippe sinon.
+Requires the "ducklake" extra: the ``ducklake_conn`` fixture skips otherwise.
 """
 
 from __future__ import annotations
@@ -45,11 +45,11 @@ def test_create_then_upsert(ducklake_conn) -> None:
 
 
 def test_non_default_alias_with_connection_on_another_catalog(tmp_path) -> None:
-    """Alias ≠ ``"db"`` et connexion positionnée hors du catalogue cible.
+    """Alias ≠ ``"db"`` and connection positioned outside the target catalog.
 
-    Garde-fou contre deux régressions de ``dt_ducklake_manager`` : un alias
-    transmis sous un mauvais nom de paramètre, et un alias non propagé au
-    constructeur (retombée silencieuse sur ``"db"`` ou sur le catalogue courant).
+    Safeguard against two ``dt_ducklake_manager`` regressions: an alias passed under
+    the wrong parameter name, and an alias not propagated to the constructor (silent
+    fallback on ``"db"`` or on the current catalog).
     """
     with file_backed_catalog(tmp_path, alias="lake") as (conn, alias):
         conn.execute("USE memory")

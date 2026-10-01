@@ -1,8 +1,8 @@
-"""Tests d'intégration — :mod:`statflows.storage.json` contre S3 (moto).
+"""Integration tests — :mod:`statflows.storage.json` against S3 (moto).
 
-Comportement figé : validation d'extension côté S3, aller-retour, lecture
-tolérante (``missing_ok`` avale l'absence d'objet mais pas l'erreur de format),
-conversion d'un ``Path`` en clé POSIX, transmission de ``indent`` / ``ensure_ascii``.
+Frozen behaviour: extension validation on the S3 side, round trip, tolerant read
+(``missing_ok`` swallows a missing object but not a format error), conversion of
+a ``Path`` into a POSIX key, forwarding of ``indent`` / ``ensure_ascii``.
 """
 
 from __future__ import annotations

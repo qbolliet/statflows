@@ -1,0 +1,1 @@
+::: statflows.core.sdmx.SDMXResponseFormat

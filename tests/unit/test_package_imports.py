@@ -1,10 +1,10 @@
-"""Le socle du package s'importe sans aucun extra.
+"""The package core can be imported without any extra.
 
-``statflows`` et ses sous-paquets ``core`` / ``sources`` / ``storage`` ne doivent
-tirer ni ``boto3`` (extra « s3 ») ni ``duckdb`` / ``dt_ducklake_manager``
-(extra « ducklake ») au chargement. Le job « bare-imports » de la CI installe le
-package nu et exécute ``tests/unit`` ; en local (extras présents) ces tests se
-contentent de vérifier que les imports aboutissent.
+``statflows`` and its ``core`` / ``sources`` / ``storage`` subpackages must pull
+in neither ``boto3`` ("s3" extra) nor ``duckdb`` / ``dt_ducklake_manager``
+("ducklake" extra) on load. The CI "bare-imports" job installs the bare package
+and runs ``tests/unit``; locally (extras present) these tests merely check that
+the imports succeed.
 """
 
 from __future__ import annotations

@@ -1,17 +1,17 @@
-"""Tests d'intégration — orchestrateur ``SDMXDownloader`` (PS-27, constat C-08).
+"""Integration tests — ``SDMXDownloader`` orchestrator (PS-27, finding C-08).
 
-Bout-en-bout sans réseau : faux client (:mod:`tests.utils.fake_sdmx`), 2 000
-fausses requêtes, catalogue DuckLake sur fichier local (vrai
-``DuckLakeConnector``) et registres JSON sur un bucket S3 simulé (``moto``).
+End-to-end without network: fake client (:mod:`tests.utils.fake_sdmx`), 2,000
+fake queries, DuckLake catalog on a local file (real ``DuckLakeConnector``) and
+JSON registries on a simulated S3 bucket (``moto``).
 
-Le test a) est un test de **caractérisation** : écrit et vérifié sur le code
-antérieur au tamponnage, il fige le contenu final (tables et registre) du mode
-par défaut, qui doit rester identique.
+Test a) is a **characterisation** test: written and verified on the pre-buffering
+code, it freezes the final content (tables and registry) of the default mode,
+which must remain identical.
 
-Volumétrie : une requête sur ``DATA_EVERY`` renvoie des données, les autres un
-DataFrame vide. En mode par défaut chaque requête non vide coûte un upsert
-DuckLake complet (transaction, audit, compaction) : la proportion est réduite
-pour garder la suite rapide, sans réduire le nombre de requêtes (2 000).
+Volume: one query out of ``DATA_EVERY`` returns data, the others an empty
+DataFrame. In default mode every non-empty query costs a full DuckLake upsert
+(transaction, audit, compaction): the proportion is reduced to keep the suite
+fast, without reducing the number of queries (2,000).
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ STRUCTURES_KEY = "registries/fake_structures.json"
 
 @pytest.fixture
 def clock(monkeypatch: pytest.MonkeyPatch) -> FakeClock:
-    """Horloge factice substituée à ``statflows.core.download._now``."""
+    """Fake clock substituted for ``statflows.core.download._now``."""
     fake = FakeClock()
     monkeypatch.setattr(download_module, "_now", fake)
     return fake
@@ -70,14 +70,14 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> FakeClock:
 
 @pytest.fixture
 def lake(tmp_path: Path) -> dict[str, Path]:
-    """Chemins d'un catalogue DuckLake fichier vierge."""
+    """Paths of a blank file-based DuckLake catalog."""
     data_path = tmp_path / "data"
     data_path.mkdir()
     return {"catalog": tmp_path / "catalog.ducklake", "data": data_path}
 
 
 def make_connector(lake: dict[str, Path]) -> DuckLakeConnector:
-    """Connecteur DuckLake sur le catalogue fichier du test."""
+    """DuckLake connector on the test's file-based catalog."""
     return DuckLakeConnector(
         str(lake["catalog"]),
         str(lake["data"]),
@@ -88,7 +88,7 @@ def make_connector(lake: dict[str, Path]) -> DuckLakeConnector:
 def make_downloader(
     client: FakeClient, lake: dict[str, Path], bucket: str, **kwargs: Any
 ) -> SDMXDownloader:
-    """Orchestrateur câblé sur le faux client, le catalogue et le bucket."""
+    """Orchestrator wired to the fake client, the catalog and the bucket."""
     return SDMXDownloader(
         client,
         make_connector(lake),
@@ -101,7 +101,7 @@ def make_downloader(
 
 
 def read_table(lake: dict[str, Path], dataflow: str) -> pd.DataFrame:
-    """Contenu de la table de faits d'un dataflow, trié par clé."""
+    """Content of a dataflow's fact table, sorted by key."""
     conn = make_connector(lake).connect()
     try:
         df = conn.execute(
@@ -114,7 +114,7 @@ def read_table(lake: dict[str, Path], dataflow: str) -> pd.DataFrame:
 
 
 def count_snapshots(lake: dict[str, Path]) -> int:
-    """Nombre de snapshots du catalogue."""
+    """Number of snapshots of the catalog."""
     conn = make_connector(lake).connect()
     try:
         return conn.execute("SELECT count(*) FROM db.snapshots()").fetchone()[0]
@@ -123,14 +123,14 @@ def count_snapshots(lake: dict[str, Path]) -> int:
 
 
 def read_registry(bucket: str) -> dict[str, Any]:
-    """Entrées du registre des dates sous la racine ``DOWNLOADS``."""
+    """Entries of the dates registry under the ``DOWNLOADS`` root."""
     return (Loader().load(REGISTRY_KEY, bucket=bucket, missing_ok=True) or {}).get(
         "DOWNLOADS", {}
     )
 
 
 def expected_registry(queries: list[Any]) -> dict[str, Any]:
-    """Registre attendu : la requête de rang ``i`` est datée ``T0 + i minutes``."""
+    """Expected registry: the query of rank ``i`` is dated ``T0 + i minutes``."""
     return {
         q.identity_key(): {
             "agency": q.agency,
@@ -145,7 +145,7 @@ def expected_registry(queries: list[Any]) -> dict[str, Any]:
 def assert_final_content(
     lake: dict[str, Path], bucket: str, queries: list[Any]
 ) -> None:
-    """Contenu final attendu : tables complètes et registre à jour."""
+    """Expected final content: complete tables and up-to-date registry."""
     for dataflow in DATAFLOWS:
         pd.testing.assert_frame_equal(
             read_table(lake, dataflow),
@@ -183,7 +183,7 @@ OLD_DATE = "2020-01-01T00:00:00+00:00"
 
 
 def spy_saves(downloader: SDMXDownloader) -> list[str]:
-    """Espionne ``downloader._saver.save`` ; renvoie la liste (vivante) des chemins écrits."""
+    """Spy on ``downloader._saver.save``; return the (live) list of written paths."""
     saved: list[str] = []
     original = downloader._saver.save
 
@@ -196,7 +196,7 @@ def spy_saves(downloader: SDMXDownloader) -> list[str]:
 
 
 def registry_saves(saved: list[str]) -> list[str]:
-    """Écritures du registre des dates (fichier unique ou fragments)."""
+    """Writes of the dates registry (single file or shards)."""
     stem = REGISTRY_KEY[: -len(".json")]
     return [p for p in saved if p == REGISTRY_KEY or p.startswith(stem + "/")]
 
@@ -204,7 +204,7 @@ def registry_saves(saved: list[str]) -> list[str]:
 def seed_registry(
     bucket: str, queries: list[Any], last_download: str
 ) -> dict[str, Any]:
-    """Pré-remplit le registre avec une même date ancienne pour toutes les requêtes."""
+    """Pre-fill the registry with the same old date for every query."""
     entries = {
         q.identity_key(): {
             "agency": q.agency,
@@ -219,7 +219,7 @@ def seed_registry(
 
 
 def non_empty_by_dataflow(queries: list[Any], stop: int) -> dict[str, int]:
-    """Nombre de requêtes non vides par dataflow parmi les ``stop`` premières."""
+    """Number of non-empty queries per dataflow among the first ``stop``."""
     counts = {dataflow: 0 for dataflow in DATAFLOWS}
     for q in queries[:stop]:
         if q.index % DATA_EVERY == 0:
@@ -230,7 +230,7 @@ def non_empty_by_dataflow(queries: list[Any], stop: int) -> dict[str, int]:
 def assert_stopped_cleanly(
     lake: dict[str, Path], bucket: str, queries: list[Any], stop: int, report
 ) -> None:
-    """Garanties d'un arrêt anticipé après ``stop`` requêtes traitées."""
+    """Guarantees of an early stop after ``stop`` processed queries."""
     done = queries[:stop]
     assert report.stopped_early is True
     assert report.processed == stop

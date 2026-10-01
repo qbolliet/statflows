@@ -1,6 +1,6 @@
 # Importation des modules
 from json import dumps
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 # Importation du module de connection
 from ..._connection import S3Connection
@@ -40,7 +40,7 @@ class S3Saver(S3Connection):
         super().__init__(s3_package=s3_package)
 
     # Méthode de connexion
-    def connect(self, **kwargs) -> Self:
+    def connect(self, **kwargs: Any) -> Self:
         """Establish a connection to the S3 bucket.
 
         Args:
@@ -50,7 +50,9 @@ class S3Saver(S3Connection):
         return self._connect(**kwargs)
 
     # Méthode de sauvegarde
-    def save(self, bucket: str, key: str, obj: object | None = None, **kwargs) -> None:
+    def save(
+        self, bucket: str, key: str, obj: object | None = None, **kwargs: Any
+    ) -> None:
         """Save a JSON-serialisable object to an S3 object.
 
         Args:

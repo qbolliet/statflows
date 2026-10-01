@@ -90,6 +90,24 @@ jobs:
       - name: Exécution des tests unitaires (sans extras)
         run: .venv/bin/python -m pytest tests/unit
 
+  # La documentation doit se construire sans avertissement (docstrings, liens).
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Installer les dépendances de documentation
+        run: uv sync --group docs
+
+      - name: Construire le site (mode strict)
+        run: uv run mkdocs build --strict
+
   # Le paquet doit se construire et ses métadonnées être valides (PyPI).
   build:
     name: Build & métadonnées

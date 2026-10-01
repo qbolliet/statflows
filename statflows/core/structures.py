@@ -134,7 +134,7 @@ class DataflowStructure:
 
     # Méthode auxiliaire de construction des indices
     def _build_indexes(self) -> None:
-        """Construction des index de correspondance nom <-> position."""
+        """Build the name <-> position lookup indexes."""
         # Parcours des dimensions
         for dim in self.dimensions:
             # Complétion des dictionnaires

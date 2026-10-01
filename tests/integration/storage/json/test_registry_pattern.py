@@ -1,9 +1,9 @@
-"""Tests d'intégration — convention « racine nommée + fusion » des scripts.
+"""Integration tests — "named root + merge" convention of the scripts.
 
-Les scripts du pipeline composent ``Loader`` / ``Saver`` selon un motif fixe
-(cf. :mod:`tests.utils.registries`) : lecture des entrées sous une racine nommée,
-fusion incrémentale des seules clés fournies, forme persistée ``{root: {...}}``.
-Ce contrat est vérifié en local et sur S3 (moto).
+The pipeline scripts compose ``Loader`` / ``Saver`` following a fixed pattern
+(see :mod:`tests.utils.registries`): reading the entries under a named root,
+incremental merge of the supplied keys only, persisted shape ``{root: {...}}``.
+This contract is checked locally and on S3 (moto).
 """
 
 from __future__ import annotations

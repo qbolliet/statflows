@@ -1,8 +1,8 @@
-"""Tests de caractérisation — :class:`statflows.storage.json.Loader` (mode local).
+"""Characterisation tests — :class:`statflows.storage.json.Loader` (local mode).
 
-Comportement figé : extension non ``.json`` → ``ValueError``, aller-retour local,
-acceptation d'un ``Path``, lecture tolérante (``missing_ok``). Le mode S3 est
-couvert par ``tests/integration/storage/json``.
+Frozen behaviour: non-``.json`` extension → ``ValueError``, local round trip,
+acceptance of a ``Path``, tolerant read (``missing_ok``). S3 mode is covered by
+``tests/integration/storage/json``.
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def test_list_json_missing_directory_is_empty(tmp_path: Path) -> None:
 
 
 def test_atomic_tempfile_is_dot_prefixed(tmp_path: Path, monkeypatch) -> None:
-    """Le temporaire de l'écriture atomique est masqué pour ``list_json``."""
+    """The temporary file of the atomic write is hidden from ``list_json``."""
     import tempfile
 
     seen = {}

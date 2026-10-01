@@ -1,9 +1,9 @@
-"""Tests unitaires — :mod:`statflows.core.registry` (registre des dates, stockage local).
+"""Unit tests — :mod:`statflows.core.registry` (dates registry, local storage).
 
-Comportement figé : lecture identique d'un registre en fichier unique et en
-fragments, fusion « date la plus récente » des deux formats, migration vers
-les fragments, réécriture des seuls fragments modifiés. Le module ne dépend
-d'aucun extra (importable sans duckdb).
+Frozen behaviour: identical reading of a single-file registry and of a sharded
+one, "most recent date" merge of both formats, migration to shards, rewriting of
+the modified shards only. The module depends on no extra (importable without
+duckdb).
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ UTC = UTC
 
 
 def _raw(dataflow: str, day: int, reporter: str = "FR") -> dict[str, Any]:
-    """Entrée brute du registre datée du ``day`` janvier 2026."""
+    """Raw registry entry dated the ``day`` of January 2026."""
     return {
         "agency": "ESTAT",
         "dataflow": dataflow,
@@ -56,7 +56,7 @@ def _registry(path: Path, *, sharded: bool) -> DownloadRegistry:
 
 
 def _spy(registry: DownloadRegistry) -> list[str]:
-    """Espionne les écritures du registre ; renvoie les noms de fichiers écrits."""
+    """Spy on the registry writes; return the names of the written files."""
     written: list[str] = []
     original = registry._saver.save
 

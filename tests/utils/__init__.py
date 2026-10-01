@@ -1,1 +1,1 @@
-"""Fonctions et classes de test partagées entre ``tests/unit`` et ``tests/integration``."""
+"""Test functions and classes shared between ``tests/unit`` and ``tests/integration``."""

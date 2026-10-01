@@ -1,6 +1,6 @@
 # Importation des modules
 import json
-from typing import Literal, Self
+from typing import Any, Literal, Self
 
 # Importation du module de connection
 from ..._connection import S3Connection
@@ -40,7 +40,7 @@ class S3Loader(S3Connection):
         super().__init__(s3_package=s3_package)
 
     # Méthode de connexion au S3
-    def connect(self, **kwargs) -> Self:
+    def connect(self, **kwargs: Any) -> Self:
         """Establish a connection to the S3 bucket.
 
         Args:
@@ -50,7 +50,7 @@ class S3Loader(S3Connection):
         return self._connect(**kwargs)
 
     # Méthode de chargement des données
-    def load(self, bucket: str, key: str, **kwargs) -> object:
+    def load(self, bucket: str, key: str, **kwargs: Any) -> object:
         """Load a JSON object from an S3 object.
 
         Args:

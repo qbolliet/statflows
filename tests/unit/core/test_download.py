@@ -1,10 +1,10 @@
-"""Tests de caractérisation — helpers purs de :mod:`statflows.core.download`.
+"""Characterisation tests — pure helpers of :mod:`statflows.core.download`.
 
-Comportement figé : ``_schema_name``, ``_parse_iso``, ``_json_safe``, ``_primary_keys``.
+Frozen behaviour: ``_schema_name``, ``_parse_iso``, ``_json_safe``, ``_primary_keys``.
 
-Ces helpers sont purs, mais ils vivent dans ``download.py`` dont l'import tire
-``duckdb`` et ``dt_ducklake_manager`` (l'orchestrateur porte l'extra
-« ducklake ») : le module entier est conditionné à leur présence, dès la collecte.
+These helpers are pure, but they live in ``download.py`` whose import pulls in
+``duckdb`` and ``dt_ducklake_manager`` (the orchestrator carries the "ducklake"
+extra): the whole module is conditioned on their presence, from collection on.
 """
 
 from __future__ import annotations

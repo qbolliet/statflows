@@ -1,10 +1,10 @@
-"""Tests unitaires — options de tamponnage et de connexion de ``SDMXDownloader``.
+"""Unit tests — buffering and connection options of ``SDMXDownloader``.
 
-Comportement figé : validation des seuils, surcharge temporaire des options
-DuckLake du connecteur (``ducklake_options``), exposition des diagnostics de
-tamponnage dans les métriques du ``DownloadReport``, relais des nouveaux
-paramètres par ``download_updates``. Aucun catalogue ni réseau : connecteur
-factice. Requiert l'extra « ducklake » (import de l'orchestrateur).
+Frozen behaviour: validation of the thresholds, temporary override of the
+connector's DuckLake options (``ducklake_options``), exposure of the buffering
+diagnostics in the ``DownloadReport`` metrics, forwarding of the new parameters
+by ``download_updates``. No catalog nor network: fake connector. Requires the
+"ducklake" extra (import of the orchestrator).
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from statflows.core.reports import DownloadReport  # noqa: E402
 
 
 class _Connector:
-    """Connecteur factice : mémorise sa configuration au moment de ``connect()``."""
+    """Fake connector: remembers its configuration at the time of ``connect()``."""
 
     catalog_alias = "db"
 

@@ -1,18 +1,18 @@
-"""Contrat de non-régression de l'extraction de ``statflows`` depuis ``trade-analysis``.
+"""Non-regression contract for the extraction of ``statflows`` from ``trade-analysis``.
 
-Arborescence :
+Layout:
 
-- ``tests/unit/`` — tests unitaires, calqués sur l'arborescence du package
-  (``core/``, ``sources/``, ``storage/json/``, ``storage/ducklake/``). Aucun
-  service externe : entrées/sorties locales et logique pure.
-- ``tests/integration/`` — bout-en-bout contre des services simulés : S3 via
-  ``moto``, catalogue DuckLake sur fichier. Fixtures dans
-  ``tests/integration/conftest.py`` ; chaque test y est automatiquement marqué
+- ``tests/unit/`` — unit tests, mirroring the package layout
+  (``core/``, ``sources/``, ``storage/json/``, ``storage/ducklake/``). No
+  external service: local I/O and pure logic.
+- ``tests/integration/`` — end-to-end against simulated services: S3 through
+  ``moto``, file-based DuckLake catalog. Fixtures live in
+  ``tests/integration/conftest.py``; every test there is automatically marked
   ``integration``.
-- ``tests/utils/`` — fonctions et classes de test partagées (import
+- ``tests/utils/`` — shared test functions and classes (import
   ``from tests.utils.<module> import ...``).
 
-Ces tests figent le comportement du code migré (registres JSON, helpers DuckLake,
-helpers purs de l'orchestrateur) et doivent passer à l'identique de part et
-d'autre de l'extraction. Aucun code de production n'est modifié par les tests.
+These tests freeze the behaviour of the migrated code (JSON registries, DuckLake
+helpers, pure helpers of the orchestrator) and must pass identically on both
+sides of the extraction. No production code is modified by the tests.
 """

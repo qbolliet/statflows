@@ -1,9 +1,10 @@
-"""L'extra « s3 » est optionnel pour :mod:`statflows.storage.json`.
+"""The "s3" extra is optional for :mod:`statflows.storage.json`.
 
-``Loader`` / ``Saver`` s'importent et fonctionnent en local sans ``boto3`` /
-``s3fs`` ; seul un appel avec ``bucket=...`` exige l'extra et, à défaut, lève une
-``ImportError`` explicite. L'absence des paquets est simulée en plaçant ``None``
-dans ``sys.modules`` (la machinerie d'import de CPython lève alors ``ImportError``).
+``Loader`` / ``Saver`` can be imported and work locally without ``boto3`` /
+``s3fs``; only a call with ``bucket=...`` requires the extra and, when it is
+missing, raises an explicit ``ImportError``. The absence of the packages is
+simulated by placing ``None`` in ``sys.modules`` (CPython's import machinery then
+raises ``ImportError``).
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ import pytest
 
 @pytest.fixture
 def s3_deps_absent(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Rend ``boto3`` et ``s3fs`` non importables pour la durée du test."""
+    """Make ``boto3`` and ``s3fs`` non-importable for the duration of the test."""
     for pkg in ("boto3", "s3fs"):
         monkeypatch.setitem(sys.modules, pkg, None)
         for name in [k for k in list(sys.modules) if k.startswith(f"{pkg}.")]:

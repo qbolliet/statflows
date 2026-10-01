@@ -1,9 +1,9 @@
-"""Tests unitaires — codelists avec libellés (Eurostat, Comtrade, ``codelist_frame``).
+"""Unit tests — codelists with labels (Eurostat, Comtrade, ``codelist_frame``).
 
-Comportement figé : colonnes ``code`` / ``label`` / ``parent``, résolution de la
-codelist d'une dimension via la structure, et **aucun second appel réseau**
-quand la codelist est en cache — y compris lorsque Comtrade l'a déjà
-téléchargée pour construire les requêtes. Aucun réseau : appels HTTP mockés.
+Frozen behaviour: ``code`` / ``label`` / ``parent`` columns, resolution of a
+dimension's codelist through the structure, and **no second network call** when
+the codelist is cached — including when Comtrade has already downloaded it to
+build the queries. No network: HTTP calls are mocked.
 """
 
 from __future__ import annotations

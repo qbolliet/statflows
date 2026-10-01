@@ -1,8 +1,8 @@
-"""Montage d'un catalogue DuckLake sur fichier temporaire, sans connecteur externe.
+"""Mounting of a DuckLake catalog on a temporary file, without an external connector.
 
-Reproduit le montage du pipeline (``duckdb.connect(":memory:")`` +
-``INSTALL/LOAD ducklake`` + ``ATTACH 'ducklake:...'``) pour exercer les helpers
-de :mod:`statflows.storage.ducklake.tables` sur un vrai catalogue.
+Reproduces the pipeline's mounting (``duckdb.connect(":memory:")`` +
+``INSTALL/LOAD ducklake`` + ``ATTACH 'ducklake:...'``) to exercise the helpers of
+:mod:`statflows.storage.ducklake.tables` on a real catalog.
 """
 
 from __future__ import annotations
@@ -18,18 +18,18 @@ import pytest
 def file_backed_catalog(
     tmp_path: Path, *, alias: str = "db", schema: str = "s1"
 ) -> Iterator[tuple[object, str]]:
-    """Ouvre un catalogue DuckLake ``.ducklake`` en fichier temp.
+    """Open a file-based ``.ducklake`` DuckLake catalog in a temp dir.
 
-    ``pytest.skip`` si ``duckdb`` n'est pas installé (extra « ducklake ») ou si
-    l'extension DuckDB ``ducklake`` n'est pas récupérable (hors-ligne).
+    ``pytest.skip`` if ``duckdb`` is not installed ("ducklake" extra) or if the
+    ``ducklake`` DuckDB extension cannot be fetched (offline).
 
     Args:
-        tmp_path: Dossier temporaire du test.
-        alias: Alias sous lequel attacher le catalogue.
-        schema: Schéma créé d'emblée dans le catalogue.
+        tmp_path: Temporary folder of the test.
+        alias: Alias under which to attach the catalog.
+        schema: Schema created up front in the catalog.
 
     Yields:
-        Tuple ``(conn, alias)``, connexion positionnée sur ``{alias}.main``.
+        Tuple ``(conn, alias)``, connection positioned on ``{alias}.main``.
     """
     duckdb = pytest.importorskip("duckdb")
 

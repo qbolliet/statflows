@@ -1,10 +1,11 @@
-"""L'extra « ducklake » est optionnel, sauf pour l'écriture.
+"""The "ducklake" extra is optional, except for writing.
 
-``statflows.storage.ducklake.tables`` s'importe sans ``dt_ducklake_manager`` ;
-seul ``write_dataframe`` le requiert et lève, à défaut, une ``ImportError``
-nommant l'extra. L'absence est simulée via ``sys.modules``.
+``statflows.storage.ducklake.tables`` can be imported without
+``dt_ducklake_manager``; only ``write_dataframe`` requires it and raises, when it
+is missing, an ``ImportError`` naming the extra. The absence is simulated through
+``sys.modules``.
 
-Porté depuis ``trade-analysis/tests/test_optional_ducklake.py``.
+Ported from ``trade-analysis/tests/test_optional_ducklake.py``.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ import pytest
 
 @pytest.fixture
 def ducklake_manager_absent(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Rend ``dt_ducklake_manager`` non importable pour la durée du test."""
+    """Make ``dt_ducklake_manager`` non-importable for the duration of the test."""
     monkeypatch.setitem(sys.modules, "dt_ducklake_manager", None)
     for name in [k for k in list(sys.modules) if k.startswith("dt_ducklake_manager.")]:
         monkeypatch.delitem(sys.modules, name)

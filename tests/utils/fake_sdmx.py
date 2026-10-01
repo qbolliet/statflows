@@ -1,13 +1,13 @@
-"""Faux client SDMX, fausses requêtes et horloge déterministe pour l'orchestrateur.
+"""Fake SDMX client, fake queries and deterministic clock for the orchestrator.
 
-Implémente l'interface minimale consommée par
+Implements the minimal interface consumed by
 :class:`~statflows.core.download.SDMXDownloader` (``fetch_updates``,
-``resolve_query_structure``, ``structure_registry``) sans aucun appel réseau.
+``resolve_query_structure``, ``structure_registry``) without any network call.
 
-Les données sont déterministes : la requête d'indice ``i`` porte le déclarant
-``R{i:05d}`` et renvoie, si elle n'est pas vide, ``len(PRODUCTS) × len(PERIODS)``
-observations dont la valeur ne dépend que de ``(i, produit, période)``. Deux
-requêtes ne se recouvrent donc jamais sur la clé primaire.
+The data are deterministic: the query of index ``i`` carries the reporter
+``R{i:05d}`` and, if it is not empty, returns ``len(PRODUCTS) × len(PERIODS)``
+observations whose value only depends on ``(i, product, period)``. Two queries
+therefore never overlap on the primary key.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ T0 = datetime(2026, 1, 1, tzinfo=UTC)
 
 @dataclass
 class FakeQuery:
-    """Requête minimale : ``identity_key()``, ``to_dict()``, ``agency``, ``dataflow``."""
+    """Minimal query: ``identity_key()``, ``to_dict()``, ``agency``, ``dataflow``."""
 
     index: int
     dataflow: str
@@ -58,17 +58,17 @@ class FakeQuery:
 
 
 def make_queries(n: int) -> list[FakeQuery]:
-    """Construit ``n`` requêtes réparties par blocs de 7 sur les deux dataflows.
+    """Build ``n`` queries spread in blocks of 7 over the two dataflows.
 
-    Le découpage par blocs (plutôt qu'une alternance stricte) garantit que les
-    requêtes non vides (``index % data_every == 0``) tombent dans les deux
-    dataflows quelle que soit la parité de ``data_every``.
+    Splitting in blocks (rather than a strict alternation) guarantees that the
+    non-empty queries (``index % data_every == 0``) fall into both dataflows
+    whatever the parity of ``data_every``.
     """
     return [FakeQuery(i, DATAFLOWS[(i // 7) % len(DATAFLOWS)]) for i in range(n)]
 
 
 def query_frame(query: FakeQuery) -> pd.DataFrame:
-    """Données (déterministes) renvoyées pour une requête non vide."""
+    """(Deterministic) data returned for a non-empty query."""
     rows = [
         {
             "REF_AREA": query.reporter,
@@ -83,7 +83,7 @@ def query_frame(query: FakeQuery) -> pd.DataFrame:
 
 
 def structure_for(dataflow: str) -> DataflowStructure:
-    """Structure du dataflow simulé (dimensions = clé primaire hors période)."""
+    """Structure of the simulated dataflow (dimensions = primary key excluding period)."""
     return DataflowStructure(
         agency=AGENCY,
         dataflow=dataflow,
@@ -93,12 +93,12 @@ def structure_for(dataflow: str) -> DataflowStructure:
 
 
 class FakeClock:
-    """Horloge factice avançant d'une minute à chaque appel à ``fetch_updates``.
+    """Fake clock advancing one minute on every call to ``fetch_updates``.
 
-    La date de référence d'une requête (capturée juste avant son ``fetch``) vaut
-    donc ``T0 + i minutes`` pour la ``i``-ème requête traitée, quel que soit le
-    nombre d'appels intermédiaires à l'horloge : le registre est identique d'un
-    mode d'écriture à l'autre.
+    The reference date of a query (captured right before its ``fetch``) is therefore
+    ``T0 + i minutes`` for the ``i``-th processed query, whatever the number of
+    intermediate calls to the clock: the registry is identical from one write mode to
+    the other.
     """
 
     def __init__(self) -> None:
@@ -110,14 +110,14 @@ class FakeClock:
 
 @dataclass
 class FakeClient:
-    """Client minimal consommé par ``SDMXDownloader``.
+    """Minimal client consumed by ``SDMXDownloader``.
 
     Args:
-        clock: Horloge avancée à chaque ``fetch_updates``.
-        data_every: Une requête sur ``data_every`` renvoie des données, les
-            autres un DataFrame vide.
-        on_fetch: Rappel optionnel ``(position, query)`` exécuté au début de
-            chaque ``fetch_updates`` (simulation d'un signal, d'une panne…).
+        clock: Clock advanced on every ``fetch_updates``.
+        data_every: One query out of ``data_every`` returns data, the others an
+            empty DataFrame.
+        on_fetch: Optional callback ``(position, query)`` run at the start of every
+            ``fetch_updates`` (simulation of a signal, a failure…).
     """
 
     clock: FakeClock
@@ -151,7 +151,7 @@ class FakeClient:
 def expected_table(
     queries: list[FakeQuery], dataflow: str, data_every: int
 ) -> pd.DataFrame:
-    """Contenu attendu de la table de faits d'un dataflow, trié par clé."""
+    """Expected content of a dataflow's fact table, sorted by key."""
     frames = [
         query_frame(q)
         for q in queries

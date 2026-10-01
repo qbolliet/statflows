@@ -1,0 +1,158 @@
+site_name: statflows
+site_description: Statistical API clients (Eurostat, OECD, COMTRADE, UNSD) and incremental download orchestrator
+site_url: https://qbolliet.github.io/statflows/
+repo_url: https://github.com/qbolliet/statflows
+site_dir: site
+docs_dir: docs
+# Les notes internes de publication ne font pas partie du site.
+exclude_docs: |
+  PYPI_CHECKLIST.md
+theme:
+  name: material
+  pygments_style: lovelace
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  features:
+  - content.tabs.link
+  - content.code.annotate
+  - content.code.copy
+  - navigation.sections
+  - navigation.path
+  palette:
+  - scheme: default
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+  - scheme: slate
+    toggle:
+      icon: material/brightness-4
+      name: Switch to light mode
+markdown_extensions:
+- admonition
+- tables
+- pymdownx.highlight:
+    anchor_linenums: true
+    line_spans: __span
+    pygments_lang_class: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- pymdownx.superfences:
+    custom_fences:
+    - name: mermaid
+      class: mermaid
+      format: !!python/name:pymdownx.superfences.fence_code_format
+- markdown.extensions.sane_lists
+- pymdownx.arithmatex:
+    generic: true
+plugins:
+- search
+- autorefs
+- mkdocstrings:
+    handlers:
+      python:
+        # Le paquet est à la racine du dépôt (pas de répertoire src/).
+        paths:
+        - .
+        inventories:
+        - https://docs.python.org/3/objects.inv
+        - https://pandas.pydata.org/docs/objects.inv
+        - https://mkdocstrings.github.io/objects.inv
+        - https://mkdocstrings.github.io/autorefs/objects.inv
+        - https://mkdocstrings.github.io/griffe/objects.inv
+        - https://python-markdown.github.io/objects.inv
+        options:
+          docstring_options:
+            ignore_init_summary: true
+          show_root_heading: true
+          merge_init_into_class: false
+          docstring_style: google
+          docstring_section_style: table
+          heading_level: 1
+          filters:
+          - '!^_'
+          inherited_members: true
+          parameter_headings: true
+          preload_modules:
+          - mkdocstrings
+          relative_crossrefs: true
+          scoped_crossrefs: true
+          separate_signature: true
+          show_bases: false
+          show_inheritance_diagram: true
+          show_root_full_path: false
+          show_signature_annotations: true
+          show_source: true
+          show_symbol_type_heading: false
+          show_symbol_type_toc: true
+          signature_crossrefs: true
+          summary: true
+          unwrap_annotated: true
+extra_javascript:
+- https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+nav:
+- Package description: index.md
+- Getting started: getting-started.md
+- Data providers: providers.md
+- Incremental downloads: downloads.md
+- Performance and volume: performance.md
+- Storage: storage.md
+- Development: development.md
+- API Documentation:
+  - core:
+    - APIClient: api/core/APIClient.md
+    - AbstractSDMXClient: api/core/AbstractSDMXClient.md
+    - download_updates: api/core/download_updates.md
+    - SDMXDownloader: api/core/SDMXDownloader.md
+    - build_client: api/core/build_client.md
+    - build_queries: api/core/build_queries.md
+    - filter_codes: api/core/filter_codes.md
+    - codelist_frame: api/core/codelist_frame.md
+    - SDMXQueryRequest: api/core/SDMXQueryRequest.md
+    - RateLimiter: api/core/RateLimiter.md
+    - CompositeRateLimiter: api/core/CompositeRateLimiter.md
+    - build_rate_limiter: api/core/build_rate_limiter.md
+    - RegistryEntry: api/core/RegistryEntry.md
+    - iter_registry_entries: api/core/iter_registry_entries.md
+    - DownloadReport: api/core/DownloadReport.md
+    - QueryReport: api/core/QueryReport.md
+    - FetchReport: api/core/FetchReport.md
+    - HttpStats: api/core/HttpStats.md
+    - RateLimitStats: api/core/RateLimitStats.md
+    - SDMXVersion: api/core/SDMXVersion.md
+    - DimensionAtObservation: api/core/DimensionAtObservation.md
+    - StructureResourceType: api/core/StructureResourceType.md
+    - DuplicateHandling: api/core/DuplicateHandling.md
+    - SDMXResponseFormat: api/core/SDMXResponseFormat.md
+    - SDMXEndpointBuilder: api/core/SDMXEndpointBuilder.md
+    - DimensionInfo: api/core/DimensionInfo.md
+    - DataflowStructure: api/core/DataflowStructure.md
+    - DataflowStructureRegistry: api/core/DataflowStructureRegistry.md
+  - sources.eurostat:
+    - EurostatClient: api/sources/eurostat/EurostatClient.md
+    - EurostatQueryRequest: api/sources/eurostat/EurostatQueryRequest.md
+    - EurostatQueryRequestV30: api/sources/eurostat/EurostatQueryRequestV30.md
+    - EurostatQueryRequestV21: api/sources/eurostat/EurostatQueryRequestV21.md
+    - EurostatEndpointBuilderV30: api/sources/eurostat/EurostatEndpointBuilderV30.md
+    - EurostatEndpointBuilderV21: api/sources/eurostat/EurostatEndpointBuilderV21.md
+    - EurostatResponseFormat: api/sources/eurostat/EurostatResponseFormat.md
+  - sources.oecd:
+    - OECDClient: api/sources/oecd/OECDClient.md
+    - OECDQueryRequest: api/sources/oecd/OECDQueryRequest.md
+    - OECDEndpointBuilder: api/sources/oecd/OECDEndpointBuilder.md
+    - OECDEndpointBuilderV1: api/sources/oecd/OECDEndpointBuilderV1.md
+    - OECDEndpointBuilderV2: api/sources/oecd/OECDEndpointBuilderV2.md
+    - OECDResponseFormat: api/sources/oecd/OECDResponseFormat.md
+  - sources.comtrade:
+    - ComtradeClient: api/sources/comtrade/ComtradeClient.md
+    - ComtradeQueryRequest: api/sources/comtrade/ComtradeQueryRequest.md
+    - ComtradeResponseFormat: api/sources/comtrade/ComtradeResponseFormat.md
+  - sources.unsd:
+    - UNSDClient: api/sources/unsd/UNSDClient.md
+    - UNSDCorrespondenceRequest: api/sources/unsd/UNSDCorrespondenceRequest.md
+    - UNSDResponseFormat: api/sources/unsd/UNSDResponseFormat.md
+  - storage:
+    - S3Connection: api/storage/S3Connection.md
+    - Loader: api/storage/Loader.md
+    - Saver: api/storage/Saver.md
+    - write_dataframe: api/storage/write_dataframe.md
+    - fact_table_exists: api/storage/fact_table_exists.md

@@ -1,8 +1,8 @@
 """Tests — :func:`statflows.sources.comtrade.parsing.parse_availability_last_released`.
 
-Comportement figé : une ligne par (reporter, période) en entrée, une date par
-période en sortie (la plus récente tous reporters confondus), dates absentes
-ou invalides tolérées, entrée vide ou incomplète → dictionnaire vide.
+Frozen behaviour: one row per (reporter, period) as input, one date per period as
+output (the most recent across all reporters), missing or invalid dates
+tolerated, empty or incomplete input → empty dictionary.
 """
 
 from __future__ import annotations
