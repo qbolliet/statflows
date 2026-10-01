@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import inspect
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pytest
 
@@ -33,10 +33,12 @@ class _Connector:
 
     catalog_alias = "db"
 
-    def __init__(self, ducklake_options: Any = None, inlining: Optional[int] = None) -> None:
+    def __init__(
+        self, ducklake_options: Any = None, inlining: int | None = None
+    ) -> None:
         self.ducklake_options = ducklake_options
         self.data_inlining_row_limit = inlining
-        self.seen: List[Dict[str, Any]] = []
+        self.seen: list[dict[str, Any]] = []
 
     def connect(self) -> str:
         self.seen.append(
@@ -76,7 +78,7 @@ def _downloader(tmp_path: Path, connector: _Connector, **kwargs: Any) -> SDMXDow
         {"write_batch_queries": -1},
     ],
 )
-def test_invalid_thresholds_raise(tmp_path: Path, kwargs: Dict[str, Any]) -> None:
+def test_invalid_thresholds_raise(tmp_path: Path, kwargs: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
         _downloader(tmp_path, _Connector(), **kwargs)
 
@@ -131,7 +133,9 @@ def test_recommended_options_resolved_before_merge(tmp_path: Path) -> None:
     from dt_ducklake_manager.connection import RECOMMENDED_DUCKLAKE_OPTIONS
 
     connector = _Connector(ducklake_options="recommended")
-    downloader = _downloader(tmp_path, connector, ducklake_options={"target_file_size": "1GB"})
+    downloader = _downloader(
+        tmp_path, connector, ducklake_options={"target_file_size": "1GB"}
+    )
 
     downloader._connect()
 
@@ -149,7 +153,9 @@ def test_connector_restored_when_connect_fails(tmp_path: Path) -> None:
             raise RuntimeError("attach failed")
 
     connector = _Failing(inlining=7)
-    downloader = _downloader(tmp_path, connector, ducklake_options={"data_inlining_row_limit": 0})
+    downloader = _downloader(
+        tmp_path, connector, ducklake_options={"data_inlining_row_limit": 0}
+    )
 
     with pytest.raises(RuntimeError):
         downloader._connect()
@@ -162,7 +168,9 @@ def test_connector_restored_when_connect_fails(tmp_path: Path) -> None:
 
 
 def test_report_metrics_include_buffering_diagnostics() -> None:
-    report = DownloadReport(n_registry_flushes=3, n_write_batches=2, rows_pending_at_stop=0)
+    report = DownloadReport(
+        n_registry_flushes=3, n_write_batches=2, rows_pending_at_stop=0
+    )
 
     metrics = report.to_metrics()
 

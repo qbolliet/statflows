@@ -16,12 +16,13 @@ script side.
 The tables are available at:
 https://unstats.un.org/unsd/classifications/Econ/
 """
+
 # Importation des modules
 # Modules de base
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import quote
 
 # Module de manipulation de données
@@ -40,8 +41,10 @@ logger = logging.getLogger(__name__)
 
 
 # Chargement des paramètres
-with open(Path(__file__).parents[2] / "parameters" / "unsd.json", "r", encoding="utf-8") as f:
-    PARAMETERS: Dict[str, Any] = json.load(f)
+with open(
+    Path(__file__).parents[2] / "parameters" / "unsd.json", encoding="utf-8"
+) as f:
+    PARAMETERS: dict[str, Any] = json.load(f)
 
 
 # Classe de récupération des tables de correspondance de nomenclatures de l'UNSD
@@ -122,7 +125,7 @@ class UNSDClient(APIClient):
             'HS2022toHS2017ConversionAndCorrelationTables.xlsx'
         """
         # Recherche de la paire dans le catalogue déclaré
-        tables: Dict[str, str] = PARAMETERS["TABLES"]
+        tables: dict[str, str] = PARAMETERS["TABLES"]
         key = table_key(source, target)
         # Message d'erreur si la table de correspondance n'est pas trouvée dans le registre
         if key not in tables:
@@ -170,7 +173,7 @@ class UNSDClient(APIClient):
             21
         """
         # Construction d'une ligne par paire déclarée
-        records: List[Dict[str, str]] = []
+        records: list[dict[str, str]] = []
         # Parcours des tables référencées dans le catalogue
         for key, filename in PARAMETERS["TABLES"].items():
             source, target = key.split("-")
@@ -185,13 +188,16 @@ class UNSDClient(APIClient):
             )
 
         # Tri par millésimes décroissants (les paires les plus récentes d'abord)
-        df_tables = pd.DataFrame(records, columns=[
-            "source_classification",
-            "target_classification",
-            "filename",
-            "extension",
-            "url",
-        ])
+        df_tables = pd.DataFrame(
+            records,
+            columns=[
+                "source_classification",
+                "target_classification",
+                "filename",
+                "extension",
+                "url",
+            ],
+        )
         return df_tables.sort_values(
             ["source_classification", "target_classification"], ascending=False
         ).reset_index(drop=True)
@@ -201,7 +207,7 @@ class UNSDClient(APIClient):
     # ──────────────────────────────────────────────────────────────────
 
     # Méthode de téléchargement d'un classeur brut
-    def download_raw(self, source: str, target: str) -> Tuple[bytes, str]:
+    def download_raw(self, source: str, target: str) -> tuple[bytes, str]:
         """Return the untouched workbook and its extension.
 
         Args:
@@ -291,8 +297,7 @@ class UNSDClient(APIClient):
 
         # Logging
         logger.info(
-            f"Parsed {len(df_table)} rows from the {kind} sheet of "
-            f"'{filename}'"
+            f"Parsed {len(df_table)} rows from the {kind} sheet of '{filename}'"
         )
 
         return df_table

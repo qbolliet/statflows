@@ -4,6 +4,7 @@ Centralises the small value types shared across the Eurostat submodules: the
 response-format enum, the SDMX structure-query parameter literals, the set of
 supported API versions and the maintaining-agency identifier.
 """
+
 # Importation des modules
 from typing import Literal
 
@@ -39,12 +40,7 @@ StructureReferences = Literal[
 # Compression des structures
 StructureCompress = Literal["true", "false"]
 # Type de détail des données
-DataDetail = Literal[
-    "full",
-    "dataonly",
-    "serieskeysonly",
-    "nodata"
-]
+DataDetail = Literal["full", "dataonly", "serieskeysonly", "nodata"]
 
 # Sous-ensemble des versions SDMX supportées par Eurostat (utilisé pour la validation)
 SUPPORTED_API_VERSIONS: frozenset[SDMXVersion] = frozenset(

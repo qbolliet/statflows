@@ -16,12 +16,12 @@ pour garder la suite rapide, sans réduire le nombre de requêtes (2 000).
 
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
-from pathlib import Path
 import signal
 import threading
-from typing import Any, Dict, List
+from datetime import timedelta
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -35,8 +35,8 @@ pytest.importorskip(
 from dt_ducklake_manager import DuckLakeConnector  # noqa: E402
 
 import statflows.core.download as download_module  # noqa: E402
-from statflows.core.download import SDMXDownloader  # noqa: E402
 from statflows import iter_registry_entries  # noqa: E402
+from statflows.core.download import SDMXDownloader  # noqa: E402
 from statflows.storage.json import Loader, Saver  # noqa: E402
 from tests.utils.fake_sdmx import (  # noqa: E402
     DATAFLOWS,
@@ -69,22 +69,24 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> FakeClock:
 
 
 @pytest.fixture
-def lake(tmp_path: Path) -> Dict[str, Path]:
+def lake(tmp_path: Path) -> dict[str, Path]:
     """Chemins d'un catalogue DuckLake fichier vierge."""
     data_path = tmp_path / "data"
     data_path.mkdir()
     return {"catalog": tmp_path / "catalog.ducklake", "data": data_path}
 
 
-def make_connector(lake: Dict[str, Path]) -> DuckLakeConnector:
+def make_connector(lake: dict[str, Path]) -> DuckLakeConnector:
     """Connecteur DuckLake sur le catalogue fichier du test."""
     return DuckLakeConnector(
-        str(lake["catalog"]), str(lake["data"]), log_filename=str(lake["data"].parent / "dl.log")
+        str(lake["catalog"]),
+        str(lake["data"]),
+        log_filename=str(lake["data"].parent / "dl.log"),
     )
 
 
 def make_downloader(
-    client: FakeClient, lake: Dict[str, Path], bucket: str, **kwargs: Any
+    client: FakeClient, lake: dict[str, Path], bucket: str, **kwargs: Any
 ) -> SDMXDownloader:
     """Orchestrateur câblé sur le faux client, le catalogue et le bucket."""
     return SDMXDownloader(
@@ -98,7 +100,7 @@ def make_downloader(
     )
 
 
-def read_table(lake: Dict[str, Path], dataflow: str) -> pd.DataFrame:
+def read_table(lake: dict[str, Path], dataflow: str) -> pd.DataFrame:
     """Contenu de la table de faits d'un dataflow, trié par clé."""
     conn = make_connector(lake).connect()
     try:
@@ -111,7 +113,7 @@ def read_table(lake: Dict[str, Path], dataflow: str) -> pd.DataFrame:
     return df.sort_values(["REF_AREA", "PRODUCT", "TIME_PERIOD"]).reset_index(drop=True)
 
 
-def count_snapshots(lake: Dict[str, Path]) -> int:
+def count_snapshots(lake: dict[str, Path]) -> int:
     """Nombre de snapshots du catalogue."""
     conn = make_connector(lake).connect()
     try:
@@ -120,14 +122,14 @@ def count_snapshots(lake: Dict[str, Path]) -> int:
         conn.close()
 
 
-def read_registry(bucket: str) -> Dict[str, Any]:
+def read_registry(bucket: str) -> dict[str, Any]:
     """Entrées du registre des dates sous la racine ``DOWNLOADS``."""
     return (Loader().load(REGISTRY_KEY, bucket=bucket, missing_ok=True) or {}).get(
         "DOWNLOADS", {}
     )
 
 
-def expected_registry(queries: List[Any]) -> Dict[str, Any]:
+def expected_registry(queries: list[Any]) -> dict[str, Any]:
     """Registre attendu : la requête de rang ``i`` est datée ``T0 + i minutes``."""
     return {
         q.identity_key(): {
@@ -140,7 +142,9 @@ def expected_registry(queries: List[Any]) -> Dict[str, Any]:
     }
 
 
-def assert_final_content(lake: Dict[str, Path], bucket: str, queries: List[Any]) -> None:
+def assert_final_content(
+    lake: dict[str, Path], bucket: str, queries: list[Any]
+) -> None:
     """Contenu final attendu : tables complètes et registre à jour."""
     for dataflow in DATAFLOWS:
         pd.testing.assert_frame_equal(
@@ -178,9 +182,9 @@ def test_default_mode_final_content(s3_bucket: str, lake, clock) -> None:
 OLD_DATE = "2020-01-01T00:00:00+00:00"
 
 
-def spy_saves(downloader: SDMXDownloader) -> List[str]:
+def spy_saves(downloader: SDMXDownloader) -> list[str]:
     """Espionne ``downloader._saver.save`` ; renvoie la liste (vivante) des chemins écrits."""
-    saved: List[str] = []
+    saved: list[str] = []
     original = downloader._saver.save
 
     def spy(filepath, *args, **kwargs):
@@ -191,13 +195,15 @@ def spy_saves(downloader: SDMXDownloader) -> List[str]:
     return saved
 
 
-def registry_saves(saved: List[str]) -> List[str]:
+def registry_saves(saved: list[str]) -> list[str]:
     """Écritures du registre des dates (fichier unique ou fragments)."""
     stem = REGISTRY_KEY[: -len(".json")]
     return [p for p in saved if p == REGISTRY_KEY or p.startswith(stem + "/")]
 
 
-def seed_registry(bucket: str, queries: List[Any], last_download: str) -> Dict[str, Any]:
+def seed_registry(
+    bucket: str, queries: list[Any], last_download: str
+) -> dict[str, Any]:
     """Pré-remplit le registre avec une même date ancienne pour toutes les requêtes."""
     entries = {
         q.identity_key(): {
@@ -212,7 +218,7 @@ def seed_registry(bucket: str, queries: List[Any], last_download: str) -> Dict[s
     return entries
 
 
-def non_empty_by_dataflow(queries: List[Any], stop: int) -> Dict[str, int]:
+def non_empty_by_dataflow(queries: list[Any], stop: int) -> dict[str, int]:
     """Nombre de requêtes non vides par dataflow parmi les ``stop`` premières."""
     counts = {dataflow: 0 for dataflow in DATAFLOWS}
     for q in queries[:stop]:
@@ -222,7 +228,7 @@ def non_empty_by_dataflow(queries: List[Any], stop: int) -> Dict[str, int]:
 
 
 def assert_stopped_cleanly(
-    lake: Dict[str, Path], bucket: str, queries: List[Any], stop: int, report
+    lake: dict[str, Path], bucket: str, queries: list[Any], stop: int, report
 ) -> None:
     """Garanties d'un arrêt anticipé après ``stop`` requêtes traitées."""
     done = queries[:stop]
@@ -287,7 +293,7 @@ def test_failed_batch_does_not_advance_its_entries(
 ) -> None:
     queries = make_queries(N_QUERIES)
     old = seed_registry(s3_bucket, queries, OLD_DATE)
-    failed_reporters: List[str] = []
+    failed_reporters: list[str] = []
     real_write = download_module.write_dataframe
     calls = {"n": 0}
 
@@ -351,13 +357,15 @@ def test_deadline_mid_batch_flushes_pending_batch(s3_bucket: str, lake, clock) -
 # ──────────────────────────────────────────────────────────────────────
 
 
-def test_sigterm_during_fetch_flushes_pending_batch(s3_bucket: str, lake, clock) -> None:
+def test_sigterm_during_fetch_flushes_pending_batch(
+    s3_bucket: str, lake, clock
+) -> None:
     queries = make_queries(N_QUERIES)
     stop = 1110
     assert any(n % 10 for n in non_empty_by_dataflow(queries, stop).values())
     original = signal.getsignal(signal.SIGTERM)
-    seen: Dict[str, Any] = {}
-    holder: Dict[str, SDMXDownloader] = {}
+    seen: dict[str, Any] = {}
+    holder: dict[str, SDMXDownloader] = {}
 
     def on_fetch(position: int, query) -> None:
         if position == 0:
@@ -383,8 +391,8 @@ def test_sigterm_during_fetch_flushes_pending_batch(s3_bucket: str, lake, clock)
 
 def test_sigterm_outside_fetch_only_requests_stop(s3_bucket: str, lake, clock) -> None:
     queries = make_queries(200)
-    holder: Dict[str, SDMXDownloader] = {}
-    published: List[str] = []
+    holder: dict[str, SDMXDownloader] = {}
+    published: list[str] = []
 
     def on_complete(query_report) -> None:
         published.append(query_report.identity_key)
@@ -409,7 +417,7 @@ def test_no_signal_handler_outside_main_thread(
 ) -> None:
     queries = make_queries(20)
     original = signal.getsignal(signal.SIGTERM)
-    seen: Dict[str, Any] = {}
+    seen: dict[str, Any] = {}
 
     def on_fetch(position: int, query) -> None:
         if position == 0:
@@ -417,10 +425,12 @@ def test_no_signal_handler_outside_main_thread(
 
     client = FakeClient(clock, data_every=DATA_EVERY, on_fetch=on_fetch)
     downloader = make_downloader(client, lake, s3_bucket)
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
 
     with caplog.at_level(logging.WARNING, logger="statflows.core.download"):
-        thread = threading.Thread(target=lambda: result.update(r=downloader.run(queries)))
+        thread = threading.Thread(
+            target=lambda: result.update(r=downloader.run(queries))
+        )
         thread.start()
         thread.join()
 
@@ -443,8 +453,12 @@ def test_sharded_registry_migration_and_targeted_rewrites(
     by_dataflow = {"registry_shard_key": lambda q: q.dataflow}
 
     # 1. Registre historique en fichier unique
-    make_downloader(FakeClient(clock, DATA_EVERY), lake, s3_bucket, **buffered).run(queries)
-    single = {e.identity_key: e for e in iter_registry_entries(REGISTRY_KEY, bucket=s3_bucket)}
+    make_downloader(FakeClient(clock, DATA_EVERY), lake, s3_bucket, **buffered).run(
+        queries
+    )
+    single = {
+        e.identity_key: e for e in iter_registry_entries(REGISTRY_KEY, bucket=s3_bucket)
+    }
     assert {k: e.to_raw() for k, e in single.items()} == expected_registry(queries)
 
     # 2. Migration : registre fragmenté par dataflow, run sur 100 requêtes DF_ALPHA
@@ -463,7 +477,9 @@ def test_sharded_registry_migration_and_targeted_rewrites(
     for fragment in fragments:
         fragment_keys |= set(Loader().load(fragment, bucket=s3_bucket)["DOWNLOADS"])
     assert fragment_keys == set(single)
-    migrated = {e.identity_key: e for e in iter_registry_entries(REGISTRY_KEY, bucket=s3_bucket)}
+    migrated = {
+        e.identity_key: e for e in iter_registry_entries(REGISTRY_KEY, bucket=s3_bucket)
+    }
     assert set(migrated) == set(single)
     run_keys = {q.identity_key() for q in alpha}
     for key, entry in migrated.items():

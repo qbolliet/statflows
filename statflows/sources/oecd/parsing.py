@@ -5,10 +5,11 @@ data structures: SDMX-JSON observations, structure metadata, and
 ContentConstraint update dates. They carry no client state and are therefore
 exposed as module-level functions rather than methods.
 """
+
 # Importation des modules
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 # Fonction de parsing d'une réponse au format json
-def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
+def parse_json_response(data: dict[str, Any]) -> pd.DataFrame:
     """Parse SDMX-JSON response to DataFrame.
 
     Args:
@@ -41,10 +42,7 @@ def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
         # Extraction des dimensions et de leurs valeurs
         dimensions = structure.get("dimensions", {}).get("observation", [])
         dim_names = [dim["id"] for dim in dimensions]
-        dim_values = {
-            dim["id"]: [v["id"] for v in dim["values"]]
-            for dim in dimensions
-        }
+        dim_values = {dim["id"]: [v["id"] for v in dim["values"]] for dim in dimensions}
 
         # Extraction des observations
         observations = dataSets[0].get("observations", {})
@@ -90,7 +88,7 @@ def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
 def create_structure_from_api_response(
     agency: str,
     dataflow: str,
-    api_response: Dict[str, Any],
+    api_response: dict[str, Any],
 ) -> DataflowStructure:
     """Create a DataflowStructure from OECD API structure response.
 
@@ -113,14 +111,11 @@ def create_structure_from_api_response(
         data = api_response.get("data", api_response)
 
         # Construction de l'index concept_id → nom lisible
-        concept_names: Dict[str, str] = {}
+        concept_names: dict[str, str] = {}
         for scheme in data.get("conceptSchemes", []):
             for concept in scheme.get("concepts", []):
                 concept_id = concept.get("id")
-                name = (
-                    concept.get("names", {}).get("en")
-                    or concept.get("name")
-                )
+                name = concept.get("names", {}).get("en") or concept.get("name")
                 if concept_id and name:
                     concept_names[concept_id] = name
 
@@ -155,14 +150,18 @@ def create_structure_from_api_response(
                 # Extraction de l'identifiant de concept depuis l'URN
                 # Ex. "...CS_STES(4.0).REF_AREA" → "REF_AREA"
                 concept_identity = dim_data.get("conceptIdentity", "")
-                concept_id = concept_identity.rsplit(".", 1)[-1] if concept_identity else dim_id
+                concept_id = (
+                    concept_identity.rsplit(".", 1)[-1] if concept_identity else dim_id
+                )
                 dim_name = concept_names.get(concept_id)
 
-            dimensions.append(DimensionInfo(
-                name=dim_id,
-                position=position,
-                description=dim_name if dim_name != dim_id else None,
-            ))
+            dimensions.append(
+                DimensionInfo(
+                    name=dim_id,
+                    position=position,
+                    description=dim_name if dim_name != dim_id else None,
+                )
+            )
 
         # Tri par position
         dimensions.sort(key=lambda d: d.position)

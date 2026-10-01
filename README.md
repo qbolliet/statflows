@@ -238,12 +238,12 @@ for entry in iter_registry_entries("registries/eurostat_last_download.json", buc
 
 ### Compaction et inlining
 
-Aucune compaction n'est lancée après les écritures : `write_dataframe` passe
-`compact_after_update=False` à `update_database` (dont le défaut est `True`), car
-compacter après chaque lot est coûteux et mieux placé en fin de run ou dans une
-maintenance planifiée. Pour la réactiver malgré tout :
-`update_options={"compact_after_update": True}` lance, après le commit de chaque
-upsert (donc une fois par lot), la compaction légère de `dt-ducklake-manager`
+`write_dataframe` ne force pas `compact_after_update` : la compaction
+post-écriture suit le défaut de `update_database` dans `dt-ducklake-manager`.
+Compacter après chaque lot peut être coûteux, mieux placé en fin de run ou dans
+une maintenance planifiée : `update_options={"compact_after_update": False}` la
+désactive. Quand elle est active, elle s'exécute après le commit de chaque
+upsert (donc une fois par lot) et correspond à la compaction légère de `dt-ducklake-manager`
 sur `<schéma>.fact_table` : `ducklake_merge_adjacent_files` puis
 `ducklake_rewrite_data_files`. Elle n'expire aucun snapshot, ne supprime aucun
 fichier et ne vide pas les données inlinées ; ses échecs sont journalisés sans

@@ -1,7 +1,7 @@
 # Importation des modules
 # Modules de base
 import os
-from typing import Literal, Optional
+from typing import Literal, Self
 
 # Message d'aide commun quand l'extra « s3 » n'est pas installé
 _S3_EXTRA_HINT = (
@@ -49,6 +49,7 @@ class S3Connection:
             - AWS_SECRET_ACCESS_KEY
             - AWS_SESSION_TOKEN
     """
+
     # Initialisation
     def __init__(self, s3_package: Literal["boto3", "s3fs"] = "boto3") -> None:
         """Initialize the S3 connection with specified S3 package.
@@ -67,13 +68,13 @@ class S3Connection:
     # Méthode auxiliaire de connexion à S3
     def _connect(
         self,
-        endpoint_url: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None,
-        verify: Optional[bool] = False,
+        endpoint_url: str | None = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
+        verify: bool | None = False,
         **kwargs,
-    ) -> None:
+    ) -> Self:
         """Establish connection to S3 using specified credentials.
 
         Args:

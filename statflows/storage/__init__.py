@@ -5,6 +5,7 @@ et, côté projet consommateur, par les chargeurs tabulaires qui en héritent. S
 import est **différé** : la classe dépend de ``boto3`` (extra ``s3``), or
 :mod:`statflows.storage.ducklake` doit rester importable sans cet extra.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

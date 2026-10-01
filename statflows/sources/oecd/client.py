@@ -3,12 +3,13 @@
 High-level client for querying OECD data through their SDMX API and
 converting responses to pandas DataFrames.
 """
+
 # Importation des modules
+import logging
+import xml.etree.ElementTree as ET
 from dataclasses import replace
 from datetime import datetime
-import logging
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
-import xml.etree.ElementTree as ET
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 
@@ -25,7 +26,7 @@ from ...core.structures import (
     DataflowStructureRegistry,
 )
 from . import parsing
-from .endpoints import OECDEndpointBuilder, _OECD_ENDPOINT_BUILDERS
+from .endpoints import _OECD_ENDPOINT_BUILDERS, OECDEndpointBuilder
 from .formats import OECDResponseFormat
 
 if TYPE_CHECKING:
@@ -58,6 +59,7 @@ class OECDClient(AbstractSDMXClient):
         ...     dimensions={"REF_AREA": ["FRA"], "MEASURE": ["PRINTO01"]},
         ... )
     """
+
     # Initialisation de l'URL par défaut
     DEFAULT_BASE_URL = "https://sdmx.oecd.org/public/rest"
 
@@ -70,9 +72,9 @@ class OECDClient(AbstractSDMXClient):
         base_url: str = DEFAULT_BASE_URL,
         timeout: int = 60,
         sdmx_version: SDMXVersion = SDMXVersion.V2,
-        structure_registry: Optional[DataflowStructureRegistry] = None,
+        structure_registry: DataflowStructureRegistry | None = None,
         auto_fetch_structure: bool = True,
-        rate_limiter: Optional[RateLimiter] = None,
+        rate_limiter: RateLimiter | None = None,
         auto_load_rate_limit: bool = True,
     ):
         # Initialisation de la base (structure_registry, auto_fetch_structure,
@@ -89,7 +91,9 @@ class OECDClient(AbstractSDMXClient):
         self.sdmx_version = sdmx_version
         self.api_client = APIClient(base_url=base_url, timeout=timeout)
         # Sélection du builder versionné depuis le registre
-        self.endpoint_builder: OECDEndpointBuilder = _OECD_ENDPOINT_BUILDERS[sdmx_version]
+        self.endpoint_builder: OECDEndpointBuilder = _OECD_ENDPOINT_BUILDERS[
+            sdmx_version
+        ]
 
     # Méthode de requête des données
     def get_data(
@@ -97,19 +101,19 @@ class OECDClient(AbstractSDMXClient):
         agency: str,
         dataflow: str,
         version: str = "+",
-        dimensions: Optional[Dict[Union[int, str], Union[str, List[str]]]] = None,
-        start_period: Optional[str] = None,
-        end_period: Optional[str] = None,
-        last_n_observations: Optional[int] = None,
+        dimensions: dict[int | str, str | list[str]] | None = None,
+        start_period: str | None = None,
+        end_period: str | None = None,
+        last_n_observations: int | None = None,
         format: OECDResponseFormat = OECDResponseFormat.CSV_LABELS,
         dimension_at_observation: DimensionAtObservation = DimensionAtObservation.ALL_DIMENSIONS,
-        attributes: Optional[str] = None,
-        measures: Optional[str] = None,
+        attributes: str | None = None,
+        measures: str | None = None,
         on_duplicate: DuplicateHandling = "warn",
-        split_dimensions: Optional[List[Union[int, str]]] = None,
+        split_dimensions: list[int | str] | None = None,
         max_split_combinations: int = 100,
-        updated_after: Optional[Union[str, datetime]] = None,
-        default_dimensions: List[str] = ['TIME_PERIOD'],
+        updated_after: str | datetime | None = None,
+        default_dimensions: list[str] = ["TIME_PERIOD"],
     ) -> pd.DataFrame:
         """Retrieve data from OECD API.
 
@@ -182,7 +186,7 @@ class OECDClient(AbstractSDMXClient):
 
         # Empaquetage des paramètres et délégation au pipeline mutualisé
         # (résolution structure → préparation requêtes → exécution → doublons)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "agency": agency,
             "dataflow": dataflow,
             "version": version,
@@ -198,7 +202,7 @@ class OECDClient(AbstractSDMXClient):
             "split_dimensions": split_dimensions,
             "max_split_combinations": max_split_combinations,
             "updated_after": updated_after,
-            "default_dimensions": default_dimensions
+            "default_dimensions": default_dimensions,
         }
         return self._execute_query_pipeline(params)
 
@@ -210,7 +214,7 @@ class OECDClient(AbstractSDMXClient):
     def fetch_updates(
         self,
         query: "OECDQueryRequest",
-        since: Optional[datetime],
+        since: datetime | None,
         n_observations: int = 10,
     ) -> pd.DataFrame:
         """Fetch OECD data for a query, incrementally when possible.
@@ -245,9 +249,7 @@ class OECDClient(AbstractSDMXClient):
     # ──────────────────────────────────────────────────────────────────
 
     # Implémentation du hook : résolution de la structure
-    def _resolve_structure(
-        self, params: Dict[str, Any]
-    ) -> Optional[DataflowStructure]:
+    def _resolve_structure(self, params: dict[str, Any]) -> DataflowStructure | None:
         """Resolve the dataflow structure for a query (registry or API fetch).
 
         Args:
@@ -264,9 +266,9 @@ class OECDClient(AbstractSDMXClient):
     # Implémentation du hook : préparation des requêtes splitées
     def _prepare_requests(
         self,
-        structure: Optional[DataflowStructure],
-        params: Dict[str, Any],
-    ) -> Tuple[List[Tuple[Dict, Dict]], Dict, Dict[str, Any]]:
+        structure: DataflowStructure | None,
+        params: dict[str, Any],
+    ) -> tuple[list[tuple[dict, dict]], dict, dict[str, Any]]:
         """Normalise dimensions and build the request combinations.
 
         Args:
@@ -306,7 +308,7 @@ class OECDClient(AbstractSDMXClient):
         )
 
         # Arguments transmis à chaque _execute_single_request
-        execute_kwargs: Dict[str, Any] = {
+        execute_kwargs: dict[str, Any] = {
             "agency": agency,
             "dataflow": dataflow,
             "version": params.get("version", "+"),
@@ -328,11 +330,11 @@ class OECDClient(AbstractSDMXClient):
     # Méthode auxiliaire de normalisation des dimensions du filtre sous la forme d'un dictionnaire position : valeur
     def _normalize_dimensions(
         self,
-        dimensions: Optional[Dict[Union[int, str], Union[str, List[str]]]],
+        dimensions: dict[int | str, str | list[str]] | None,
         agency: str,
         dataflow: str,
-        structure: Optional[DataflowStructure] = None,
-    ) -> Dict[int, List[str]]:
+        structure: DataflowStructure | None = None,
+    ) -> dict[int, list[str]]:
         """Normalize dimensions to Dict[int, List[str]] format.
 
         Args:
@@ -364,7 +366,7 @@ class OECDClient(AbstractSDMXClient):
             )
 
         # Cas où toutes les clés sont des entiers
-        normalized = {}
+        normalized: dict[int | str, list[str]] = {}
         # Normalisation de la valeur sous forme de liste
         for key, value in dimensions.items():
             # Conversion de la valeur en liste si nécessaire
@@ -373,15 +375,15 @@ class OECDClient(AbstractSDMXClient):
             else:
                 normalized[key] = list(value)
 
-        return normalized
+        return cast(dict[int, list[str]], normalized)
 
     # Méthode auxiliaire de normalisation de split_dimensions en noms de dimensions
     def _normalize_split_dimensions(
         self,
-        split_dimensions: Optional[List[Union[int, str]]],
-        structure: Optional[DataflowStructure],
-        dimensions: Dict[int, List[str]],
-    ) -> List[str]:
+        split_dimensions: list[int | str] | None,
+        structure: DataflowStructure | None,
+        dimensions: dict[int, list[str]],
+    ) -> list[str]:
         """Normalize split_dimensions to dimension NAMES and validate.
 
         Returns dimension names (not positions) because column positions
@@ -413,7 +415,7 @@ class OECDClient(AbstractSDMXClient):
             )
 
         # Initialisation de la liste des noms
-        normalized_names: List[str] = []
+        normalized_names: list[str] = []
 
         # Parcours des dimensions à split
         for dim_spec in split_dimensions:
@@ -425,7 +427,7 @@ class OECDClient(AbstractSDMXClient):
                 if dim_name is None:
                     raise ValueError(
                         f"Position {dim_spec} not found in structure. "
-                        f"Valid positions: 0-{structure.num_dimensions-1}"
+                        f"Valid positions: 0-{structure.num_dimensions - 1}"
                     )
                 # Vérification que la dimension est dans le filtre
                 if dim_spec not in dimensions:
@@ -468,18 +470,20 @@ class OECDClient(AbstractSDMXClient):
 
         # Logging si déduplication
         if len(unique_names) < len(normalized_names):
-            logger.debug(f"Deduplicated split_dimensions: {normalized_names} → {unique_names}")
+            logger.debug(
+                f"Deduplicated split_dimensions: {normalized_names} → {unique_names}"
+            )
 
         return unique_names
 
     # Méthode auxiliaire de génération des combinaisons de requêtes
     def _generate_request_combinations(
         self,
-        dimensions: Dict[int, List[str]],
-        split_dimension_names: List[str],
-        structure: Optional[DataflowStructure],
+        dimensions: dict[int, list[str]],
+        split_dimension_names: list[str],
+        structure: DataflowStructure | None,
         max_combinations: int = 100,
-    ) -> List[Tuple[Dict[int, List[str]], Dict[str, List[str]]]]:
+    ) -> list[tuple[dict[int, list[str]], dict[str, list[str]]]]:
         """Generate request combinations and post-filter dimensions.
 
         Args:
@@ -505,14 +509,14 @@ class OECDClient(AbstractSDMXClient):
         )
 
         # Identification des dimensions à split (valeurs multiples et dans split_positions)
-        split_dims: Dict[int, List[str]] = {
+        split_dims: dict[int, list[str]] = {
             pos: values
             for pos, values in dimensions.items()
             if pos in split_positions and len(values) > 1
         }
 
         # Identification des dimensions multi-valeurs à ne pas split (pour filtre ex post)
-        postfilter_dims: Dict[int, List[str]] = {
+        postfilter_dims: dict[int, list[str]] = {
             pos: values
             for pos, values in dimensions.items()
             if pos not in split_positions and len(values) > 1
@@ -520,7 +524,7 @@ class OECDClient(AbstractSDMXClient):
 
         # Conversion des positions postfilter en noms (skip si pas de structure :
         # le post-filtrage par nom de colonne n'est alors pas possible)
-        postfilter_dims_by_name: Dict[str, List[str]] = {}
+        postfilter_dims_by_name: dict[str, list[str]] = {}
         if structure is not None:
             for pos, values in postfilter_dims.items():
                 dim_name = structure.get_name(pos)
@@ -532,7 +536,7 @@ class OECDClient(AbstractSDMXClient):
         split_combos = self._cartesian_split(split_dims, max_combinations)
 
         # Construction des combinaisons (dims_for_url, dims_for_postfilter)
-        combinations: List[Tuple[Dict[int, List[str]], Dict[str, List[str]]]] = []
+        combinations: list[tuple[dict[int, list[str]], dict[str, list[str]]]] = []
         for combo in split_combos:
             # Copie des dimensions de base
             dims_for_url = dimensions.copy()
@@ -563,7 +567,7 @@ class OECDClient(AbstractSDMXClient):
         agency: str,
         dataflow: str,
         version: str = "+",
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
     ) -> DataflowStructure:
         """Retrieve dataflow structure metadata.
 
@@ -586,7 +590,7 @@ class OECDClient(AbstractSDMXClient):
 
         # Construction de l'URL et des paramètres de structure via le builder versionné
         endpoint = self.endpoint_builder.build_structure_endpoint(
-            resource_type=None,
+            resource_type=None,  # type: ignore[arg-type]
             resource_id=dataflow,
             agency=agency,
             version=version,
@@ -599,7 +603,9 @@ class OECDClient(AbstractSDMXClient):
         }
 
         # Exécution de la requête
-        response = self.api_client.get(endpoint, params=params, headers=headers, timeout=timeout)
+        response = self.api_client.get(
+            endpoint, params=params, headers=headers, timeout=timeout
+        )
         return self.create_structure_from_api_response(
             agency=agency, dataflow=dataflow, api_response=response.json()
         )
@@ -609,7 +615,7 @@ class OECDClient(AbstractSDMXClient):
         self,
         agency: str,
         dataflow: str,
-        api_response: Dict[str, Any],
+        api_response: dict[str, Any],
     ) -> DataflowStructure:
         """Create a DataflowStructure from OECD API structure response.
 
@@ -627,7 +633,9 @@ class OECDClient(AbstractSDMXClient):
         Raises:
             ValueError: If the response cannot be parsed.
         """
-        return parsing.create_structure_from_api_response(agency, dataflow, api_response)
+        return parsing.create_structure_from_api_response(
+            agency, dataflow, api_response
+        )
 
     # Méthode de listing de tous les dataflows disponibles
     def list_all_dataflows(self) -> pd.DataFrame:
@@ -667,30 +675,32 @@ class OECDClient(AbstractSDMXClient):
 
         # Namespaces SDMX
         namespaces = {
-            'mes': 'http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message',
-            'str': 'http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure',
-            'com': 'http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common'
+            "mes": "http://www.sdmx.org/resources/sdmxml/schemas/v2_1/message",
+            "str": "http://www.sdmx.org/resources/sdmxml/schemas/v2_1/structure",
+            "com": "http://www.sdmx.org/resources/sdmxml/schemas/v2_1/common",
         }
 
         # Extraction des dataflows
         dataflows = []
-        for df in root.findall('.//str:Dataflow', namespaces):
+        for df in root.findall(".//str:Dataflow", namespaces):
             # Extraction des attributs
-            dataflow_id = df.get('id')
-            agency_id = df.get('agencyID')
-            version = df.get('version')
+            dataflow_id = df.get("id")
+            agency_id = df.get("agencyID")
+            version = df.get("version")
 
             # Extraction du nom
-            name_elem = df.find('.//com:Name', namespaces)
+            name_elem = df.find(".//com:Name", namespaces)
             name = name_elem.text if name_elem is not None else None
 
             # Ajout à la liste
-            dataflows.append({
-                'dataflow': dataflow_id,
-                'agency': agency_id,
-                'version': version,
-                'name': name
-            })
+            dataflows.append(
+                {
+                    "dataflow": dataflow_id,
+                    "agency": agency_id,
+                    "version": version,
+                    "name": name,
+                }
+            )
 
         # Conversion en DataFrame
         df_result = pd.DataFrame(dataflows)
@@ -724,7 +734,7 @@ class OECDClient(AbstractSDMXClient):
     # Implémentation de l'abstraction : exécution d'une seule requête de données
     def _execute_single_request(
         self,
-        dims_for_request: Dict[int, List[str]],
+        dims_for_request: dict[int, list[str]],
         **request_kwargs,
     ) -> pd.DataFrame:
         """Execute a single OECD data request.
@@ -748,8 +758,10 @@ class OECDClient(AbstractSDMXClient):
         agency: str = request_kwargs["agency"]
         dataflow: str = request_kwargs["dataflow"]
         version: str = request_kwargs.get("version", "+")
-        structure: Optional[DataflowStructure] = request_kwargs.get("structure")
-        fmt: OECDResponseFormat = request_kwargs.get("format", OECDResponseFormat.CSV_LABELS)
+        structure: DataflowStructure | None = request_kwargs.get("structure")
+        fmt: OECDResponseFormat = request_kwargs.get(
+            "format", OECDResponseFormat.CSV_LABELS
+        )
         dimension_at_observation: DimensionAtObservation = request_kwargs.get(
             "dimension_at_observation", DimensionAtObservation.ALL_DIMENSIONS
         )
@@ -767,7 +779,7 @@ class OECDClient(AbstractSDMXClient):
             version=version,
             key=dim_filter,
         )
-        params = self.endpoint_builder.build_data_params(
+        params = self.endpoint_builder.build_data_params(  # type: ignore[call-arg]
             start_period=request_kwargs.get("start_period"),
             end_period=request_kwargs.get("end_period"),
             last_n_observations=request_kwargs.get("last_n_observations"),

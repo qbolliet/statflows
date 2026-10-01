@@ -8,8 +8,8 @@ de :mod:`statflows.storage.ducklake.tables` sur un vrai catalogue.
 from __future__ import annotations
 
 import contextlib
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Tuple
 
 import pytest
 
@@ -17,7 +17,7 @@ import pytest
 @contextlib.contextmanager
 def file_backed_catalog(
     tmp_path: Path, *, alias: str = "db", schema: str = "s1"
-) -> Iterator[Tuple["object", str]]:
+) -> Iterator[tuple[object, str]]:
     """Ouvre un catalogue DuckLake ``.ducklake`` en fichier temp.
 
     ``pytest.skip`` si ``duckdb`` n'est pas installé (extra « ducklake ») ou si

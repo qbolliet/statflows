@@ -18,24 +18,23 @@ an entry only ever moves forward, so the merge is always safe.
 The module depends on nothing heavier than :mod:`statflows.storage.json`: it is
 importable without the optional ``ducklake`` extra.
 """
+
 # Importation des modules
 from __future__ import annotations
+
+import logging
+import re
+from collections.abc import Iterator, Mapping
+
 # Modules de base
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-import logging
+from datetime import UTC, datetime
 from pathlib import Path
-import re
 from typing import (
     Any,
-    Dict,
-    Iterator,
-    Mapping,
-    Optional,
-    Set,
-    Tuple,
-    Union,
+    cast,
 )
+
 # Modules de stockage des registres JSON
 from ..storage.json import Loader, Saver
 
@@ -50,15 +49,16 @@ DEFAULT_SHARD = "_default"
 _SHARD_FORBIDDEN = re.compile(r"[^A-Za-z0-9_.\-]")
 
 # Type d'un chemin de registre (local ou clé S3)
-RegistryPath = Union[str, Path]
+RegistryPath = str | Path
 
 
 # ──────────────────────────────────────────────────────────────────────
 # Fonctions utilitaires
 # ──────────────────────────────────────────────────────────────────────
 
+
 # Fonction de parsing d'une chaîne ISO en datetime UTC
-def _parse_iso(value: Optional[str]) -> Optional[datetime]:
+def _parse_iso(value: str | None) -> datetime | None:
     """Parse an ISO-8601 string into a UTC-aware datetime.
 
     Args:
@@ -77,8 +77,8 @@ def _parse_iso(value: Optional[str]) -> Optional[datetime]:
         return None
     # Normalisation en UTC (les datetimes naïfs sont interprétés comme UTC)
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 # Fonction de calcul du répertoire des fragments
@@ -149,7 +149,7 @@ def _not_older(candidate: Mapping[str, Any], current: Mapping[str, Any]) -> bool
     Returns:
         ``True`` if ``candidate`` should replace ``current``.
     """
-    oldest = datetime.min.replace(tzinfo=timezone.utc)
+    oldest = datetime.min.replace(tzinfo=UTC)
     new = _parse_iso(candidate.get("last_download")) or oldest
     old = _parse_iso(current.get("last_download")) or oldest
     return new >= old
@@ -158,6 +158,7 @@ def _not_older(candidate: Mapping[str, Any], current: Mapping[str, Any]) -> bool
 # ──────────────────────────────────────────────────────────────────────
 # Lecture
 # ──────────────────────────────────────────────────────────────────────
+
 
 # Entrée du registre, indépendante du format physique
 @dataclass(frozen=True)
@@ -173,17 +174,18 @@ class RegistryEntry:
         last_download: UTC instant of the last successful download — the
             instant captured just *before* the request was sent.
     """
+
     identity_key: str
     agency: str
     dataflow: str
-    params: Dict[str, Any] = field(hash=False)
+    params: dict[str, Any] = field(hash=False)
     last_download: datetime
 
     # Construction depuis une entrée JSON brute
     @classmethod
     def from_raw(
         cls, identity_key: str, raw: Mapping[str, Any]
-    ) -> Optional["RegistryEntry"]:
+    ) -> RegistryEntry | None:
         """Build an entry from its JSON representation.
 
         Args:
@@ -206,7 +208,7 @@ class RegistryEntry:
         )
 
     # Conversion en entrée JSON brute
-    def to_raw(self) -> Dict[str, Any]:
+    def to_raw(self) -> dict[str, Any]:
         """Return the JSON representation stored in the registry."""
         return {
             "agency": self.agency,
@@ -220,8 +222,8 @@ class RegistryEntry:
 def load_registry_records(
     last_download_path: RegistryPath,
     loader: Loader,
-    bucket: Optional[str] = None,
-) -> Dict[str, Tuple[Dict[str, Any], Optional[str]]]:
+    bucket: str | None = None,
+) -> dict[str, tuple[dict[str, Any], str | None]]:
     """Read the raw entries of a registry, whatever its physical layout.
 
     Reads the historical single file, then every fragment, and keeps per
@@ -241,7 +243,7 @@ def load_registry_records(
     """
     # Fichier unique historique (absent → aucune entrée)
     single = loader.load(last_download_path, bucket=bucket, missing_ok=True) or {}
-    records: Dict[str, Tuple[Dict[str, Any], Optional[str]]] = {
+    records: dict[str, tuple[dict[str, Any], str | None]] = {
         key: (raw, None) for key, raw in single.get(REGISTRY_ROOT, {}).items()
     }
 
@@ -263,8 +265,8 @@ def load_registry_records(
 # Fonction publique d'itération sur les entrées du registre
 def iter_registry_entries(
     last_download_path: RegistryPath,
-    bucket: Optional[str] = None,
-    storage_options: Optional[Dict[str, Any]] = None,
+    bucket: str | None = None,
+    storage_options: dict[str, Any] | None = None,
 ) -> Iterator[RegistryEntry]:
     """Iterate over the entries of a last-download registry.
 
@@ -310,6 +312,7 @@ def iter_registry_entries(
 # Écriture (usage interne de l'orchestrateur)
 # ──────────────────────────────────────────────────────────────────────
 
+
 # Registre en mémoire et sa persistance
 class DownloadRegistry:
     """In-memory last-download registry with layout-aware persistence.
@@ -339,7 +342,7 @@ class DownloadRegistry:
         *,
         loader: Loader,
         saver: Saver,
-        bucket: Optional[str] = None,
+        bucket: str | None = None,
         sharded: bool = False,
     ) -> None:
         # Instanciation des attributs
@@ -349,12 +352,12 @@ class DownloadRegistry:
         self._bucket = bucket
         self.sharded = sharded
         # Entrées brutes (identity_key → entrée JSON)
-        self.entries: Dict[str, Dict[str, Any]] = {}
+        self.entries: dict[str, dict[str, Any]] = {}
         # Fragment de chaque entrée et membres de chaque fragment
-        self._shard_of: Dict[str, Optional[str]] = {}
-        self._members: Dict[str, Set[str]] = {}
+        self._shard_of: dict[str, str | None] = {}
+        self._members: dict[str, set[str]] = {}
         # Fragments à réécrire au prochain flush
-        self._dirty: Set[str] = set()
+        self._dirty: set[str] = set()
 
     # Méthode de chargement (les deux formats)
     def load(self) -> None:
@@ -372,7 +375,7 @@ class DownloadRegistry:
             self._place(key, shard)
 
     # Méthode de lecture d'une entrée
-    def get(self, key: str) -> Optional[Dict[str, Any]]:
+    def get(self, key: str) -> dict[str, Any] | None:
         """Return the raw entry of ``key``, or ``None``."""
         return self.entries.get(key)
 
@@ -396,13 +399,11 @@ class DownloadRegistry:
             return
 
         # Assignation
-        for key in list(self._members.get(None, ())):  # type: ignore[arg-type]
+        for key in list(self._members.get(cast(Any, None), ())):
             self._move(key, shard_of.get(key, DEFAULT_SHARD))
 
     # Méthode de validation d'une entrée
-    def commit(
-        self, key: str, raw: Dict[str, Any], shard: Optional[str] = None
-    ) -> None:
+    def commit(self, key: str, raw: dict[str, Any], shard: str | None = None) -> None:
         """Record an entry in memory (persisted at the next :meth:`flush`).
 
         Args:
@@ -417,7 +418,7 @@ class DownloadRegistry:
         # Cas où l'ensemble est vide
         if not self.sharded:
             return
-        
+
         target = shard or self._shard_of.get(key) or DEFAULT_SHARD
         self._move(key, target)
         self._dirty.add(target)
@@ -461,7 +462,7 @@ class DownloadRegistry:
         )
 
     # Méthode auxiliaire de placement initial d'une entrée
-    def _place(self, key: str, shard: Optional[str]) -> None:
+    def _place(self, key: str, shard: str | None) -> None:
         """Index ``key`` in ``shard`` (no dirtiness)."""
         self._shard_of[key] = shard
         self._members.setdefault(shard, set()).add(key)  # type: ignore[arg-type]

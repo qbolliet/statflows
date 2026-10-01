@@ -32,13 +32,14 @@ Two further discrepancies surfaced on inspection and are handled by
 ``"n to 1"`` instead of ``"n:1"``, and the HS1996/HS2002 workbooks prefix them
 with a spreadsheet text-guard apostrophe (``"'n:n"``).
 """
+
 # Importation des modules
 # Modules de base
 import json
 import logging
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, cast
 
 import pandas as pd
 
@@ -61,12 +62,14 @@ logger = logging.getLogger(__name__)
 
 
 # Chargement des paramètres
-with open(Path(__file__).parents[2] / "parameters" / "unsd.json", "r", encoding="utf-8") as f:
-    PARAMETERS: Dict[str, Any] = json.load(f)
+with open(
+    Path(__file__).parents[2] / "parameters" / "unsd.json", encoding="utf-8"
+) as f:
+    PARAMETERS: dict[str, Any] = json.load(f)
 
 
 # Fonction de sélection de la feuille correspondant à un type de correspondance
-def select_sheet(sheet_names: List[str], kind: str, filename: str) -> str:
+def select_sheet(sheet_names: list[str], kind: str, filename: str) -> str:
     """Select the workbook sheet holding a given kind of correspondence.
 
     Matching is done on the case-insensitive radical declared in
@@ -100,7 +103,7 @@ def select_sheet(sheet_names: List[str], kind: str, filename: str) -> str:
         'Conversion HS12-HS07'
     """
     # Extraction du radical déclaré pour le type demandé
-    patterns: Dict[str, str] = PARAMETERS["SHEET_PATTERNS"]
+    patterns: dict[str, str] = PARAMETERS["SHEET_PATTERNS"]
     if kind not in patterns:
         raise ValueError(
             f"Unsupported correspondence kind '{kind}'. "
@@ -112,13 +115,10 @@ def select_sheet(sheet_names: List[str], kind: str, filename: str) -> str:
     matches = [name for name in sheet_names if radical in name.casefold()]
     if not matches:
         raise ValueError(
-            f"No '{kind}' sheet found in '{filename}'. "
-            f"Available sheets: {sheet_names}."
+            f"No '{kind}' sheet found in '{filename}'. Available sheets: {sheet_names}."
         )
     if len(matches) > 1:
-        raise ValueError(
-            f"Ambiguous '{kind}' sheet in '{filename}': {matches}."
-        )
+        raise ValueError(f"Ambiguous '{kind}' sheet in '{filename}': {matches}.")
     return matches[0]
 
 
@@ -199,8 +199,8 @@ def read_sheet(content: bytes, extension: str, sheet: str) -> pd.DataFrame:
 
 # Fonction de rejet des colonnes parasites d'une feuille
 def drop_marker_columns(
-    df_body: pd.DataFrame, headers: List[str]
-) -> Tuple[pd.DataFrame, List[str]]:
+    df_body: pd.DataFrame, headers: list[str]
+) -> tuple[pd.DataFrame, list[str]]:
     """Drop the marker, empty and partial-match columns of a sheet body.
 
     Three kinds of spurious columns coexist in the workbooks and are removed
@@ -224,8 +224,8 @@ def drop_marker_columns(
         ['HS 2012', 'HS 2007']
     """
     # Sélection des positions conservées
-    kept_positions: List[int] = []
-    kept_headers: List[str] = []
+    kept_positions: list[int] = []
+    kept_headers: list[str] = []
     for position, header in enumerate(headers):
         # Rejet sur le libellé d'en-tête (correspondance partielle déclarée)
         if any(token in header.casefold() for token in REJECTED_COLUMN_TOKENS):
@@ -244,8 +244,8 @@ def drop_marker_columns(
 
 # Fonction de résolution des colonnes de codes et de relation
 def resolve_columns(
-    headers: List[str], source: str, target: str, filename: str
-) -> Tuple[int, int, Optional[int]]:
+    headers: list[str], source: str, target: str, filename: str
+) -> tuple[int, int, int | None]:
     """Resolve the source, target and relationship column positions.
 
     Code columns are paired to their classification by the vintage their header
@@ -273,6 +273,7 @@ def resolve_columns(
         ... )
         (0, 1, 2)
     """
+
     # Recherche de la colonne portant un millésime donné
     def _find(classification: str) -> int:
         year = vintage_year(classification)
@@ -326,9 +327,7 @@ def normalise_codes(codes: pd.Series) -> pd.Series:
         ['010121', '010129']
     """
     # Cadrage à six chiffres après retrait des espaces parasites
-    return (
-        codes.astype("string").str.strip().str.zfill(HS_CODE_LENGTH)
-    )
+    return codes.astype("string").str.strip().str.zfill(HS_CODE_LENGTH)
 
 
 # Fonction de normalisation des relations de la feuille Correlation
@@ -390,7 +389,10 @@ def parse_correspondence(
     """
     # Sélection de la feuille et lecture en texte brut
     sheet = select_sheet(
-        pd.ExcelFile(BytesIO(content), engine=engine_for(extension)).sheet_names,
+        cast(
+            list[str],
+            pd.ExcelFile(BytesIO(content), engine=engine_for(extension)).sheet_names,
+        ),
         kind=kind,
         filename=filename,
     )
@@ -436,7 +438,9 @@ def parse_correspondence(
     )
     # Relation annotée sur la seule feuille Correlation
     if relationship_position is None:
-        df_table["relationship"] = pd.Series(pd.NA, index=df_table.index, dtype="string")
+        df_table["relationship"] = pd.Series(
+            pd.NA, index=df_table.index, dtype="string"
+        )
     else:
         df_table["relationship"] = normalise_relationships(
             df_body.iloc[:, relationship_position]
@@ -477,7 +481,9 @@ def validate_conversion(df_table: pd.DataFrame, filename: str) -> None:
         True
     """
     # Unicité des codes sources (la Conversion doit être une fonction)
-    duplicated = df_table.loc[df_table["source_code"].duplicated(keep=False), "source_code"]
+    duplicated = df_table.loc[
+        df_table["source_code"].duplicated(keep=False), "source_code"
+    ]
     if not duplicated.empty:
         raise ValueError(
             f"Conversion table '{filename}' is not a function: "
@@ -488,9 +494,7 @@ def validate_conversion(df_table: pd.DataFrame, filename: str) -> None:
 
     # Longueur des codes de part et d'autre
     for column in ("source_code", "target_code"):
-        invalid = df_table.loc[
-            df_table[column].str.len() != HS_CODE_LENGTH, column
-        ]
+        invalid = df_table.loc[df_table[column].str.len() != HS_CODE_LENGTH, column]
         if not invalid.empty:
             raise ValueError(
                 f"Conversion table '{filename}' holds {len(invalid)} "

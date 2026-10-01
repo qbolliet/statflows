@@ -4,15 +4,16 @@ Re-exports the public OECD API so that ``from ..sources.oecd import OECDClient``
 (and the higher-level ``statflows`` re-exports) keep working
 after the split into submodules.
 """
+
 # Importation des éléments d'intérêt du sous-package
-from .formats import OECDResponseFormat
+from .client import OECDClient
 from .endpoints import (
     OECDEndpointBuilder,
     OECDEndpointBuilderV1,
     OECDEndpointBuilderV2,
 )
+from .formats import OECDResponseFormat
 from .queries import OECDQueryRequest
-from .client import OECDClient
 
 # Réexport des éléments d'intérêt du sous-package
 __all__ = [

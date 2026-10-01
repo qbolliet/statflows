@@ -1,9 +1,11 @@
 # Importation des modules
 # Modules de base
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any, Literal
+
 # Module de chargement de fichiers en local
 from .local.loader import load_local
+
 # Module de chargement de fichiers depuis S3 : ne tire pas ``boto3`` au chargement,
 # la dépendance de l'extra « s3 » n'est requise qu'à l'établissement de la connexion
 from .s3.loader import S3Loader
@@ -39,7 +41,7 @@ class Loader(S3Loader):
     """
 
     # Initialisation
-    def __init__(self, s3_package: Optional[str] = "boto3") -> None:
+    def __init__(self, s3_package: Literal["boto3", "s3fs"] = "boto3") -> None:
         """Initialize the Loader with specified S3 package.
 
         Args:
@@ -49,10 +51,10 @@ class Loader(S3Loader):
         super().__init__(s3_package=s3_package)
 
     # Méthode de chargement des données
-    def load(
+    def load(  # type: ignore[override]
         self,
-        filepath: Union[str, Path],
-        bucket: Optional[str] = None,
+        filepath: str | Path,
+        bucket: str | None = None,
         missing_ok: bool = False,
         **kwargs,
     ) -> Any:
@@ -142,10 +144,10 @@ class Loader(S3Loader):
     # Méthode de listage des fichiers JSON d'un répertoire (ou préfixe S3)
     def list_json(
         self,
-        directory: Union[str, Path],
-        bucket: Optional[str] = None,
+        directory: str | Path,
+        bucket: str | None = None,
         **kwargs,
-    ) -> List[str]:
+    ) -> list[str]:
         """List the ``.json`` files directly under a directory or S3 prefix.
 
         Only direct children are returned (no recursion), and names starting
@@ -190,7 +192,7 @@ class Loader(S3Loader):
 
         # Récupération des clés selon le package S3
         if self.s3_package == "boto3":
-            keys: List[str] = []
+            keys: list[str] = []
             paginator = self.s3.get_paginator("list_objects_v2")
             for page in paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter="/"):
                 keys.extend(obj["Key"] for obj in page.get("Contents", []))

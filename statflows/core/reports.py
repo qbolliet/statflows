@@ -14,13 +14,18 @@ dependencies. :func:`flatten_metrics` duplicates a couple of dozen lines of a
 consuming project's tracking helper for that very reason — the alternative would
 be a cross-package dependency this package is meant to avoid.
 """
+
 # Importation des modules
 from __future__ import annotations
-# Modules de base
-from dataclasses import asdict, dataclass, field, fields, is_dataclass
+
 import math
 import re
-from typing import Any, Dict, List, Mapping, Optional
+from collections.abc import Mapping
+
+# Modules de base
+from dataclasses import asdict, dataclass, field, fields, is_dataclass
+from typing import Any
+
 # Module de manipulation de données
 import pandas as pd
 
@@ -32,8 +37,9 @@ _FORBIDDEN_KEY_CHARS = re.compile(r"[^0-9a-zA-Z_\-./ :]")
 # Aplatissement des rapports
 # ──────────────────────────────────────────────────────────────────────
 
+
 # Fonction auxiliaire : parcours récursif d'un rapport
-def _walk(payload: Any, prefix: str) -> Dict[str, Any]:
+def _walk(payload: Any, prefix: str) -> dict[str, Any]:
     """Flatten a dataclass, mapping or scalar into dotted keys.
 
     Args:
@@ -45,7 +51,7 @@ def _walk(payload: Any, prefix: str) -> Dict[str, Any]:
     """
     # Rapport structuré : parcours de ses champs
     if is_dataclass(payload) and not isinstance(payload, type):
-        walked: Dict[str, Any] = {}
+        walked: dict[str, Any] = {}
         for report_field in fields(payload):
             key = f"{prefix}.{report_field.name}" if prefix else report_field.name
             walked.update(_walk(getattr(payload, report_field.name), key))
@@ -62,7 +68,7 @@ def _walk(payload: Any, prefix: str) -> Dict[str, Any]:
 
 
 # Fonction d'aplatissement d'un rapport en métriques
-def flatten_metrics(payload: Any, prefix: str = "") -> Dict[str, float]:
+def flatten_metrics(payload: Any, prefix: str = "") -> dict[str, float]:
     """Flatten every finite numeric field of a report into dotted metric keys.
 
     Walks dataclasses and mappings recursively. Booleans are cast to ``0``/``1``;
@@ -81,7 +87,7 @@ def flatten_metrics(payload: Any, prefix: str = "") -> Dict[str, float]:
         3.0
     """
     # Initialisation du dictionnaire des métriques
-    metrics: Dict[str, float] = {}
+    metrics: dict[str, float] = {}
     for key, value in _walk(payload, prefix).items():
         # Exclusion des types non numériques (les booléens sont des entiers)
         if isinstance(value, bool):
@@ -100,6 +106,7 @@ def flatten_metrics(payload: Any, prefix: str = "") -> Dict[str, float]:
 # Compteurs des briques mutualisées
 # ──────────────────────────────────────────────────────────────────────
 
+
 # Compteurs de la couche HTTP
 @dataclass
 class HttpStats:
@@ -116,14 +123,15 @@ class HttpStats:
         total_bytes: Cumulated size of the response bodies.
         status_counts: Number of responses per HTTP status code.
     """
+
     n_requests: int = 0
     n_failures: int = 0
     total_seconds: float = 0.0
     total_bytes: int = 0
-    status_counts: Dict[str, int] = field(default_factory=dict)
+    status_counts: dict[str, int] = field(default_factory=dict)
 
     # Enregistrement d'une réponse
-    def record(self, status_code: Optional[int], seconds: float, n_bytes: int) -> None:
+    def record(self, status_code: int | None, seconds: float, n_bytes: int) -> None:
         """Record one completed request.
 
         Args:
@@ -141,7 +149,7 @@ class HttpStats:
         self.status_counts[key] = self.status_counts.get(key, 0) + 1
 
     # Enregistrement d'un échec
-    def record_failure(self, status_code: Optional[int], seconds: float) -> None:
+    def record_failure(self, status_code: int | None, seconds: float) -> None:
         """Record one failed request.
 
         Args:
@@ -163,7 +171,7 @@ class HttpStats:
         self.status_counts = {}
 
     # Copie figée des compteurs
-    def snapshot(self) -> "HttpStats":
+    def snapshot(self) -> HttpStats:
         """Return an independent copy of the current counters.
 
         Returns:
@@ -192,6 +200,7 @@ class RateLimitStats:
         max_wait_seconds: Longest single wait.
         remaining_requests: Slots still available in the current window.
     """
+
     n_acquisitions: int = 0
     total_wait_seconds: float = 0.0
     max_wait_seconds: float = 0.0
@@ -201,6 +210,7 @@ class RateLimitStats:
 # ──────────────────────────────────────────────────────────────────────
 # Rapport d'une récupération (niveau client)
 # ──────────────────────────────────────────────────────────────────────
+
 
 # Diagnostic d'une récupération de données par le client
 @dataclass
@@ -226,6 +236,7 @@ class FetchReport:
             registry (``True``) or had to be fetched (``False``); ``None`` when
             no structure was resolved.
     """
+
     n_requests: int = 0
     n_request_errors: int = 0
     n_no_records: int = 0
@@ -233,12 +244,13 @@ class FetchReport:
     rows_fetched: int = 0
     rows_after_filter: int = 0
     n_duplicates: int = 0
-    structure_from_cache: Optional[bool] = None
+    structure_from_cache: bool | None = None
 
 
 # ──────────────────────────────────────────────────────────────────────
 # Rapport d'une requête (niveau orchestrateur)
 # ──────────────────────────────────────────────────────────────────────
+
 
 # Diagnostic du traitement d'une requête
 @dataclass
@@ -266,6 +278,7 @@ class QueryReport:
         http: HTTP counters accumulated while processing the query.
         rate_limit: Rate-limiter counters accumulated while processing it.
     """
+
     identity_key: str = ""
     agency: str = ""
     dataflow: str = ""
@@ -275,14 +288,14 @@ class QueryReport:
     table_created: bool = False
     empty: bool = False
     duration_seconds: float = 0.0
-    error_type: Optional[str] = None
-    error_message: Optional[str] = None
+    error_type: str | None = None
+    error_message: str | None = None
     fetch: FetchReport = field(default_factory=FetchReport)
     http: HttpStats = field(default_factory=HttpStats)
     rate_limit: RateLimitStats = field(default_factory=RateLimitStats)
 
     # Mise en forme des métriques d'une requête
-    def to_metrics(self, prefix: str = "query") -> Dict[str, float]:
+    def to_metrics(self, prefix: str = "query") -> dict[str, float]:
         """Flatten the numeric diagnostics of the query.
 
         Args:
@@ -297,6 +310,7 @@ class QueryReport:
 # ──────────────────────────────────────────────────────────────────────
 # Rapport d'exécution (niveau run)
 # ──────────────────────────────────────────────────────────────────────
+
 
 # Structure de données résumant l'exécution d'un téléchargement
 @dataclass
@@ -330,6 +344,7 @@ class DownloadReport:
         queries: Per-query diagnostics, in completion order (a buffered query
             completes when its write batch is committed or fails).
     """
+
     processed: int = 0
     rows_written: int = 0
     empty: int = 0
@@ -346,10 +361,10 @@ class DownloadReport:
     n_write_batches: int = 0
     rows_pending_at_stop: int = 0
     # Détail par requête (principe « les diagnostics sont des données »)
-    queries: List[QueryReport] = field(default_factory=list)
+    queries: list[QueryReport] = field(default_factory=list)
 
     # Agrégats dérivés du détail par requête
-    def aggregates(self) -> Dict[str, float]:
+    def aggregates(self) -> dict[str, float]:
         """Sum the per-query diagnostics into run-level counters.
 
         Returns:
@@ -382,16 +397,13 @@ class DownloadReport:
         # Somme sur l'ensemble des requêtes traitées
         return {
             name: float(
-                sum(
-                    getattr(getattr(query, group), attribute)
-                    for query in self.queries
-                )
+                sum(getattr(getattr(query, group), attribute) for query in self.queries)
             )
             for name, (group, attribute) in paths.items()
         }
 
     # Mise en forme des métriques du run
-    def to_metrics(self, prefix: str = "download") -> Dict[str, float]:
+    def to_metrics(self, prefix: str = "download") -> dict[str, float]:
         """Flatten the run diagnostics into dotted metric keys.
 
         The per-query detail is *not* expanded here — it belongs in

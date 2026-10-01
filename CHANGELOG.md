@@ -19,8 +19,8 @@ C-08). All default values reproduce the previous behaviour.
   `write_batch_queries` (DuckLake writes in batches, per schema, deduplicated
   on the primary key), `update_options` / `build_options` (options forwarded to
   `DatabaseUpdater.update_database` / `DuckLakeTablesBuilder.build_schema`),
-  `ducklake_options` (including `data_inlining_row_limit`) and `run_id`. No
-  post-write compaction by default. Invariant: a registry entry never advances
+  `ducklake_options` (including `data_inlining_row_limit`) and `run_id`.
+  Invariant: a registry entry never advances
   before the data of its query has been written successfully.
 - Clean shutdown on `SIGTERM` during `run()` (handler installed in the main
   thread, restored on exit): pending batches and registry are persisted,
@@ -32,9 +32,8 @@ C-08). All default values reproduce the previous behaviour.
   format-independent reading (single file or shards), exported from
   `statflows`, `statflows.core` and `statflows.core.download`.
 - `write_dataframe(..., update_options=None, build_options=None, run_id=None,
-  commit_message=None)`. The compaction of `update_database` is disabled by
-  default there (`update_options={"compact_after_update": True}` to re-enable
-  it).
+  commit_message=None)`. The compaction of `update_database` follows the library
+  default (`update_options={"compact_after_update": False}` to disable it).
 - `Loader.list_json(directory, bucket=None)`: JSON files of a local directory
   or an S3 prefix.
 - Codelists with labels: `statflows.core.factory.codelist_frame`,

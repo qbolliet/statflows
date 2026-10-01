@@ -1,11 +1,10 @@
 # Importation des modules
 import json
 from pathlib import Path
-from typing import Optional
 
 
 # Fonction de sauvegarde de données en local au format JSON
-def save_local(filepath: str, obj: Optional[object] = None, **kwargs) -> None:
+def save_local(filepath: str, obj: object | None = None, **kwargs) -> None:
     """Save an object to a local JSON file.
 
     Args:

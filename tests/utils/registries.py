@@ -16,20 +16,20 @@ production n'a pas.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 from statflows.storage.json import Loader, Saver
 
 # Type d'un chemin de registre (local ou clé S3)
-RegistryPath = Union[str, Path]
+RegistryPath = str | Path
 
 
 def read_named_registry(
     path: RegistryPath,
-    bucket: Optional[str] = None,
+    bucket: str | None = None,
     *,
     root: str,
-    loader: Optional[Loader] = None,
+    loader: Loader | None = None,
 ) -> dict:
     """Lecture des entrées sous la racine ``root`` (registre ou racine absente → ``{}``).
 
@@ -49,11 +49,11 @@ def read_named_registry(
 def merge_named_registry(
     path: RegistryPath,
     entries: dict[str, Any],
-    bucket: Optional[str] = None,
+    bucket: str | None = None,
     *,
     root: str,
-    loader: Optional[Loader] = None,
-    saver: Optional[Saver] = None,
+    loader: Loader | None = None,
+    saver: Saver | None = None,
 ) -> None:
     """Fusion des ``entries`` fournies dans le registre (les autres clés bougent pas).
 
@@ -69,6 +69,4 @@ def merge_named_registry(
     saver = saver or Saver()
     registry = read_named_registry(path, bucket, root=root, loader=loader)
     registry.update(entries)
-    saver.save(
-        path, {root: registry}, bucket=bucket, indent=2, ensure_ascii=False
-    )
+    saver.save(path, {root: registry}, bucket=bucket, indent=2, ensure_ascii=False)

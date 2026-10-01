@@ -6,16 +6,17 @@ shared by both API versions; :class:`OECDEndpointBuilderV1` and
 :class:`OECDEndpointBuilderV2` implement the version-specific URL paths,
 query parameters and positional dimension key.
 """
+
 # Importation des modules
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from ...core.sdmx import (
     DimensionAtObservation,
     SDMXEndpointBuilder,
     SDMXVersion,
 )
-from .formats import OECDResponseFormat, _OECD_FORMAT_PARAM_MAP
+from .formats import _OECD_FORMAT_PARAM_MAP, OECDResponseFormat
 
 
 # Classe de base abstraite pour les endpoint builders OCDE
@@ -42,10 +43,10 @@ class OECDEndpointBuilder(SDMXEndpointBuilder):
     # Construction des headers HTTP (Accept basé sur le format et la version)
     def build_headers(
         self,
-        accept_encoding: Optional[str] = None,
-        accept_language: Optional[str] = None,
-        response_format: Optional[OECDResponseFormat] = None,
-    ) -> Dict[str, str]:
+        accept_encoding: str | None = None,
+        accept_language: str | None = None,
+        response_format: OECDResponseFormat | None = None,
+    ) -> dict[str, str]:
         """Build HTTP request headers for the OECD API.
 
         Args:
@@ -59,7 +60,7 @@ class OECDEndpointBuilder(SDMXEndpointBuilder):
             HTTP headers dictionary.
         """
         fmt = response_format or OECDResponseFormat.CSV_LABELS
-        headers: Dict[str, str] = {
+        headers: dict[str, str] = {
             "Accept": self.get_accept_header(fmt, self.sdmx_version),
             "Accept-Encoding": accept_encoding or "gzip, deflate",
         }
@@ -70,12 +71,12 @@ class OECDEndpointBuilder(SDMXEndpointBuilder):
     # Construction des paramètres de requête de structure (identiques v1/v2)
     def build_structure_params(
         self,
-        references: Optional[str] = "all",
-        detail: Optional[str] = "referencepartial",
-        format: Optional[str] = None,
-        format_version: Optional[str] = None,
-        compress: Optional[str] = None,
-    ) -> Dict[str, str]:
+        references: str | None = "all",
+        detail: str | None = "referencepartial",
+        format: str | None = None,
+        format_version: str | None = None,
+        compress: str | None = None,
+    ) -> dict[str, str]:
         """Build query parameters for an OECD structure request.
 
         Args:
@@ -88,7 +89,7 @@ class OECDEndpointBuilder(SDMXEndpointBuilder):
         Returns:
             Query-parameter dictionary.
         """
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         if references is not None:
             params["references"] = references
         if detail is not None:
@@ -138,8 +139,8 @@ class OECDEndpointBuilder(SDMXEndpointBuilder):
 
     @staticmethod
     def build_dimension_filter(
-        dimensions: Dict[int, List[str]],
-        num_dimensions: Optional[int] = None,
+        dimensions: dict[int, list[str]],
+        num_dimensions: int | None = None,
     ) -> str:
         """Build the positional dimension key string for the data URL.
 
@@ -174,7 +175,7 @@ class OECDEndpointBuilderV1(OECDEndpointBuilder):
         dataflow: str,
         agency: str,
         version: str,
-        key: Optional[str] = None,
+        key: str | None = None,
     ) -> str:
         """Build the URL path for a data query.
 
@@ -194,23 +195,23 @@ class OECDEndpointBuilderV1(OECDEndpointBuilder):
     def build_data_params(
         self,
         *,
-        start_period: Optional[str] = None,
-        end_period: Optional[str] = None,
-        last_n_observations: Optional[int] = None,
-        first_n_observations: Optional[int] = None,
+        start_period: str | None = None,
+        end_period: str | None = None,
+        last_n_observations: int | None = None,
+        first_n_observations: int | None = None,
         compress: bool = False,
-        dimensions: Optional[Dict[str, List[str]]] = None,
-        response_format: Optional[OECDResponseFormat] = None,
-        response_format_version: Optional[str] = None,
-        lang: Optional[str] = None,
-        labels: Optional[str] = None,
-        attributes: Optional[str] = None,
-        measures: Optional[str] = None,
-        return_data: Optional[str] = None,
-        dimension_at_observation: Optional[str] = None,
-        detail: Optional[str] = None,
-        updated_after: Optional[Union[str, datetime]] = None,
-    ) -> Dict[str, Any]:
+        dimensions: dict[str, list[str]] | None = None,
+        response_format: OECDResponseFormat | None = None,
+        response_format_version: str | None = None,
+        lang: str | None = None,
+        labels: str | None = None,
+        attributes: str | None = None,
+        measures: str | None = None,
+        return_data: str | None = None,
+        dimension_at_observation: str | None = None,
+        detail: str | None = None,
+        updated_after: str | datetime | None = None,
+    ) -> dict[str, Any]:
         """Build query parameters for an OECD v1 data request.
 
         Recognised parameters: ``start_period``, ``end_period``,
@@ -223,10 +224,9 @@ class OECDEndpointBuilderV1(OECDEndpointBuilder):
             Query-parameter dictionary.
         """
         fmt = response_format or OECDResponseFormat.CSV_LABELS
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "dimensionAtObservation": (
-                dimension_at_observation
-                or DimensionAtObservation.ALL_DIMENSIONS.value
+                dimension_at_observation or DimensionAtObservation.ALL_DIMENSIONS.value
             ),
             "format": _OECD_FORMAT_PARAM_MAP[fmt],
         }
@@ -243,7 +243,7 @@ class OECDEndpointBuilderV1(OECDEndpointBuilder):
         resource_type: Any,
         resource_id: str,
         agency: str,
-        version: Optional[str],
+        version: str | None,
     ) -> str:
         """Build the URL path for a structure query.
 
@@ -262,8 +262,8 @@ class OECDEndpointBuilderV1(OECDEndpointBuilder):
 
     @staticmethod
     def build_dimension_filter(
-        dimensions: Dict[int, List[str]],
-        num_dimensions: Optional[int] = None,
+        dimensions: dict[int, list[str]],
+        num_dimensions: int | None = None,
     ) -> str:
         """Build the positional dimension filter string for SDMX v1.
 
@@ -283,7 +283,10 @@ class OECDEndpointBuilderV1(OECDEndpointBuilder):
             return "all"
         max_dim = max(dimensions.keys())
         total_dims = num_dimensions if num_dimensions else max_dim + 1
-        parts = [",".join(dimensions[i]) if i in dimensions else "" for i in range(total_dims)]
+        parts = [
+            ",".join(dimensions[i]) if i in dimensions else ""
+            for i in range(total_dims)
+        ]
         return ".".join(parts)
 
 
@@ -307,7 +310,7 @@ class OECDEndpointBuilderV2(OECDEndpointBuilder):
         dataflow: str,
         agency: str,
         version: str,
-        key: Optional[str] = None,
+        key: str | None = None,
     ) -> str:
         """Build the URL path for a data query.
 
@@ -327,23 +330,23 @@ class OECDEndpointBuilderV2(OECDEndpointBuilder):
     def build_data_params(
         self,
         *,
-        start_period: Optional[str] = None,
-        end_period: Optional[str] = None,
-        last_n_observations: Optional[int] = None,
-        first_n_observations: Optional[int] = None,
+        start_period: str | None = None,
+        end_period: str | None = None,
+        last_n_observations: int | None = None,
+        first_n_observations: int | None = None,
         compress: bool = False,
-        dimensions: Optional[Dict[str, List[str]]] = None,
-        response_format: Optional[OECDResponseFormat] = None,
-        response_format_version: Optional[str] = None,
-        lang: Optional[str] = None,
-        labels: Optional[str] = None,
-        attributes: Optional[str] = None,
-        measures: Optional[str] = None,
-        return_data: Optional[str] = None,
-        dimension_at_observation: Optional[str] = None,
-        detail: Optional[str] = None,
-        updated_after: Optional[Union[str, datetime]] = None,
-    ) -> Dict[str, Any]:
+        dimensions: dict[str, list[str]] | None = None,
+        response_format: OECDResponseFormat | None = None,
+        response_format_version: str | None = None,
+        lang: str | None = None,
+        labels: str | None = None,
+        attributes: str | None = None,
+        measures: str | None = None,
+        return_data: str | None = None,
+        dimension_at_observation: str | None = None,
+        detail: str | None = None,
+        updated_after: str | datetime | None = None,
+    ) -> dict[str, Any]:
         """Build query parameters for an OECD v2 data request.
 
         v2 encodes the time-period filter via ``c[TIME_PERIOD]=ge:…+le:…``
@@ -363,10 +366,9 @@ class OECDEndpointBuilderV2(OECDEndpointBuilder):
             Query-parameter dictionary.
         """
         fmt = response_format or OECDResponseFormat.CSV_LABELS
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "dimensionAtObservation": (
-                dimension_at_observation
-                or DimensionAtObservation.ALL_DIMENSIONS.value
+                dimension_at_observation or DimensionAtObservation.ALL_DIMENSIONS.value
             ),
             "format": _OECD_FORMAT_PARAM_MAP[fmt],
         }
@@ -402,7 +404,7 @@ class OECDEndpointBuilderV2(OECDEndpointBuilder):
         resource_type: Any,
         resource_id: str,
         agency: str,
-        version: Optional[str],
+        version: str | None,
     ) -> str:
         """Build the URL path for a structure query.
 
@@ -421,8 +423,8 @@ class OECDEndpointBuilderV2(OECDEndpointBuilder):
 
     @staticmethod
     def build_dimension_filter(
-        dimensions: Dict[int, List[str]],
-        num_dimensions: Optional[int] = None,
+        dimensions: dict[int, list[str]],
+        num_dimensions: int | None = None,
     ) -> str:
         """Build the positional dimension filter string for SDMX v2.
 
@@ -453,12 +455,14 @@ class OECDEndpointBuilderV2(OECDEndpointBuilder):
                 )
         max_dim = max(dimensions.keys())
         total_dims = num_dimensions if num_dimensions else max_dim + 1
-        parts = [dimensions[i][0] if i in dimensions else "*" for i in range(total_dims)]
+        parts = [
+            dimensions[i][0] if i in dimensions else "*" for i in range(total_dims)
+        ]
         return ".".join(parts)
 
 
 # Registre des builders par version d'API (à l'image du registre Eurostat)
-_OECD_ENDPOINT_BUILDERS: Dict[SDMXVersion, OECDEndpointBuilder] = {
+_OECD_ENDPOINT_BUILDERS: dict[SDMXVersion, OECDEndpointBuilder] = {
     SDMXVersion.V1: OECDEndpointBuilderV1(),
     SDMXVersion.V2: OECDEndpointBuilderV2(),
 }

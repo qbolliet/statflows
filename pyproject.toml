@@ -2,7 +2,20 @@
 name = "statflows"
 version = "0.1.0"
 description = "Downloaders and storage backends for international trade and economic statistics"
-requires-python = ">=3.13"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Quentin Bolliet", email = "bolliet.quentin@gmail.com" }]
+requires-python = ">=3.13,<4"
+keywords = ["statistics", "trade", "sdmx", "eurostat", "oecd", "comtrade", "unsd", "ducklake"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Typing :: Typed",
+]
 dependencies = [
     "pandas>=2.3.3",
     "pyarrow>=24.0.0",
@@ -26,6 +39,12 @@ all = [
     "s3fs>=0.4.2",
 ]
 
+[project.urls]
+Homepage = "https://github.com/qbolliet/statflows"
+Repository = "https://github.com/qbolliet/statflows"
+Changelog = "https://github.com/qbolliet/statflows/blob/main/CHANGELOG.md"
+Issues = "https://github.com/qbolliet/statflows/issues"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -36,9 +55,51 @@ dt-ducklake-manager = { git = "https://github.com/qbolliet/dt-ducklake-manager",
 [dependency-groups]
 dev = [
     "moto[s3]>=5.2.3",
+    "mypy>=2.1.0",
+    "pandas-stubs>=2.3.0",
+    "pre-commit>=4.6.0",
     "pytest>=9.1.1",
     "pytest-cov>=6.0.0",
+    "ruff>=0.15.17,<0.16",
+    "types-pyyaml>=6.0",
+    "types-requests>=2.32",
 ]
+
+# Les JSON de parameters/ sont des données d'exécution : hatchling embarque tous
+# les fichiers du paquet dans la wheel, mais on l'explicite pour l'sdist.
+[tool.hatch.build.targets.wheel]
+packages = ["statflows"]
+
+[tool.hatch.build.targets.sdist]
+include = ["statflows", "tests", "README.md", "LICENSE", "CHANGELOG.md"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP"]
+# E501 : délégué à ruff format ; N803/N806 : noms hérités des API SDMX/Comtrade ;
+# UP042 : StrEnum, changement de comportement à traiter à part.
+ignore = ["E501", "N803", "N806", "UP042"]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+# Les builders / clients SDMX partagent une base dont les signatures couvrent
+# l'union des paramètres de tous les fournisseurs (cf. core/sdmx.py) : les
+# sous-classes restreignent volontairement ces signatures (override).
+[[tool.mypy.overrides]]
+module = [
+    "statflows.sources.eurostat.endpoints",
+    "statflows.sources.eurostat.client",
+    "statflows.sources.oecd.endpoints",
+]
+disable_error_code = ["override"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

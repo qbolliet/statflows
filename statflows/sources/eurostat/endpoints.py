@@ -5,8 +5,9 @@ URL construction and query-parameter encoding for the Eurostat SDMX API.
 (primary endpoint) and :class:`EurostatEndpointBuilderV21` the SDMX 2.1
 conventions (legacy endpoint, Comext datasets).
 """
+
 # Importation des modules
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from ...core.sdmx import (
     SDMXEndpointBuilder,
@@ -48,7 +49,7 @@ class EurostatEndpointBuilderV30(SDMXEndpointBuilder):
     ACCEPT_HEADER = "application/vnd.sdmx.structure+xml;version=3.0.0"
 
     # Mapping des formats de réponse vers les valeurs de paramètre API
-    _FORMAT_PARAM: Dict[EurostatResponseFormat, str] = {
+    _FORMAT_PARAM: dict[EurostatResponseFormat, str] = {
         EurostatResponseFormat.CSV: "csvdata",
         EurostatResponseFormat.TSV: "tsv",
         EurostatResponseFormat.JSON: "json",
@@ -58,10 +59,10 @@ class EurostatEndpointBuilderV30(SDMXEndpointBuilder):
     # Construction des headers pour SDMX 3.0
     def build_headers(
         self,
-        accept_encoding: Optional[str] = None,
-        accept_language: Optional[str] = None,
-        response_format: Optional[Any] = None,
-    ) -> Dict[str, str]:
+        accept_encoding: str | None = None,
+        accept_language: str | None = None,
+        response_format: Any | None = None,
+    ) -> dict[str, str]:
         """Build HTTP request headers for SDMX 3.0.
 
         Args:
@@ -90,7 +91,7 @@ class EurostatEndpointBuilderV30(SDMXEndpointBuilder):
         dataflow: str,
         agency: str,
         version: str,
-        key: Optional[str] = None,
+        key: str | None = None,
     ) -> str:
         """Build the URL path for an SDMX 3.0 data query.
 
@@ -124,24 +125,24 @@ class EurostatEndpointBuilderV30(SDMXEndpointBuilder):
         self,
         *,
         # Commun aux deux versions
-        start_period: Optional[str] = None,
-        end_period: Optional[str] = None,
-        last_n_observations: Optional[int] = None,
-        first_n_observations: Optional[int] = None,
+        start_period: str | None = None,
+        end_period: str | None = None,
+        last_n_observations: int | None = None,
+        first_n_observations: int | None = None,
         compress: bool = False,
         # Spécifique SDMX 3.0
-        dimensions: Optional[Dict[str, List[str]]] = None,
-        response_format: Optional[EurostatResponseFormat] = None,
-        response_format_version: Optional[str] = None,
-        lang: Optional[str] = None,
-        labels: Optional[str] = None,
-        attributes: Optional[str] = None,
-        measures: Optional[str] = None,
-        return_data: Optional[str] = None,
+        dimensions: dict[str, list[str]] | None = None,
+        response_format: EurostatResponseFormat | None = None,
+        response_format_version: str | None = None,
+        lang: str | None = None,
+        labels: str | None = None,
+        attributes: str | None = None,
+        measures: str | None = None,
+        return_data: str | None = None,
         # Spécifique SDMX 2.1 (ignoré par ce builder)
-        dimension_at_observation: Optional[str] = None,
-        detail: Optional[DataDetail] = None,
-    ) -> Dict[str, str]:
+        dimension_at_observation: str | None = None,
+        detail: DataDetail | None = None,
+    ) -> dict[str, str]:
         """Build query parameters for an SDMX 3.0 data request.
 
         Full documentation:
@@ -181,7 +182,7 @@ class EurostatEndpointBuilderV30(SDMXEndpointBuilder):
             an HTTP GET request.
         """
         # Initialisation du dictionnaire de paramètres
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
 
         # Filtres de dimensions (c[DIM]=val1,val2)
         if dimensions:
@@ -238,7 +239,7 @@ class EurostatEndpointBuilderV30(SDMXEndpointBuilder):
         resource_type: StructureResourceType,
         resource_id: str,
         agency: str,
-        version: Optional[str],
+        version: str | None,
     ) -> str:
         """Build the URL path for an SDMX 3.0 structure query.
 
@@ -274,12 +275,12 @@ class EurostatEndpointBuilderV30(SDMXEndpointBuilder):
     # Construction des paramètres de requête de structure SDMX 3.0
     def build_structure_params(
         self,
-        references: Optional[StructureReferences] = "none",
-        detail: Optional[StructureDetail] = "full",
-        format: Optional[str] = "structure",
-        format_version: Optional[str] = "3.0",
-        compress: Optional[StructureCompress] = "true",
-    ) -> Dict[str, str]:
+        references: StructureReferences | None = "none",
+        detail: StructureDetail | None = "full",
+        format: str | None = "structure",
+        format_version: str | None = "3.0",
+        compress: StructureCompress | None = "true",
+    ) -> dict[str, str]:
         """Build query parameters for an SDMX 3.0 structure request.
 
         Full documentation:
@@ -304,7 +305,7 @@ class EurostatEndpointBuilderV30(SDMXEndpointBuilder):
             Query-parameter dictionary.
         """
         # Initialisation du dictionnaire des paramètres
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
 
         # Ajout des clés quand elles sont non nulles
         if references is not None:
@@ -356,7 +357,7 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
     ACCEPT_HEADER = "application/vnd.sdmx.structure+xml;version=2.1"
 
     # Mapping des formats de réponse vers les valeurs de paramètre API 2.1
-    _FORMAT_PARAM: Dict[EurostatResponseFormat, str] = {
+    _FORMAT_PARAM: dict[EurostatResponseFormat, str] = {
         EurostatResponseFormat.CSV: "SDMX-CSV",
         EurostatResponseFormat.TSV: "TSV",
         EurostatResponseFormat.JSON: "JSON",
@@ -364,7 +365,7 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
     }
 
     # Mapping des types de structure 3.0 vers les types 2.1
-    _RESOURCE_MAP: Dict[StructureResourceType, str] = {
+    _RESOURCE_MAP: dict[StructureResourceType, str] = {
         StructureResourceType.DATAFLOW: "dataflow",
         StructureResourceType.DATASTRUCTURE: "datastructure",
         StructureResourceType.DATACONSTRAINT: "contentconstraint",
@@ -375,10 +376,10 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
     # Construction des headers pour SDMX 2.1
     def build_headers(
         self,
-        accept_encoding: Optional[str] = None,
-        accept_language: Optional[str] = None,
-        response_format: Optional[Any] = None,
-    ) -> Dict[str, str]:
+        accept_encoding: str | None = None,
+        accept_language: str | None = None,
+        response_format: Any | None = None,
+    ) -> dict[str, str]:
         """Build HTTP request headers for SDMX 2.1.
 
         Args:
@@ -405,9 +406,9 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
     def build_data_endpoint(
         self,
         dataflow: str,
-        agency: Optional[str],
-        version: Optional[str],
-        key: Optional[str] = "all",
+        agency: str | None,
+        version: str | None,
+        key: str | None = "all",
     ) -> str:
         """Build the URL path for an SDMX 2.1 data query.
 
@@ -455,24 +456,24 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
         self,
         *,
         # Commun aux deux versions
-        start_period: Optional[str] = None,
-        end_period: Optional[str] = None,
-        last_n_observations: Optional[int] = None,
-        first_n_observations: Optional[int] = None,
+        start_period: str | None = None,
+        end_period: str | None = None,
+        last_n_observations: int | None = None,
+        first_n_observations: int | None = None,
         compress: bool = False,
         # Spécifique SDMX 3.0 (ignoré par ce builder)
-        dimensions: Optional[Dict[str, List[str]]] = None,
-        response_format: Optional[EurostatResponseFormat] = None,
-        response_format_version: Optional[str] = None,
-        lang: Optional[str] = None,
-        labels: Optional[str] = None,
-        attributes: Optional[str] = None,
-        measures: Optional[str] = None,
-        return_data: Optional[str] = None,
+        dimensions: dict[str, list[str]] | None = None,
+        response_format: EurostatResponseFormat | None = None,
+        response_format_version: str | None = None,
+        lang: str | None = None,
+        labels: str | None = None,
+        attributes: str | None = None,
+        measures: str | None = None,
+        return_data: str | None = None,
         # Spécifique SDMX 2.1
-        dimension_at_observation: Optional[str] = None,
-        detail: Optional[DataDetail] = None,
-    ) -> Dict[str, str]:
+        dimension_at_observation: str | None = None,
+        detail: DataDetail | None = None,
+    ) -> dict[str, str]:
         """Build query parameters for an SDMX 2.1 data request.
 
         Full documentation:
@@ -509,7 +510,7 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
             Query-parameter dictionary.
         """
         # Initialisation du dictionnaire de paramètres
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
 
         # Période temporelle (startPeriod / endPeriod)
         if start_period:
@@ -540,7 +541,7 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
         resource_type: StructureResourceType,
         resource_id: str,
         agency: str,
-        version: Optional[str],
+        version: str | None,
     ) -> str:
         """Build the URL path for an SDMX 2.1 structure query.
 
@@ -576,7 +577,8 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
 
         # Conversion des tokens de version vers les équivalents 2.1 (None → "latest")
         v21_version = (
-            "latest" if version in ("+", "~", None)
+            "latest"
+            if version in ("+", "~", None)
             else ("all" if version == "*" else version)
         )
 
@@ -584,21 +586,18 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
         v21_agency = "all" if agency == "*" else agency
         v21_resource_id = "all" if resource_id == "*" else resource_id
 
-        return (
-            f"/sdmx/2.1/{mapped_type}"
-            f"/{v21_agency}/{v21_resource_id}/{v21_version}"
-        )
+        return f"/sdmx/2.1/{mapped_type}/{v21_agency}/{v21_resource_id}/{v21_version}"
 
     # Construction des paramètres de requête de structure SDMX 2.1
     def build_structure_params(
         self,
-        references: Optional[StructureReferences] = "none",
-        detail: Optional[StructureDetail] = "full",
+        references: StructureReferences | None = "none",
+        detail: StructureDetail | None = "full",
         # Spécifique SDMX 3.0 (ignoré par ce builder)
-        format: Optional[str] = None,
-        format_version: Optional[str] = None,
-        compress: Optional[StructureCompress] = None,
-    ) -> Dict[str, str]:
+        format: str | None = None,
+        format_version: str | None = None,
+        compress: StructureCompress | None = None,
+    ) -> dict[str, str]:
         """Build query parameters for an SDMX 2.1 structure request.
 
         Full documentation:
@@ -620,7 +619,7 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
             Query-parameter dictionary.
         """
         # Initialisation du dictionnaire de paramètres
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         # Ajout des clés supportées par l'API 2.1
         if detail is not None:
             params["detail"] = detail
@@ -630,7 +629,7 @@ class EurostatEndpointBuilderV21(SDMXEndpointBuilder):
 
 
 # Registre des builders par version d'API
-_ENDPOINT_BUILDERS: Dict[SDMXVersion, SDMXEndpointBuilder] = {
+_ENDPOINT_BUILDERS: dict[SDMXVersion, SDMXEndpointBuilder] = {
     SDMXVersion.V3: EurostatEndpointBuilderV30(),
     SDMXVersion.V2_1: EurostatEndpointBuilderV21(),
 }

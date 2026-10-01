@@ -11,10 +11,11 @@ explicit fields (flows, reporters, partners, products, periods) rather than a
 generic ``dimensions`` mapping. The :meth:`identity_key` override projects those
 fields onto the canonical identity-key format shared with the SDMX DTOs.
 """
+
 # Importation des modules
 # Modules de base
-from dataclasses import dataclass, field
-from typing import ClassVar, List, Optional, Type, Union
+from dataclasses import dataclass
+from typing import ClassVar
 
 # Modules du package
 from ...core.queries import SDMXQueryRequest
@@ -61,31 +62,32 @@ class ComtradeQueryRequest(SDMXQueryRequest):
         ... )
         >>> df = client.execute_query(query)  # doctest: +SKIP
     """
+
     # Identifiant logique du dataflow (typeCode_freqCode_clCode)
     dataflow: str
     version: str = "*"
     # Sélection des données (champs explicites propres à Comtrade)
-    flows: Optional[Union[List[str], str]] = None
-    reporters: Optional[Union[List[str], List[int], str, int]] = None
-    partners: Optional[Union[List[str], List[int], str, int]] = None
-    partners2: Optional[Union[List[str], List[int], str, int]] = None
-    products: Optional[Union[List[str], List[int], str, int]] = None
-    customs: Optional[Union[List[str], str]] = None
-    mot: Optional[Union[List[str], str]] = None
-    periods: Optional[Union[List[str], str]] = None
-    period_start: Optional[str] = None
-    period_end: Optional[str] = None
+    flows: list[str] | str | None = None
+    reporters: list[str] | list[int] | str | int | None = None
+    partners: list[str] | list[int] | str | int | None = None
+    partners2: list[str] | list[int] | str | int | None = None
+    products: list[str] | list[int] | str | int | None = None
+    customs: list[str] | str | None = None
+    mot: list[str] | str | None = None
+    periods: list[str] | str | None = None
+    period_start: str | None = None
+    period_end: str | None = None
     # Paramètres de requête ancrés (défauts intelligents alignés sur get_data)
     type_code: str = "C"
     classification: str = "HS"
     frequency: str = "annual"
-    max_records: Optional[int] = None
-    count_only: Optional[bool] = None
+    max_records: int | None = None
+    count_only: bool | None = None
     include_desc: bool = True
     format: ComtradeResponseFormat = ComtradeResponseFormat.JSON
 
     # Enum de format du provider (utilisé par SDMXQueryRequest.from_dict)
-    _FORMAT_ENUM: ClassVar[Optional[Type[SDMXResponseFormat]]] = ComtradeResponseFormat
+    _FORMAT_ENUM: ClassVar[type[SDMXResponseFormat] | None] = ComtradeResponseFormat
 
     # Propriété d'agence (Comtrade publie sous l'agence COMTRADE)
     @property
@@ -142,6 +144,4 @@ class ComtradeQueryRequest(SDMXQueryRequest):
         }
         # Retrait des champs non renseignés pour une clé stable et compacte
         dimensions = {k: v for k, v in dimensions.items() if v is not None}
-        return build_identity_key(
-            self.agency, self.dataflow, self.version, dimensions
-        )
+        return build_identity_key(self.agency, self.dataflow, self.version, dimensions)

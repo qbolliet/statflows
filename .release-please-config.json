@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "include-v-in-tag": true,
+  "include-component-in-tag": false,
+  "bootstrap-sha": "a7dfa49dd43fbe1b79621123fdfe3dea5e364ff5",
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "package-name": "statflows",
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}

@@ -14,15 +14,17 @@ dedicated script (``scripts/download_comtrade.py``) rather than in the client.
 The methodology is available at:
 https://comtradeapi.un.org/files/v1/app/wiki/MethodologyGuideforComtradePlus.pdf
 """
+
 # Importation des modules
 # Modules de base
 import json
 import logging
 import os
 import re
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, cast
 
 # Modules externes
 import numpy as np
@@ -50,9 +52,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# Chargement des paramètres 
-with open(Path(__file__).parents[2] / "parameters" / "comtrade.json", "r", encoding="utf-8") as f:
-    PARAMETERS: Dict[str, Any] = json.load(f)
+# Chargement des paramètres
+with open(
+    Path(__file__).parents[2] / "parameters" / "comtrade.json", encoding="utf-8"
+) as f:
+    PARAMETERS: dict[str, Any] = json.load(f)
 
 
 # Exception levée lorsqu'un appel à l'API UN Comtrade échoue
@@ -64,7 +68,7 @@ class ComtradeAPIError(RuntimeError):
         status_code: HTTP status code, ``None`` for network errors.
     """
 
-    def __init__(self, message: str, status_code: Optional[int] = None) -> None:
+    def __init__(self, message: str, status_code: int | None = None) -> None:
         super().__init__(message)
         self.status_code = status_code
 
@@ -114,17 +118,19 @@ class ComtradeClient(APIClient):
     DEFAULT_BASE_URL = "https://comtradeapi.un.org"
 
     # URL du registre des fichiers de référence (métadonnées)
-    REFERENCES_URL = "https://comtradeapi.un.org/files/v1/app/reference/ListofReferences.json"
+    REFERENCES_URL = (
+        "https://comtradeapi.un.org/files/v1/app/reference/ListofReferences.json"
+    )
 
     # Initialisation
     def __init__(
         self,
         base_url: str = DEFAULT_BASE_URL,
         timeout: int = 120,
-        subscription_key: Optional[str] = None,
-        proxy: Optional[str] = None,
-        structure_registry: Optional[DataflowStructureRegistry] = None,
-        rate_limiter: Optional[Union[RateLimiter, CompositeRateLimiter]] = None,
+        subscription_key: str | None = None,
+        proxy: str | None = None,
+        structure_registry: DataflowStructureRegistry | None = None,
+        rate_limiter: RateLimiter | CompositeRateLimiter | None = None,
         auto_load_rate_limit: bool = True,
         max_retries: int = 3,
         backoff_factor: float = 0.5,
@@ -147,14 +153,14 @@ class ComtradeClient(APIClient):
         # Proxy optionnel (hôte:port) propagé à la session HTTP
         self.proxy = proxy
         if self._proxy_url is not None:
-            self.session.proxies.update({"http": self._proxy_url, "https": self._proxy_url})
+            self.session.proxies.update(
+                {"http": self._proxy_url, "https": self._proxy_url}
+            )
 
         # Rate limiter (argument ou chargement automatique depuis la configuration)
         if auto_load_rate_limit and rate_limiter is None:
             rate_limiter = self._load_rate_limiter()
-        self.rate_limiter: Optional[Union[RateLimiter, CompositeRateLimiter]] = (
-            rate_limiter
-        )
+        self.rate_limiter: RateLimiter | CompositeRateLimiter | None = rate_limiter
 
         # Registre des structures (argument ou construction depuis les paramètres)
         if structure_registry is not None:
@@ -171,12 +177,12 @@ class ComtradeClient(APIClient):
         # Cache des dates de dernière publication par signature de disponibilité
         # (pour fetch_updates) : évite un appel de disponibilité par lot de produits
         # d'une même période
-        self._availability_cache: Dict[Tuple, Optional[datetime]] = {}
+        self._availability_cache: dict[tuple, datetime | None] = {}
 
         # Cache des métadonnées de référence par catégorie (None : registre des
         # catégories) : la construction des requêtes et la publication des
         # codelists partagent ainsi les mêmes appels réseau
-        self._metadata_cache: Dict[Optional[str], pd.DataFrame] = {}
+        self._metadata_cache: dict[str | None, pd.DataFrame] = {}
 
     # ──────────────────────────────────────────────────────────────────
     # Chargement de la configuration
@@ -185,7 +191,7 @@ class ComtradeClient(APIClient):
     # Méthode de chargement du rate limiter depuis la configuration
     def _load_rate_limiter(
         self,
-    ) -> Optional[Union[RateLimiter, CompositeRateLimiter]]:
+    ) -> RateLimiter | CompositeRateLimiter | None:
         """Build the rate limiter from the ``RATE_LIMIT`` configuration section.
 
         The section is a list of ``{requests, unit, count}`` limits, so a
@@ -202,8 +208,7 @@ class ComtradeClient(APIClient):
             return None
         try:
             logger.info(
-                f"Loading rate limiter from "
-                f"parameters/{self.PROVIDER_CONFIG_NAME}.json"
+                f"Loading rate limiter from parameters/{self.PROVIDER_CONFIG_NAME}.json"
             )
             return build_rate_limiter(config)
         except Exception as e:
@@ -213,7 +218,7 @@ class ComtradeClient(APIClient):
 
     # Propriété d'URL de proxy formatée pour la session HTTP
     @property
-    def _proxy_url(self) -> Optional[str]:
+    def _proxy_url(self) -> str | None:
         """Proxy URL set on the HTTP session (``None`` when unset)."""
         # Aucun proxy → None ; sinon préfixe http://
         if self.proxy is None:
@@ -221,7 +226,7 @@ class ComtradeClient(APIClient):
         return f"http://{self.proxy}"
 
     # Méthode auxiliaire de résolution de l'endpoint et des headers d'authentification
-    def _auth(self, path: str) -> Tuple[str, Optional[Dict[str, str]]]:
+    def _auth(self, path: str) -> tuple[str, dict[str, str] | None]:
         """Return the endpoint and headers for an authenticated-or-public call.
 
         With a subscription key the ``/data/`` endpoint is used and the key is
@@ -242,8 +247,8 @@ class ComtradeClient(APIClient):
     def _get_json(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
         context: str = "Comtrade API call",
     ) -> Any:
         """GET ``endpoint`` and return the decoded JSON payload.
@@ -297,8 +302,8 @@ class ComtradeClient(APIClient):
 
     # Méthode auxiliaire de preprocessing des codes
     def _preprocess_codes(
-        self, codes: Union[List[int], List[str], int, str, None]
-    ) -> Optional[str]:
+        self, codes: list[int] | list[str] | int | str | None
+    ) -> str | None:
         """Preprocess country or product codes into the Comtrade CSV format.
 
         Args:
@@ -325,7 +330,7 @@ class ComtradeClient(APIClient):
         return codes
 
     # Méthode auxiliaire de validation d'une subdivision
-    def _validate_subdivision(self, subdivision: Union[str, None]) -> bool:
+    def _validate_subdivision(self, subdivision: str | None) -> bool:
         """Validate whether a parameter can be split into smaller requests.
 
         Args:
@@ -375,7 +380,7 @@ class ComtradeClient(APIClient):
     # ──────────────────────────────────────────────────────────────────
 
     # Méthode auxiliaire indiquant si une dimension peut être subdivisée
-    def _can_subdivide(self, name: str, value: Union[str, None]) -> bool:
+    def _can_subdivide(self, name: str, value: str | None) -> bool:
         """Tell whether a flow dimension can be split into smaller requests.
 
         A dimension is divisible when it carries several explicit values, or
@@ -403,9 +408,9 @@ class ComtradeClient(APIClient):
     def _divide_request(
         self,
         subdivision: str,
-        selection: Dict[str, Union[str, None]],
-        fixed: Dict[str, object],
-    ) -> Tuple[pd.DataFrame, dict]:
+        selection: dict[str, str | None],
+        fixed: dict[str, object],
+    ) -> tuple[pd.DataFrame, dict]:
         """Divide a request that exceeds the per-call record limit.
 
         Splits the requested values of ``subdivision`` into two halves and
@@ -460,10 +465,10 @@ class ComtradeClient(APIClient):
         # Requêtes récursives sur chaque sous-liste (la dimension scindée est
         # surchargée, les autres paramètres sont propagés tels quels)
         df1, request_metadata1 = self.get_data(
-            **{**fixed, **selection, subdivision: list_items1}
+            **{**fixed, **selection, subdivision: list_items1}  # type: ignore[arg-type]
         )
         df2, request_metadata2 = self.get_data(
-            **{**fixed, **selection, subdivision: list_items2}
+            **{**fixed, **selection, subdivision: list_items2}  # type: ignore[arg-type]
         )
 
         # Concaténation des jeux de données
@@ -479,28 +484,40 @@ class ComtradeClient(APIClient):
             for k in request_metadata1.keys()
         }
         return df, request_metadata
-    
+
     # Méthode auxiliaire de construction des périodes à partir du début et de la fin
-    def _build_periods_from_boundaries(self, period_start: str, frequency: str, period_end: Optional[str]=None) -> List[str]:
+    def _build_periods_from_boundaries(
+        self,
+        period_start: str | None,
+        frequency: str,
+        period_end: str | None = None,
+    ) -> list[str]:
         # Initialisation des periods
-        periods = []
+        periods: list[str] = []
 
         # Construction des périodes
         if (period_start is not None) & (period_end is not None):
-            periods = pd.date_range(
-                    start=period_start,
-                    end=period_end,
+            periods = (
+                pd.date_range(
+                    start=cast(str, period_start),
+                    end=cast(str, period_end),
                     freq="YS" if frequency == "annual" else "MS",
-                ).strftime("%Y" if frequency == "annual" else "%Y%m").tolist()
+                )
+                .strftime("%Y" if frequency == "annual" else "%Y%m")
+                .tolist()
+            )
         elif period_start is not None:
-            periods = pd.date_range(
+            periods = (
+                pd.date_range(
                     start=period_start,
                     end=datetime.today(),
                     freq="YS" if frequency == "annual" else "MS",
-                ).strftime("%Y" if frequency == "annual" else "%Y%m").tolist()
+                )
+                .strftime("%Y" if frequency == "annual" else "%Y%m")
+                .tolist()
+            )
 
         return periods
-
 
     # Méthode auxiliaire d'un appel unique à l'API tariffline
     def _request_tariffline(
@@ -508,11 +525,11 @@ class ComtradeClient(APIClient):
         typeCode: str,
         freqCode: str,
         clCode: str,
-        maxRecords: Optional[int] = None,
+        maxRecords: int | None = None,
         format_output: str = "JSON",
-        countOnly: Optional[bool] = None,
-        includeDesc: Optional[bool] = None,
-        **api_kwargs: Union[str, None],
+        countOnly: bool | None = None,
+        includeDesc: bool | None = None,
+        **api_kwargs: str | None,
     ) -> pd.DataFrame:
         """Issue a single tariffline request and return it as a DataFrame.
 
@@ -583,8 +600,8 @@ class ComtradeClient(APIClient):
 
     # Méthode auxiliaire d'appel à l'API tariffline, période par période
     def _fetch_tariffline(
-        self, api_kwargs: Dict[str, Union[str, None]], **params: Any
-    ) -> Tuple[pd.DataFrame, bool]:
+        self, api_kwargs: dict[str, str | None], **params: Any
+    ) -> tuple[pd.DataFrame, bool]:
         """Call :meth:`_request_tariffline` once per requested period.
 
         Issuing one call per period applies the rate limiter before every HTTP
@@ -613,7 +630,10 @@ class ComtradeClient(APIClient):
             self._acquire()
 
             try:
-                df = self._request_tariffline(**{**api_kwargs, "period": period}, **params)
+                df = self._request_tariffline(
+                    **{**api_kwargs, "period": period},  # type: ignore[arg-type]
+                    **params,
+                )
             finally:
                 # Incrément du compteur d'appels API (y compris en cas d'échec)
                 self.api_calls += 1
@@ -626,24 +646,24 @@ class ComtradeClient(APIClient):
     # Méthode principale de récupération des données tariffline
     def get_data(
         self,
-        flows: Optional[Union[List[str], str, None]] = ["M", "X"],
-        products: Optional[Union[List[int], List[str], int, str, None]] = None,
-        reporters: Optional[Union[List[int], List[str], int, str, None]] = None,
-        partners: Optional[Union[List[int], List[str], int, str, None]] = None,
-        partners2: Optional[Union[List[int], List[str], int, str, None]] = None,
-        customs: Optional[Union[List[str], str, None]] = None,
-        mot: Optional[Union[List[str], str, None]] = None,
-        periods: Optional[Union[List[str], str, None]] = None,
-        period_start: Optional[Union[str, None]] = None,
-        period_end: Optional[Union[str, None]] = None,
+        flows: list[str] | str | None | None = ["M", "X"],
+        products: list[int] | list[str] | int | str | None | None = None,
+        reporters: list[int] | list[str] | int | str | None | None = None,
+        partners: list[int] | list[str] | int | str | None | None = None,
+        partners2: list[int] | list[str] | int | str | None | None = None,
+        customs: list[str] | str | None | None = None,
+        mot: list[str] | str | None | None = None,
+        periods: list[str] | str | None | None = None,
+        period_start: str | None | None = None,
+        period_end: str | None | None = None,
         type_code: str = "C",
         classification: str = "HS",
         frequency: str = "annual",
-        max_records: Optional[int] = None,
+        max_records: int | None = None,
         format_output: str = "JSON",
-        count_only: Optional[bool] = None,
+        count_only: bool | None = None,
         include_desc: bool = True,
-    ) -> Tuple[pd.DataFrame, dict]:
+    ) -> tuple[pd.DataFrame, dict]:
         """Fetch tariffline data from UN Comtrade.
 
         Issues one tariffline request per period (cf. :meth:`_fetch_tariffline`) and, when
@@ -700,11 +720,19 @@ class ComtradeClient(APIClient):
         # Preprocessing des périodes
         if isinstance(periods, list):
             periods = ",".join(periods)
-        elif ((period_start is not None) & (period_end is not None)) | (period_start is not None):
-            periods = ",".join(self._build_periods_from_boundaries(period_start=period_start, frequency=frequency, period_end=period_end))
+        elif ((period_start is not None) & (period_end is not None)) | (
+            period_start is not None
+        ):
+            periods = ",".join(
+                self._build_periods_from_boundaries(
+                    period_start=period_start,
+                    frequency=frequency,
+                    period_end=period_end,
+                )
+            )
 
         # Preprocessing des flux et des codes (pays, produits, douane, transport)
-        selection: Dict[str, Union[str, None]] = {
+        selection: dict[str, str | None] = {
             "flows": self._preprocess_codes(codes=flows),
             "products": self._preprocess_codes(codes=products),
             "reporters": self._preprocess_codes(codes=reporters),
@@ -717,7 +745,7 @@ class ComtradeClient(APIClient):
 
         # Paramètres non dimensionnels propagés aux sous-requêtes (périodes déjà
         # résolues : period_start/period_end neutralisés pour éviter la ré-expansion)
-        fixed: Dict[str, object] = {
+        fixed: dict[str, object] = {
             "type_code": type_code,
             "classification": classification,
             "frequency": frequency,
@@ -782,7 +810,7 @@ class ComtradeClient(APIClient):
     # Méthode auxiliaire de construction des métadonnées d'une requête
     @staticmethod
     def _build_request_metadata(
-        selection: Dict[str, Union[str, None]], fixed: Dict[str, object]
+        selection: dict[str, str | None], fixed: dict[str, object]
     ) -> dict:
         """Build the metadata dictionary describing a resolved request.
 
@@ -805,7 +833,7 @@ class ComtradeClient(APIClient):
     # Méthode de chargement des métadonnées d'une catégorie de référence
     def get_metadata(
         self,
-        category: Optional[Union[str, None]] = None,
+        category: str | None | None = None,
         refresh: bool = False,
     ) -> pd.DataFrame:
         """Fetch metadata for a reference category from UN Comtrade.
@@ -906,7 +934,7 @@ class ComtradeClient(APIClient):
         return parsing.build_codelist(metadata, category, keep_metadata=keep_metadata)
 
     # Méthode auxiliaire de validation du format d'une période
-    def _validate_date(self, period: Union[str, int]) -> str:
+    def _validate_date(self, period: str | int) -> str:
         """Validate and format a date period string.
 
         Args:
@@ -947,11 +975,11 @@ class ComtradeClient(APIClient):
     # Méthode de construction des périodes valides
     def get_valid_periods(
         self,
-        periods: Optional[Union[List[str], str, None]] = None,
-        period_start: Optional[Union[str, None]] = None,
-        period_end: Optional[Union[str, None]] = None,
-        frequency: Optional[str] = "monthly",
-    ) -> List[str]:
+        periods: list[str] | str | None | None = None,
+        period_start: str | None | None = None,
+        period_end: str | None | None = None,
+        frequency: str | None = "monthly",
+    ) -> list[str]:
         """Generate the list of valid periods for trade-data requests.
 
         Args:
@@ -1007,14 +1035,14 @@ class ComtradeClient(APIClient):
         return valid_periods
 
     # ──────────────────────────────────────────────────────────────────
-    # Seam de téléchargement incrémental 
+    # Seam de téléchargement incrémental
     # ──────────────────────────────────────────────────────────────────
 
     # Méthode de récupération de la disponibilité des données tariffline
     def get_tariffline_data_availability(
         self,
-        reporters: Optional[Union[List[int], List[str], int, str, None]] = None,
-        periods: Optional[Union[List[str], str, None]] = None,
+        reporters: list[int] | list[str] | int | str | None | None = None,
+        periods: list[str] | str | None | None = None,
         frequency: str = "annual",
         type_code: str = "C",
         classification: str = "HS",
@@ -1066,9 +1094,7 @@ class ComtradeClient(APIClient):
         return pd.json_normalize(payload["data"])
 
     # Méthode de résolution de la date de dernière publication d'une période
-    def _period_last_released(
-        self, query: "ComtradeQueryRequest"
-    ) -> Optional[datetime]:
+    def _period_last_released(self, query: "ComtradeQueryRequest") -> datetime | None:
         """Return the most recent ``lastReleased`` date for a query's period.
 
         Wraps :meth:`get_tariffline_data_availability` and memoises the result per
@@ -1090,7 +1116,9 @@ class ComtradeClient(APIClient):
             query.frequency,
             query.type_code,
             query.classification,
-            None if query.reporters is None else ",".join(map(str, query.reporters)),
+            None
+            if query.reporters is None
+            else ",".join(map(str, cast(Iterable[Any], query.reporters))),
         )
 
         # Court-circuit sur le cache
@@ -1115,9 +1143,7 @@ class ComtradeClient(APIClient):
             )
         except Exception as e:
             # Échec non bloquant : la période sera rafraîchie par précaution
-            logger.warning(
-                "Could not fetch availability for %s: %s", query.periods, e
-            )
+            logger.warning("Could not fetch availability for %s: %s", query.periods, e)
             last_released = None
 
         # Mise en cache et renvoi
@@ -1128,7 +1154,7 @@ class ComtradeClient(APIClient):
     def fetch_updates(
         self,
         query: "ComtradeQueryRequest",
-        since: Optional[datetime],
+        since: datetime | None,
         n_observations: int = 10,
     ) -> pd.DataFrame:
         """Fetch the data for a query, incrementally when possible.
@@ -1166,8 +1192,14 @@ class ComtradeClient(APIClient):
             periods = None
             if query.periods is not None:
                 periods = query.periods
-            elif ((query.period_start is not None) & (query.period_end is not None)) | (query.period_start is not None):
-                period_list = self._build_periods_from_boundaries(period_start=query.period_start, frequency=query.frequency, period_end=query.period_end)
+            elif ((query.period_start is not None) & (query.period_end is not None)) | (
+                query.period_start is not None
+            ):
+                period_list = self._build_periods_from_boundaries(
+                    period_start=query.period_start,
+                    frequency=query.frequency,
+                    period_end=query.period_end,
+                )
                 periods = f"{period_list[0]}-{period_list[-1]}"
 
             # Logging
@@ -1274,7 +1306,10 @@ class ComtradeClient(APIClient):
             return cached
 
         # Construction depuis les paramètres déclarés et mise en cache
-        structure = parsing.build_structure_from_parameters(agency, dataflow)
+        structure = cast(
+            DataflowStructure,
+            parsing.build_structure_from_parameters(agency, dataflow),
+        )
         self.structure_registry.register(structure)
         return structure
 

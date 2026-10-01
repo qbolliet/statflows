@@ -10,8 +10,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from statflows.storage.json import Loader
 from tests.utils.registries import merge_named_registry, read_named_registry
 
@@ -29,7 +27,9 @@ def test_read_missing_file_returns_empty_dict(tmp_path: Path) -> None:
 
 def test_read_missing_root_returns_empty_dict(tmp_path: Path) -> None:
     path = tmp_path / "reg.json"
-    merge_named_registry(path, {}, root="AUTRE")  # crée le fichier sous une autre racine
+    merge_named_registry(
+        path, {}, root="AUTRE"
+    )  # crée le fichier sous une autre racine
 
     assert read_named_registry(path, root=ROOT) == {}
 

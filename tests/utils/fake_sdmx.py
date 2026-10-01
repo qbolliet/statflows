@@ -12,9 +12,10 @@ requêtes ne se recouvrent donc jamais sur la clé primaire.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import pandas as pd
 
@@ -31,7 +32,7 @@ DATAFLOWS = ("DF_ALPHA", "DF_BETA")
 PRODUCTS = ("P1", "P2")
 PERIODS = ("2020", "2021")
 # Instant de départ de l'horloge factice
-T0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
+T0 = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 @dataclass
@@ -49,14 +50,14 @@ class FakeQuery:
     def identity_key(self) -> str:
         return f"{self.agency}:{self.dataflow}:{self.reporter}"
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "dataflow": self.dataflow,
             "dimensions": {"REF_AREA": self.reporter},
         }
 
 
-def make_queries(n: int) -> List[FakeQuery]:
+def make_queries(n: int) -> list[FakeQuery]:
     """Construit ``n`` requêtes réparties par blocs de 7 sur les deux dataflows.
 
     Le découpage par blocs (plutôt qu'une alternance stricte) garantit que les
@@ -121,14 +122,14 @@ class FakeClient:
 
     clock: FakeClock
     data_every: int = 1
-    on_fetch: Optional[Callable[[int, FakeQuery], None]] = None
+    on_fetch: Callable[[int, FakeQuery], None] | None = None
     structure_registry: DataflowStructureRegistry = field(
         default_factory=DataflowStructureRegistry
     )
-    calls: List[str] = field(default_factory=list)
+    calls: list[str] = field(default_factory=list)
 
     def fetch_updates(
-        self, query: FakeQuery, since: Optional[datetime], n_observations: int
+        self, query: FakeQuery, since: datetime | None, n_observations: int
     ) -> pd.DataFrame:
         position = len(self.calls)
         self.calls.append(query.identity_key())
@@ -147,7 +148,9 @@ class FakeClient:
         return structure
 
 
-def expected_table(queries: List[FakeQuery], dataflow: str, data_every: int) -> pd.DataFrame:
+def expected_table(
+    queries: list[FakeQuery], dataflow: str, data_every: int
+) -> pd.DataFrame:
     """Contenu attendu de la table de faits d'un dataflow, trié par clé."""
     frames = [
         query_frame(q)

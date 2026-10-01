@@ -12,9 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-pytest.importorskip(
-    "duckdb", reason="requiert l'extra « ducklake » (duckdb absent)"
-)
+pytest.importorskip("duckdb", reason="requiert l'extra « ducklake » (duckdb absent)")
 
 from statflows.storage.ducklake.tables import (  # noqa: E402
     FACT_TABLE,

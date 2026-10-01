@@ -13,10 +13,12 @@ discrepancy), and only inherits the shared methods. The generic ``to_dict`` /
 ``from_dict`` therefore operate on the *concrete* subclass fields via
 :func:`dataclasses.fields`.
 """
+
 # Importation des modules
 # Modules de base
 from dataclasses import fields
-from typing import Any, ClassVar, Dict, Optional, Type
+from typing import Any, ClassVar, cast
+
 # Modules du package
 from .sdmx import SDMXResponseFormat, build_identity_key
 
@@ -38,10 +40,10 @@ class SDMXQueryRequest:
     """
 
     # Enum de format du provider (surchargé par chaque sous-classe concrète)
-    _FORMAT_ENUM: ClassVar[Optional[Type[SDMXResponseFormat]]] = None
+    _FORMAT_ENUM: ClassVar[type[SDMXResponseFormat] | None] = None
 
     # Méthode de conversion des champs en dictionnaire de kwargs get_data()
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to a dictionary suitable for ``get_data()`` kwargs.
 
         Generic over the concrete dataclass: every field (and only the fields)
@@ -52,11 +54,11 @@ class SDMXQueryRequest:
             Dictionary mapping each dataclass field name to its value.
         """
         # Sérialisation générique de tous les champs de la dataclass concrète
-        return {f.name: getattr(self, f.name) for f in fields(self)}
+        return {f.name: getattr(self, f.name) for f in fields(cast(Any, self))}
 
     # Méthode de création d'une instance à partir d'un dictionnaire
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SDMXQueryRequest":
+    def from_dict(cls, data: dict[str, Any]) -> "SDMXQueryRequest":
         """Create a query request from a dictionary specification.
 
         Symmetric counterpart of :meth:`to_dict`. Keys that do not match a
@@ -80,7 +82,7 @@ class SDMXQueryRequest:
             ... })  # doctest: +SKIP
         """
         # Filtre des clés inconnues (ex. "description") sur les champs valides
-        valid = {f.name for f in fields(cls)}
+        valid = {f.name for f in fields(cast(Any, cls))}
         kwargs = {k: v for k, v in data.items() if k in valid}
         # Coercition du format texte en enum du provider si applicable
         if cls._FORMAT_ENUM is not None and isinstance(kwargs.get("format"), str):
@@ -95,7 +97,8 @@ class SDMXQueryRequest:
             Key in format ``'agency::dataflow::version'``. Providers that key
             their dataflows differently override this method.
         """
-        return f"{self.agency}::{self.dataflow}::{self.version}"
+        self_: Any = self
+        return f"{self_.agency}::{self_.dataflow}::{self_.version}"
 
     # Méthode d'extraction d'une clé d'identité stable de la requête
     def identity_key(self) -> str:
@@ -112,6 +115,7 @@ class SDMXQueryRequest:
             Stable identity string.
         """
         # Sérialisation déterministe des dimensions (helper mutualisé)
+        self_: Any = self
         return build_identity_key(
-            self.agency, self.dataflow, self.version, self.dimensions
+            self_.agency, self_.dataflow, self_.version, self_.dimensions
         )

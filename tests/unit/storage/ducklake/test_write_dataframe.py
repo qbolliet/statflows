@@ -23,8 +23,8 @@ pytest.importorskip(
     reason="requiert l'extra « ducklake » (dt_ducklake_manager absent)",
 )
 
-import duckdb  # noqa: E402
 import dt_ducklake_manager  # noqa: E402
+import duckdb  # noqa: E402
 
 from statflows.storage.ducklake.tables import write_dataframe  # noqa: E402
 
@@ -98,7 +98,7 @@ def test_upsert_passes_catalog_alias_and_schema_to_updater(
         schema=SCHEMA,
     )
     updater_cls.return_value.update_database.assert_called_once_with(
-        data, use_transaction=True, compact_after_update=False
+        data, use_transaction=True
     )
 
 
@@ -167,9 +167,7 @@ def test_create_does_not_update(conn, data, updater_cls, builder_cls) -> None:
 # ──────────────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize(
-    "cls_name", ["DatabaseUpdater", "DuckLakeTablesBuilder"]
-)
+@pytest.mark.parametrize("cls_name", ["DatabaseUpdater", "DuckLakeTablesBuilder"])
 def test_library_classes_accept_catalog_alias(cls_name: str) -> None:
     """Les deux classes exposent ``catalog_alias`` et ``schema`` (pas l'ancien nom)."""
     params = inspect.signature(getattr(dt_ducklake_manager, cls_name)).parameters
@@ -225,7 +223,9 @@ def test_upsert_forwards_explicit_options(conn, data, updater_cls) -> None:
     )
 
 
-def test_create_forwards_commit_options_to_build_schema(conn, data, builder_cls) -> None:
+def test_create_forwards_commit_options_to_build_schema(
+    conn, data, builder_cls
+) -> None:
     write_dataframe(
         conn, data, ["id"], catalog_alias=ALIAS, schema=SCHEMA, run_id="run-1"
     )
@@ -255,6 +255,8 @@ def test_create_forwards_build_options(conn, data, builder_cls) -> None:
 )
 def test_library_update_accepts_forwarded_options(param: str) -> None:
     """``update_database`` de la version installée accepte les options transmises."""
-    params = inspect.signature(dt_ducklake_manager.DatabaseUpdater.update_database).parameters
+    params = inspect.signature(
+        dt_ducklake_manager.DatabaseUpdater.update_database
+    ).parameters
 
     assert param in params

@@ -120,11 +120,24 @@ _INDEX = {
 _FILES = {
     "https://x/reporter.json": {
         "results": [
-            {"id": 251, "text": "France", "reporterCode": 251, "reporterDesc": "France",
-             "reporterCodeIsoAlpha3": "FRA", "entryExpiredDate": None, "isGroup": False},
-            {"id": 280, "text": "Fmr Fed. Rep. of Germany", "reporterCode": 280,
-             "reporterDesc": "Fmr Fed. Rep. of Germany", "reporterCodeIsoAlpha3": "DEU",
-             "entryExpiredDate": "1990-12-31", "isGroup": False},
+            {
+                "id": 251,
+                "text": "France",
+                "reporterCode": 251,
+                "reporterDesc": "France",
+                "reporterCodeIsoAlpha3": "FRA",
+                "entryExpiredDate": None,
+                "isGroup": False,
+            },
+            {
+                "id": 280,
+                "text": "Fmr Fed. Rep. of Germany",
+                "reporterCode": 280,
+                "reporterDesc": "Fmr Fed. Rep. of Germany",
+                "reporterCodeIsoAlpha3": "DEU",
+                "entryExpiredDate": "1990-12-31",
+                "isGroup": False,
+            },
         ]
     },
     "https://x/hs.json": {

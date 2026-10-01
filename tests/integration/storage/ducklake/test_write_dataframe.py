@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from tests.utils.ducklake import file_backed_catalog
 from statflows.storage.ducklake.tables import (
     FACT_TABLE,
     fact_table_exists,
     write_dataframe,
 )
+from tests.utils.ducklake import file_backed_catalog
 
 
 def test_create_then_upsert(ducklake_conn) -> None:

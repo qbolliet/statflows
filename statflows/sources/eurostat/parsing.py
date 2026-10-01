@@ -5,14 +5,15 @@ data structures: gzip decompression, SDMX-CSV/TSV/JSON-stat data, and SDMX-ML
 structure / dataflow-catalogue responses. They carry no client state and are
 therefore exposed as module-level functions rather than methods.
 """
+
 # Importation des modules
-from datetime import datetime, timezone
 import gzip
-from io import StringIO
 import logging
 import re
-from typing import Any, Dict, List, Optional
 import xml.etree.ElementTree as ET
+from datetime import UTC, datetime
+from io import StringIO
+from typing import Any, cast
 
 import pandas as pd
 
@@ -83,9 +84,7 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
 
         # Sélection des colonnes de périodes (contiennent des chiffres)
         period_cols = [
-            col
-            for col in df.columns[1:]
-            if any(char.isdigit() for char in col)
+            col for col in df.columns[1:] if any(char.isdigit() for char in col)
         ]
 
         # Extraction des dimensions depuis la première colonne composite
@@ -94,9 +93,7 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
         dimensions_split.columns = dim_names
 
         # Reconstruction du DataFrame en format large puis conversion en format long
-        df_wide = pd.concat(
-            [dimensions_split, df[period_cols].copy()], axis=1
-        )
+        df_wide = pd.concat([dimensions_split, df[period_cols].copy()], axis=1)
         df_long = df_wide.melt(
             id_vars=dim_names,
             var_name="TIME_PERIOD",
@@ -115,7 +112,7 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
 
 
 # Fonction de parsing de réponse JSON-stat 2.0
-def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
+def parse_json_response(data: dict[str, Any]) -> pd.DataFrame:
     """Parse a JSON-stat 2.0 response.
 
     Eurostat serialises responses in JSON-stat 2.0:
@@ -142,9 +139,9 @@ def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
     """
     try:
         # Récupération de l'ordre des dimensions, de leurs tailles et des valeurs
-        dim_ids: List[str] = list(data.get("id", []))
-        sizes: List[int] = list(data.get("size", []))
-        dimensions: Dict[str, Any] = data.get("dimension", {})
+        dim_ids: list[str] = list(data.get("id", []))
+        sizes: list[int] = list(data.get("size", []))
+        dimensions: dict[str, Any] = data.get("dimension", {})
         values = data.get("value", {})
 
         # Réponse vide ou mal formée
@@ -152,14 +149,12 @@ def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
             return pd.DataFrame(columns=[*dim_ids, "value"])
 
         # Construction d'un mapping position -> code pour chaque dimension
-        codes_by_dim: Dict[str, List[Optional[str]]] = {}
+        codes_by_dim: dict[str, list[str | None]] = {}
         for dim_id, dim_size in zip(dim_ids, sizes):
-            cat_index = (
-                dimensions.get(dim_id, {}).get("category", {}).get("index", {})
-            )
+            cat_index = dimensions.get(dim_id, {}).get("category", {}).get("index", {})
             # Format objet {code: position} → inversion en liste ordonnée
             if isinstance(cat_index, dict):
-                pos_to_code: List[Optional[str]] = [None] * dim_size
+                pos_to_code: list[str | None] = [None] * dim_size
                 for code, pos in cat_index.items():
                     pos_int = int(pos)
                     if 0 <= pos_int < dim_size:
@@ -176,13 +171,11 @@ def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
         if isinstance(values, dict):
             obs_items = ((int(k), v) for k, v in values.items())
         else:
-            obs_items = (
-                (i, v) for i, v in enumerate(values) if v is not None
-            )
+            obs_items = ((i, v) for i, v in enumerate(values) if v is not None)
 
         # Décomposition row-major de l'index plat en indices multidimensionnels
         n_dims = len(sizes)
-        rows: List[Dict[str, Any]] = []
+        rows: list[dict[str, Any]] = []
         for flat_idx, value in obs_items:
             multi_idx = [0] * n_dims
             remainder = flat_idx
@@ -191,7 +184,7 @@ def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
                 remainder //= sizes[axis]
 
             # Mapping de chaque indice de dimension vers son code
-            row: Dict[str, Any] = {}
+            row: dict[str, Any] = {}
             for axis, dim_id in enumerate(dim_ids):
                 codes = codes_by_dim[dim_id]
                 idx = multi_idx[axis]
@@ -208,7 +201,7 @@ def parse_json_response(data: Dict[str, Any]) -> pd.DataFrame:
 
 
 # Fonction auxiliaire de parsing d'une date ISO en datetime UTC
-def _parse_iso_datetime(text: Optional[str]) -> Optional[datetime]:
+def _parse_iso_datetime(text: str | None) -> datetime | None:
     """Parse an ISO-8601 date or datetime string into a UTC-aware datetime.
 
     Tolerant of the formats Eurostat uses in structure responses: bare dates
@@ -241,12 +234,12 @@ def _parse_iso_datetime(text: Optional[str]) -> Optional[datetime]:
             return None
     # Normalisation en UTC : les datetimes naïfs sont interprétés comme UTC
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 # Fonction de parsing de la date de dernière mise à jour d'un dataconstraint
-def parse_dataconstraint_last_update(xml_content: str) -> Optional[datetime]:
+def parse_dataconstraint_last_update(xml_content: str) -> datetime | None:
     """Extract the data last-update instant from a dataconstraint response.
 
     Eurostat exposes the date a dataset's *data* was last updated through an
@@ -276,7 +269,7 @@ def parse_dataconstraint_last_update(xml_content: str) -> Optional[datetime]:
         return None
 
     # Recherche des annotations dans les deux jeux de namespaces (3.0 puis 2.1)
-    best_update: Optional[datetime] = None
+    best_update: datetime | None = None
     best_is_data = False
     for namespaces in (_SDMX3_NS, _SDMX21_NS):
         for annotation in root.findall(".//com:Annotation", namespaces):
@@ -290,7 +283,7 @@ def parse_dataconstraint_last_update(xml_content: str) -> Optional[datetime]:
                 continue
 
             # Extraction d'une date depuis le titre puis le texte de l'annotation
-            date_value: Optional[datetime] = None
+            date_value: datetime | None = None
             for tag in ("com:AnnotationTitle", "com:AnnotationText"):
                 elem = annotation.find(tag, namespaces)
                 if elem is not None:
@@ -326,7 +319,7 @@ def parse_dataconstraint_last_update(xml_content: str) -> Optional[datetime]:
 
 
 # Fonction auxiliaire d'extraction de l'identifiant de codelist depuis une URN
-def _codelist_id_from_urn(urn: str) -> Optional[str]:
+def _codelist_id_from_urn(urn: str) -> str | None:
     """Extract the codelist identifier from an SDMX codelist URN.
 
     The data structure references the codelist of each dimension through a URN
@@ -353,9 +346,7 @@ def _codelist_id_from_urn(urn: str) -> Optional[str]:
 
 
 # Fonction de parsing d'une réponse SDMX-ML et d'extraction des dimensions
-def parse_structure_response(
-    xml_content: str, dataflow: str
-) -> DataflowStructure:
+def parse_structure_response(xml_content: str, dataflow: str) -> DataflowStructure:
     """Parse an SDMX-ML structure response and extract dimensions.
 
     Tries SDMX 3.0 namespaces first, then falls back to 2.1.
@@ -371,7 +362,7 @@ def parse_structure_response(
         ValueError: If XML parsing fails.
     """
     try:
-        # Parsing du document XML 
+        # Parsing du document XML
         root = ET.parse(StringIO(xml_content)).getroot()
 
         # Tentative avec les namespaces SDMX 3.0 puis fallback vers 2.1
@@ -383,14 +374,12 @@ def parse_structure_response(
 
         # Vérification de la présence de l'élément DataStructure
         if structure_elem is None:
-            raise ValueError(
-                "DataStructure element not found in XML response"
-            )
+            raise ValueError("DataStructure element not found in XML response")
 
         # Construction d'un index id -> nom depuis les ConceptSchemes
         # (les dimensions ne portent pas de description directement :
         #  elles référencent un Concept via ConceptIdentity)
-        concept_names: dict[str, str] = {}
+        concept_names: dict[str, str | None] = {}
         for concept in root.findall(".//str:Concept", namespaces):
             concept_id = concept.get("id")
             if not concept_id:
@@ -403,14 +392,12 @@ def parse_structure_response(
 
         # Extraction de la liste des dimensions depuis le DSD
         dimensions: list[DimensionInfo] = []
-        dimension_list = structure_elem.find(
-            ".//str:DimensionList", namespaces
-        )
+        dimension_list = structure_elem.find(".//str:DimensionList", namespaces)
         if dimension_list is not None:
             for i, dim in enumerate(
                 dimension_list.findall("str:Dimension", namespaces)
             ):
-                dim_id = dim.get("id")
+                dim_id = cast(str, dim.get("id"))
                 position = dim.get("position", str(i))
 
                 # Résolution de la description via le ConceptScheme
@@ -467,7 +454,7 @@ def parse_dataflow_list_response(xml_content: str) -> pd.DataFrame:
         ValueError: If XML parsing or element extraction fails.
     """
     try:
-        # Parsing du document XML 
+        # Parsing du document XML
         root = ET.parse(StringIO(xml_content)).getroot()
 
         # Tentative avec les namespaces SDMX 3.0 puis fallback 2.1
@@ -485,11 +472,9 @@ def parse_dataflow_list_response(xml_content: str) -> pd.DataFrame:
             df_version = df_elem.get("version")
 
             # Extraction du nom anglais, ou première langue disponible
-            name: Optional[str] = None
+            name: str | None = None
             for name_elem in df_elem.findall("com:Name", namespaces):
-                lang = name_elem.get(
-                    "{http://www.w3.org/XML/1998/namespace}lang", ""
-                )
+                lang = name_elem.get("{http://www.w3.org/XML/1998/namespace}lang", "")
                 if name is None or lang == "en":
                     name = name_elem.text
 
@@ -513,7 +498,7 @@ def parse_dataflow_list_response(xml_content: str) -> pd.DataFrame:
 
 # Fonction de parsing d'une réponse SDMX-ML contenant une liste de codes
 # Fonction auxiliaire d'extraction du code parent d'un code SDMX
-def _code_parent(code_elem: ET.Element, namespaces: Dict[str, str]) -> Optional[str]:
+def _code_parent(code_elem: ET.Element, namespaces: dict[str, str]) -> str | None:
     """Return the parent code of an SDMX ``Code`` element, if any.
 
     Args:
@@ -581,11 +566,9 @@ def parse_codelist_response(
             code_id = code_elem.get("id")
 
             # Extraction du nom anglais, ou première langue disponible
-            name: Optional[str] = None
+            name: str | None = None
             for name_elem in code_elem.findall("com:Name", namespaces):
-                lang = name_elem.get(
-                    "{http://www.w3.org/XML/1998/namespace}lang", ""
-                )
+                lang = name_elem.get("{http://www.w3.org/XML/1998/namespace}lang", "")
                 if name is None or lang == "en":
                     name = name_elem.text
 

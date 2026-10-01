@@ -23,9 +23,7 @@ def s3_deps_absent(monkeypatch: pytest.MonkeyPatch) -> None:
         for name in [k for k in list(sys.modules) if k.startswith(f"{pkg}.")]:
             monkeypatch.delitem(sys.modules, name)
     # Ré-import à froid du sous-paquet pour que l'absence soit prise en compte
-    for name in [
-        k for k in list(sys.modules) if k.startswith("statflows.storage")
-    ]:
+    for name in [k for k in list(sys.modules) if k.startswith("statflows.storage")]:
         monkeypatch.delitem(sys.modules, name)
 
 

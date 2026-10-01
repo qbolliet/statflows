@@ -13,7 +13,6 @@ import pytest
 
 from statflows.storage.json import Loader, Saver
 
-
 # ──────────────────────────────────────────────────────────────────────
 # Extension non supportée
 # ──────────────────────────────────────────────────────────────────────

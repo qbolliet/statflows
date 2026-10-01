@@ -12,7 +12,6 @@ import pytest
 
 from statflows.sources.comtrade.parsing import parse_availability_last_released
 
-
 # ──────────────────────────────────────────────────────────────────────
 # Entrées vides ou incomplètes
 # ──────────────────────────────────────────────────────────────────────
@@ -90,7 +89,13 @@ def test_missing_or_invalid_dates_are_ignored() -> None:
     rows = pd.DataFrame(
         {
             "period": [2022, 2022, 2022, 2021, 2020],
-            "lastReleased": [None, "2026-02-06T10:18:40.23", float("nan"), None, "not a date"],
+            "lastReleased": [
+                None,
+                "2026-02-06T10:18:40.23",
+                float("nan"),
+                None,
+                "not a date",
+            ],
         }
     )
     assert parse_availability_last_released(rows) == {

@@ -3,7 +3,8 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional, Union
+from typing import Literal
+
 # Modules de package
 from .local.saver import save_local
 from .s3.saver import S3Saver
@@ -40,7 +41,7 @@ class Saver(S3Saver):
     """
 
     # Initialisation
-    def __init__(self, s3_package: Optional[str] = "boto3"):
+    def __init__(self, s3_package: Literal["boto3", "s3fs"] = "boto3"):
         """Initialize the Saver with specified S3 package.
 
         Args:
@@ -50,11 +51,11 @@ class Saver(S3Saver):
         super().__init__(s3_package=s3_package)
 
     # Méthode de sauvegarde des données
-    def save(
+    def save(  # type: ignore[override]
         self,
-        filepath: Union[str, Path],
-        obj: Optional[object] = None,
-        bucket: Optional[str] = None,
+        filepath: str | Path,
+        obj: object | None = None,
+        bucket: str | None = None,
         atomic: bool = True,
         **kwargs,
     ) -> None:

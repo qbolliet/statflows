@@ -10,11 +10,14 @@ Only :func:`write_dataframe` needs ``dt_ducklake_manager``, which it imports
 lazily: this module — and :func:`fact_table_exists` — stays importable without
 the optional ``ducklake`` extra.
 """
+
 # Importation des modules
 from __future__ import annotations
+
 # Modules de base
 import logging
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any
 
 # Module de manipulation de la base de données : usage purement annotatif, donc
 # importé au seul typage (annotations différées par `from __future__`)
@@ -64,9 +67,7 @@ def fact_table_exists(
 
 
 # Fonction auxiliaire : options de commit DuckLake renseignées
-def _commit_options(
-    run_id: Optional[str], commit_message: Optional[str]
-) -> dict[str, str]:
+def _commit_options(run_id: str | None, commit_message: str | None) -> dict[str, str]:
     """Keep the commit options that were actually provided.
 
     Args:
@@ -89,12 +90,12 @@ def write_dataframe(
     *,
     catalog_alias: str,
     schema: str,
-    categorical_threshold: Optional[int] = None,
-    label: Optional[str] = None,
-    update_options: Optional[Mapping[str, Any]] = None,
-    build_options: Optional[Mapping[str, Any]] = None,
-    run_id: Optional[str] = None,
-    commit_message: Optional[str] = None,
+    categorical_threshold: int | None = None,
+    label: str | None = None,
+    update_options: Mapping[str, Any] | None = None,
+    build_options: Mapping[str, Any] | None = None,
+    run_id: str | None = None,
+    commit_message: str | None = None,
 ) -> bool:
     """Create the schema on first encounter, upsert by primary key afterwards.
 
@@ -121,11 +122,11 @@ def write_dataframe(
             vintage…).
         update_options: Extra keyword arguments forwarded to
             ``DatabaseUpdater.update_database`` (upsert path only), e.g.
-            ``{"allow_new_columns": True}``. The post-commit compaction of the
-            library is **disabled by default** (``compact_after_update=False``):
-            compacting after every write is wasteful when writes are batched, and
-            is better left to a single end-of-run or planned maintenance pass.
-            Pass ``{"compact_after_update": True}`` to opt back in.
+            ``{"allow_new_columns": True}``. The post-commit compaction is left to
+            the library default (``compact_after_update``); pass
+            ``{"compact_after_update": False}`` to skip it, e.g. when writes are
+            batched and compaction is better left to a single end-of-run or
+            planned maintenance pass.
         build_options: Extra keyword arguments forwarded to
             ``DuckLakeTablesBuilder.build_schema`` (creation path only), e.g.
             ``{"partition_by": ["reporter"]}``.
@@ -167,7 +168,7 @@ def write_dataframe(
             schema=schema,
         )
         # Options transmises surchargeables ; les options de commit priment
-        options = update_options.copy() or {}
+        options: dict[str, Any] = dict(update_options or {})
         options.update(_commit_options(run_id, commit_message))
         success = updater.update_database(data, use_transaction=True, **options)
 

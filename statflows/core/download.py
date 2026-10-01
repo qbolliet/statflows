@@ -19,50 +19,44 @@ The orchestration is provider-agnostic: *how* to fetch the incremental data is
 delegated to each client through
 :meth:`~statflows.core.client.AbstractSDMXClient.fetch_updates`
 """
+
 # Importation des modules
 from __future__ import annotations
 
-import argparse
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from enum import Enum
 import logging
-import os
-from pathlib import Path
 import signal
 import threading
 import time
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import Enum
+from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    Union,
+    cast,
 )
 
 import duckdb
 import pandas as pd
 
-# Importation des modules de connexion
-from ..storage.json import Loader, Saver
-# Helper DuckLake partagé (création puis upsert de la table de faits)
-from ..storage.ducklake.tables import write_dataframe
-
 # Importation du connecteur à la base de données
 from dt_ducklake_manager import DuckLakeConnector
 
+# Helper DuckLake partagé (création puis upsert de la table de faits)
+from ..storage.ducklake.tables import write_dataframe
+
+# Importation des modules de connexion
+from ..storage.json import Loader, Saver
 from .client import AbstractSDMXClient
+
 # Registre des dates de dernier téléchargement (lecture publique réexportée ici)
 from .registry import (
     REGISTRY_ROOT,
     DownloadRegistry,
-    RegistryEntry,
+    RegistryEntry,  # noqa: F401
     _parse_iso,
-    iter_registry_entries,
+    iter_registry_entries,  # noqa: F401
     sanitize_shard,
 )
 from .reports import DownloadReport, HttpStats, QueryReport, RateLimitStats
@@ -83,10 +77,11 @@ _INLINING_OPTION = "data_inlining_row_limit"
 # Fonctions utilitaires
 # ──────────────────────────────────────────────────────────────────────
 
+
 # Fonction de récupération de l'instant courant en UTC
 def _now() -> datetime:
     """Return the current instant as a UTC-aware datetime."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # Fonction de normalisation d'un nom de dataflow en identifiant de schéma SQL
@@ -119,9 +114,9 @@ def _schema_name(dataflow: str) -> str:
 
 # Fonction de calcul des clés primaires d'une table à partir de sa structure
 def _primary_keys(
-    structure: Optional[DataflowStructure],
-    df_columns: List[str],
-) -> List[str]:
+    structure: DataflowStructure | None,
+    df_columns: list[str],
+) -> list[str]:
     """Derive the primary-key columns of the DuckLake table.
 
     The primary key is the set of dataflow dimensions (which uniquely identify
@@ -141,7 +136,7 @@ def _primary_keys(
     """
     # Index insensible à la casse : nom en minuscules → nom réel de la colonne
     cols_lower = {c.lower(): c for c in df_columns}
-    primary_keys: List[str] = []
+    primary_keys: list[str] = []
 
     # Dimensions de la structure présentes dans le DataFrame
     if structure is not None:
@@ -188,8 +183,9 @@ def _json_safe(value: Any) -> Any:
 # le pendant exploitable des journaux, réutilisable par un projet consommateur
 # sans dépendre de l'orchestrateur. Ils sont réexportés ici par compatibilité.
 
+
 # Fonction auxiliaire : sources de compteurs HTTP portées par un client
-def _http_stats_sources(client: Any) -> List[HttpStats]:
+def _http_stats_sources(client: Any) -> list[HttpStats]:
     """Collect every HTTP counter object a client carries.
 
     Providers either *are* an ``APIClient`` (Comtrade, UNSD) or *hold* one or
@@ -203,7 +199,7 @@ def _http_stats_sources(client: Any) -> List[HttpStats]:
         The :class:`HttpStats` instances found, possibly empty.
     """
     # Compteurs portés par le client lui-même (héritage d'APIClient)
-    sources: List[HttpStats] = []
+    sources: list[HttpStats] = []
     own = getattr(client, "stats_", None)
     if isinstance(own, HttpStats):
         sources.append(own)
@@ -263,9 +259,7 @@ def _http_delta(before: HttpStats, after: HttpStats) -> HttpStats:
 
 
 # Fonction auxiliaire : consommation du limiteur de débit d'une requête
-def _rate_limit_delta(
-    before: RateLimitStats, after: RateLimitStats
-) -> RateLimitStats:
+def _rate_limit_delta(before: RateLimitStats, after: RateLimitStats) -> RateLimitStats:
     """Difference two rate-limit snapshots to isolate one query's waits.
 
     Args:
@@ -302,10 +296,10 @@ def _client_snapshot(client: Any) -> tuple[HttpStats, RateLimitStats]:
     return http, rate_limit
 
 
-
 # ──────────────────────────────────────────────────────────────────────
 # Tampons internes
 # ──────────────────────────────────────────────────────────────────────
+
 
 # Exception d'interruption levée par le gestionnaire de SIGTERM
 class _GracefulStop(BaseException):
@@ -331,10 +325,11 @@ class _PendingWrite:
         shard: Registry fragment of the entry (sharded mode), else ``None``.
         df: Fetched data.
     """
+
     query_report: QueryReport
     key: str
-    entry: Dict[str, Any]
-    shard: Optional[str]
+    entry: dict[str, Any]
+    shard: str | None
     df: pd.DataFrame
 
 
@@ -349,9 +344,10 @@ class _SchemaBuffer:
         items: Pending queries, in processing order.
         rows: Total rows buffered.
     """
+
     dataflow: str
-    structure: Optional[DataflowStructure]
-    items: List[_PendingWrite] = field(default_factory=list)
+    structure: DataflowStructure | None
+    items: list[_PendingWrite] = field(default_factory=list)
     rows: int = 0
 
 
@@ -362,6 +358,7 @@ _NO_HANDLER = object()
 # ──────────────────────────────────────────────────────────────────────
 # Orchestrateur
 # ──────────────────────────────────────────────────────────────────────
+
 
 # Classe orchestrant le téléchargement incrémental vers DuckLake
 class SDMXDownloader:
@@ -454,8 +451,8 @@ class SDMXDownloader:
         update_options: Forwarded to
             :func:`~statflows.storage.ducklake.tables.write_dataframe`, then to
             ``DatabaseUpdater.update_database`` (e.g. ``allow_new_columns``).
-            No post-commit compaction runs by default; pass
-            ``{"compact_after_update": True}`` to enable it per batch.
+            Post-commit compaction follows the library default; pass
+            ``{"compact_after_update": False}`` to disable it per batch.
         build_options: Forwarded to ``write_dataframe``, then to
             ``DuckLakeTablesBuilder.build_schema`` (e.g. ``partition_by``).
         ducklake_options: Optional DuckLake options applied for the duration
@@ -477,25 +474,25 @@ class SDMXDownloader:
         self,
         client: AbstractSDMXClient,
         connector: DuckLakeConnector,
-        structures_path: Union[str, Path],
-        last_download_path: Union[str, Path],
+        structures_path: str | Path,
+        last_download_path: str | Path,
         *,
         n_observations: int = 10,
         fresh_registry: bool = False,
-        max_runtime: Optional[timedelta] = timedelta(hours=23),
-        categorical_threshold: Optional[int] = None,
-        bucket: Optional[str] = None,
-        storage_options: Optional[Dict[str, Any]] = None,
-        on_query_complete: Optional[Callable[[QueryReport], None]] = None,
+        max_runtime: timedelta | None = timedelta(hours=23),
+        categorical_threshold: int | None = None,
+        bucket: str | None = None,
+        storage_options: dict[str, Any] | None = None,
+        on_query_complete: Callable[[QueryReport], None] | None = None,
         registry_flush_every: int = 1,
-        registry_flush_seconds: Optional[float] = None,
-        registry_shard_key: Optional[Callable[[Any], str]] = None,
-        write_batch_rows: Optional[int] = None,
-        write_batch_queries: Optional[int] = None,
-        update_options: Optional[Mapping[str, Any]] = None,
-        build_options: Optional[Mapping[str, Any]] = None,
-        ducklake_options: Optional[Dict[str, Any]] = None,
-        run_id: Optional[str] = None,
+        registry_flush_seconds: float | None = None,
+        registry_shard_key: Callable[[Any], str] | None = None,
+        write_batch_rows: int | None = None,
+        write_batch_queries: int | None = None,
+        update_options: Mapping[str, Any] | None = None,
+        build_options: Mapping[str, Any] | None = None,
+        ducklake_options: dict[str, Any] | None = None,
+        run_id: str | None = None,
     ) -> None:
         # Validation des seuils de tamponnage
         if registry_flush_every < 1:
@@ -570,11 +567,11 @@ class SDMXDownloader:
         self._on_query_complete = on_query_complete
 
         # Instant de démarrage (renseigné dans run())
-        self._t0: Optional[datetime] = None
+        self._t0: datetime | None = None
 
         # État d'exécution (réinitialisé par run())
-        self._buffers: Dict[str, _SchemaBuffer] = {}
-        self._shard_by_key: Dict[str, str] = {}
+        self._buffers: dict[str, _SchemaBuffer] = {}
+        self._shard_by_key: dict[str, str] = {}
         self._commits_since_flush = 0
         self._last_flush = time.monotonic()
         self._stop_requested = False
@@ -583,14 +580,14 @@ class SDMXDownloader:
     # Registre validé (identity_key → entrée) : ne contient que des entrées
     # dont les données ont été écrites
     @property
-    def _registry(self) -> Dict[str, Dict[str, Any]]:
+    def _registry(self) -> dict[str, dict[str, Any]]:
         """Committed registry entries, keyed by identity key."""
         return self._registry_store.entries
 
     # Méthode principale d'exécution du téléchargement
     def run(
         self,
-        queries: Union[Any, Iterable[Any]],
+        queries: Any | Iterable[Any],
     ) -> DownloadReport:
         """Run the download for the provided queries.
 
@@ -661,7 +658,7 @@ class SDMXDownloader:
     def _run_queries(
         self,
         conn: duckdb.DuckDBPyConnection,
-        query_list: List[Any],
+        query_list: list[Any],
         report: DownloadReport,
     ) -> None:
         """Process the queries in order until done, deadline or SIGTERM.
@@ -676,7 +673,9 @@ class SDMXDownloader:
             # Arrêt anticipé : signal reçu ou délai maximal atteint
             if self._stop_requested or self._deadline_reached():
                 reason = (
-                    "SIGTERM received" if self._stop_requested else "max runtime reached"
+                    "SIGTERM received"
+                    if self._stop_requested
+                    else "max runtime reached"
                 )
                 self._stop_early(report, len(query_list) - index, reason)
                 break
@@ -743,9 +742,14 @@ class SDMXDownloader:
                 set(self._structure_registry.list_structures()) - initial_structure_keys
             )
             # Durée totale du run
-            report.duration_seconds = (_now() - self._t0).total_seconds()
+            report.duration_seconds = (
+                _now() - cast(datetime, self._t0)
+            ).total_seconds()
             # Export du registre des structures si une structure a été ajoutée
-            if set(self._structure_registry.list_structures()) != initial_structure_keys:
+            if (
+                set(self._structure_registry.list_structures())
+                != initial_structure_keys
+            ):
                 # Export (routé vers le local ou S3 selon ``bucket``)
                 self._saver.save(
                     self._structures_path,
@@ -998,7 +1002,7 @@ class SDMXDownloader:
         self,
         conn: duckdb.DuckDBPyConnection,
         df: pd.DataFrame,
-        structure: Optional[DataflowStructure],
+        structure: DataflowStructure | None,
         schema: str,
         dataflow: str,
     ) -> bool:
@@ -1208,7 +1212,7 @@ class SDMXDownloader:
 
     # Méthode de normalisation des requêtes en liste
     @staticmethod
-    def _as_query_list(queries: Union[Any, Iterable[Any]]) -> List[Any]:
+    def _as_query_list(queries: Any | Iterable[Any]) -> list[Any]:
         """Normalise the queries argument into a list.
 
         Args:
@@ -1223,7 +1227,7 @@ class SDMXDownloader:
         return list(queries)
 
     # Méthode de priorisation des requêtes
-    def _prioritize(self, queries: List[Any]) -> List[Any]:
+    def _prioritize(self, queries: list[Any]) -> list[Any]:
         """Order queries: never-downloaded first, then oldest first.
 
         Args:
@@ -1233,7 +1237,7 @@ class SDMXDownloader:
             Sorted list of queries.
         """
         # Date « minimale » UTC pour départager les requêtes jamais téléchargées
-        epoch = datetime.min.replace(tzinfo=timezone.utc)
+        epoch = datetime.min.replace(tzinfo=UTC)
 
         # Fonction de tri
         def sort_key(query: Any) -> tuple[int, datetime]:
@@ -1255,7 +1259,7 @@ class SDMXDownloader:
         return (_now() - self._t0) >= self._max_runtime
 
     # Méthode de calcul du fragment de registre d'une requête
-    def _shard_for(self, query: Any) -> Optional[str]:
+    def _shard_for(self, query: Any) -> str | None:
         """Return the registry fragment of a query (``None`` if not sharded)."""
         if self._shard_key is None:
             return None
@@ -1268,7 +1272,7 @@ class SDMXDownloader:
     def _commit_entries(
         self,
         report: DownloadReport,
-        entries: List[Tuple[str, Dict[str, Any], Optional[str]]],
+        entries: list[tuple[str, dict[str, Any], str | None]],
     ) -> None:
         """Commit registry entries whose data is written, then maybe flush.
 
@@ -1326,30 +1330,31 @@ class SDMXDownloader:
 # Fonction de convenance
 # ──────────────────────────────────────────────────────────────────────
 
+
 # Fonction utilitaire enveloppant l'orchestrateur
 def download_updates(
     client: AbstractSDMXClient,
-    queries: Union[Any, Iterable[Any]],
+    queries: Any | Iterable[Any],
     connector: DuckLakeConnector,
-    structures_path: Union[str, Path],
-    last_download_path: Union[str, Path],
+    structures_path: str | Path,
+    last_download_path: str | Path,
     *,
     n_observations: int = 10,
     fresh_registry: bool = False,
-    max_runtime: Optional[timedelta] = timedelta(hours=23),
-    categorical_threshold: Optional[int] = None,
-    bucket: Optional[str] = None,
-    storage_options: Optional[Dict[str, Any]] = None,
-    on_query_complete: Optional[Callable[[QueryReport], None]] = None,
+    max_runtime: timedelta | None = timedelta(hours=23),
+    categorical_threshold: int | None = None,
+    bucket: str | None = None,
+    storage_options: dict[str, Any] | None = None,
+    on_query_complete: Callable[[QueryReport], None] | None = None,
     registry_flush_every: int = 1,
-    registry_flush_seconds: Optional[float] = None,
-    registry_shard_key: Optional[Callable[[Any], str]] = None,
-    write_batch_rows: Optional[int] = None,
-    write_batch_queries: Optional[int] = None,
-    update_options: Optional[Mapping[str, Any]] = None,
-    build_options: Optional[Mapping[str, Any]] = None,
-    ducklake_options: Optional[Dict[str, Any]] = None,
-    run_id: Optional[str] = None,
+    registry_flush_seconds: float | None = None,
+    registry_shard_key: Callable[[Any], str] | None = None,
+    write_batch_rows: int | None = None,
+    write_batch_queries: int | None = None,
+    update_options: Mapping[str, Any] | None = None,
+    build_options: Mapping[str, Any] | None = None,
+    ducklake_options: dict[str, Any] | None = None,
+    run_id: str | None = None,
 ) -> DownloadReport:
     """Run an incremental SDMX → DuckLake download.
 

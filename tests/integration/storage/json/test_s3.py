@@ -70,7 +70,9 @@ def test_path_converted_to_posix_key(s3_bucket: str, s3_client) -> None:
 
 
 def test_missing_key_returns_none_with_missing_ok(s3_bucket: str) -> None:
-    assert Loader().load(Path("reg/state.json"), bucket=s3_bucket, missing_ok=True) is None
+    assert (
+        Loader().load(Path("reg/state.json"), bucket=s3_bucket, missing_ok=True) is None
+    )
 
 
 def test_missing_key_raises_without_missing_ok(s3_bucket: str) -> None:
@@ -106,8 +108,17 @@ def test_honours_indent_and_non_ascii(s3_bucket: str, s3_client) -> None:
 
 def test_list_json_on_prefix_direct_children_only(s3_bucket: str) -> None:
     saver = Saver()
-    for key in ("reg/b.json", "reg/a.json", "reg/nested/c.json", "reg/.tmp.json", "regx/d.json"):
+    for key in (
+        "reg/b.json",
+        "reg/a.json",
+        "reg/nested/c.json",
+        "reg/.tmp.json",
+        "regx/d.json",
+    ):
         saver.save(key, {}, bucket=s3_bucket)
 
-    assert Loader().list_json(Path("reg"), bucket=s3_bucket) == ["reg/a.json", "reg/b.json"]
+    assert Loader().list_json(Path("reg"), bucket=s3_bucket) == [
+        "reg/a.json",
+        "reg/b.json",
+    ]
     assert Loader().list_json("absent", bucket=s3_bucket) == []
