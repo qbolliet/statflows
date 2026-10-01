@@ -60,7 +60,7 @@ jobs:
         run: uv run pytest -m integration --cov --cov-append --cov-report=xml --cov-report=term-missing
 
       - name: Envoi de la couverture à Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
