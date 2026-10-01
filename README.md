@@ -113,11 +113,14 @@ Saver().save(
 )
 
 # missing_ok=True: a first run (missing object) returns None instead of raising.
-loaded = Loader().load(
-    "registries/last_download.json",
-    bucket="my-bucket",
-    missing_ok=True,
-) or {}
+loaded = (
+    Loader().load(
+        "registries/last_download.json",
+        bucket="my-bucket",
+        missing_ok=True,
+    )
+    or {}
+)
 
 assert loaded == registry
 ```
@@ -140,8 +143,14 @@ connector = DuckLakeConnector("catalog.ducklake", "data/")
 queries = build_queries(
     "eurostat",
     [
-        {"dataflow": "namq_10_gdp", "dimensions": {"geo": ["FR", "DE"], "na_item": "B1GQ"}},
-        {"dataflow": "une_rt_q", "dimensions": {"geo": ["FR", "DE"], "sex": "T", "age": "TOTAL"}},
+        {
+            "dataflow": "namq_10_gdp",
+            "dimensions": {"geo": ["FR", "DE"], "na_item": "B1GQ"},
+        },
+        {
+            "dataflow": "une_rt_q",
+            "dimensions": {"geo": ["FR", "DE"], "sex": "T", "age": "TOTAL"},
+        },
     ],
 )
 
@@ -244,8 +253,12 @@ Downstream steps read the registry without depending on its format:
 ```python
 from statflows import iter_registry_entries
 
-for entry in iter_registry_entries("registries/eurostat_last_download.json", bucket="my-bucket"):
-    print(entry.identity_key, entry.dataflow, entry.last_download)  # frozen RegistryEntry
+for entry in iter_registry_entries(
+    "registries/eurostat_last_download.json", bucket="my-bucket"
+):
+    print(
+        entry.identity_key, entry.dataflow, entry.last_download
+    )  # frozen RegistryEntry
 ```
 
 ### Compaction and inlining
@@ -279,7 +292,7 @@ from datetime import timedelta
 
 report = download_updates(
     client=EurostatClient(),
-    queries=queries,                       # ~100,000 queries, reporter in the outer loop
+    queries=queries,  # ~100,000 queries, reporter in the outer loop
     connector=connector,
     structures_path="registries/comext_structures.json",
     last_download_path="registries/comext_last_download.json",
@@ -315,8 +328,10 @@ call.
 from statflows.core.factory import codelist_frame
 
 structure = client.get_dataflow_structure("DS-045409")
-products = codelist_frame(client, "product", structure)          # Eurostat Comext
-countries = codelist_frame(comtrade_client, "reporter", keep_metadata=True)  # ISO, isGroup…
+products = codelist_frame(client, "product", structure)  # Eurostat Comext
+countries = codelist_frame(
+    comtrade_client, "reporter", keep_metadata=True
+)  # ISO, isGroup…
 ```
 <!-- --8<-- [end:performance] -->
 
