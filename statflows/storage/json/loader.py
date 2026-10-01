@@ -1,9 +1,11 @@
 # Importation des modules
 # Modules de base
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any, Literal
+
 # Module de chargement de fichiers en local
 from .local.loader import load_local
+
 # Module de chargement de fichiers depuis S3 : ne tire pas ``boto3`` au chargement,
 # la dépendance de l'extra « s3 » n'est requise qu'à l'établissement de la connexion
 from .s3.loader import S3Loader
@@ -39,7 +41,7 @@ class Loader(S3Loader):
     """
 
     # Initialisation
-    def __init__(self, s3_package: Optional[str] = "boto3") -> None:
+    def __init__(self, s3_package: Literal["boto3", "s3fs"] = "boto3") -> None:
         """Initialize the Loader with specified S3 package.
 
         Args:
@@ -49,12 +51,12 @@ class Loader(S3Loader):
         super().__init__(s3_package=s3_package)
 
     # Méthode de chargement des données
-    def load(
+    def load(  # type: ignore[override]
         self,
-        filepath: Union[str, Path],
-        bucket: Optional[str] = None,
+        filepath: str | Path,
+        bucket: str | None = None,
         missing_ok: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> Any:
         """Load a JSON file from S3 or local storage.
 
@@ -138,3 +140,71 @@ class Loader(S3Loader):
             if missing_ok and not Path(filepath).exists():
                 return None
             return load_local(filepath=str(filepath), **kwargs)
+
+    # Méthode de listage des fichiers JSON d'un répertoire (ou préfixe S3)
+    def list_json(
+        self,
+        directory: str | Path,
+        bucket: str | None = None,
+        **kwargs: Any,
+    ) -> list[str]:
+        """List the ``.json`` files directly under a directory or S3 prefix.
+
+        Only direct children are returned (no recursion), and names starting
+        with a dot are skipped — the atomic :class:`Saver` writes its
+        temporary files as ``.tmp-*.json``, so a write interrupted midway is
+        never mistaken for a regular file.
+
+        Args:
+            directory (str or Path): Local directory, or S3 prefix (a ``Path``
+                is converted to its POSIX form) when ``bucket`` is set.
+            bucket (str, optional): S3 bucket name. If ``None``, lists the local
+                filesystem.
+            **kwargs: S3 connection arguments (``aws_access_key_id``,
+                ``aws_secret_access_key``, ``aws_session_token``,
+                ``endpoint_url``, ``verify``), used on first connection only.
+
+        Returns:
+            List[str]: Sorted paths (local) or object keys (S3) of the JSON
+            files, each directly loadable with :meth:`load`. Empty when the
+            directory or prefix does not exist.
+
+        Examples:
+            >>> Loader().list_json('registries/last_download')  # doctest: +SKIP
+            ['registries/last_download/DF_A.json']
+        """
+        # Cas du stockage local
+        if bucket is None:
+            path = Path(directory)
+            if not path.is_dir():
+                return []
+            return sorted(
+                str(child)
+                for child in path.glob("*.json")
+                if child.is_file() and not child.name.startswith(".")
+            )
+
+        # Connexion à S3 si nécessaire
+        if not hasattr(self, "s3"):
+            self.connect(**kwargs)
+        # Préfixe d'objets S3 terminé par un séparateur (enfants directs seulement)
+        prefix = Path(directory).as_posix().rstrip("/") + "/"
+
+        # Récupération des clés selon le package S3
+        if self.s3_package == "boto3":
+            keys: list[str] = []
+            paginator = self.s3.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=bucket, Prefix=prefix, Delimiter="/"):
+                keys.extend(obj["Key"] for obj in page.get("Contents", []))
+        else:
+            keys = [
+                path.split("/", 1)[1]
+                for path in self.s3.glob(f"{bucket}/{prefix}*.json")
+            ]
+
+        # Filtrage des fichiers JSON non masqués
+        return sorted(
+            key
+            for key in keys
+            if key.endswith(".json") and not key.rsplit("/", 1)[-1].startswith(".")
+        )

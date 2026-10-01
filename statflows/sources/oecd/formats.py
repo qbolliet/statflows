@@ -4,7 +4,6 @@ Defines the OECD-specific response format enum and the mapping from each
 format to the corresponding OECD API ``format`` query-parameter value.
 """
 # Importation des modules
-from typing import Dict
 
 from ...core.sdmx import SDMXResponseFormat
 
@@ -27,7 +26,7 @@ class OECDResponseFormat(SDMXResponseFormat):
 
 
 # Mapping des formats vers les valeurs de paramètre API OECD
-_OECD_FORMAT_PARAM_MAP: Dict[OECDResponseFormat, str] = {
+_OECD_FORMAT_PARAM_MAP: dict[OECDResponseFormat, str] = {
     OECDResponseFormat.JSON: "jsondata",
     OECDResponseFormat.CSV: "csvfile",
     OECDResponseFormat.CSV_LABELS: "csvfilewithlabels",

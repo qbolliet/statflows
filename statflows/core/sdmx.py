@@ -14,11 +14,11 @@ Provider-specific response format enums (``EurostatResponseFormat``,
 ``OECDResponseFormat``) inherit from :class:`SDMXResponseFormat` so that
 generic abstractions can refer to them by a common type.
 """
+
 # Importation des modules
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Literal, Optional
 from enum import Enum
-
+from typing import Any, Literal, Optional
 
 # ──────────────────────────────────────────────────────────────────────
 # Éléments transversaux à tous les providers SDMX
@@ -33,7 +33,7 @@ def build_identity_key(
     agency: str,
     dataflow: str,
     version: str,
-    dimensions: Optional[Dict[Any, Any]] = None,
+    dimensions: dict[Any, Any] | None = None,
 ) -> str:
     """Build a deterministic identity key from query selection fields.
 
@@ -169,10 +169,10 @@ class SDMXEndpointBuilder(ABC):
     @abstractmethod
     def build_headers(
         self,
-        accept_encoding: Optional[str] = None,
-        accept_language: Optional[str] = None,
+        accept_encoding: str | None = None,
+        accept_language: str | None = None,
         response_format: Optional["SDMXResponseFormat"] = None,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Build HTTP request headers.
 
         Args:
@@ -196,7 +196,7 @@ class SDMXEndpointBuilder(ABC):
         dataflow: str,
         agency: str,
         version: str,
-        key: Optional[str] = None,
+        key: str | None = None,
     ) -> str:
         """Build the URL path for a data query.
 
@@ -218,24 +218,24 @@ class SDMXEndpointBuilder(ABC):
         self,
         *,
         # Commun à toutes les versions
-        start_period: Optional[str] = None,
-        end_period: Optional[str] = None,
-        last_n_observations: Optional[int] = None,
-        first_n_observations: Optional[int] = None,
+        start_period: str | None = None,
+        end_period: str | None = None,
+        last_n_observations: int | None = None,
+        first_n_observations: int | None = None,
         compress: bool = False,
         # SDMX 3.0
-        dimensions: Optional[Dict[str, List[str]]] = None,
+        dimensions: dict[str, list[str]] | None = None,
         response_format: Optional["SDMXResponseFormat"] = None,
-        response_format_version: Optional[str] = None,
-        lang: Optional[str] = None,
-        labels: Optional[str] = None,
-        attributes: Optional[str] = None,
-        measures: Optional[str] = None,
-        return_data: Optional[str] = None,
+        response_format_version: str | None = None,
+        lang: str | None = None,
+        labels: str | None = None,
+        attributes: str | None = None,
+        measures: str | None = None,
+        return_data: str | None = None,
         # SDMX 2.1
-        dimension_at_observation: Optional[str] = None,
-        detail: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        dimension_at_observation: str | None = None,
+        detail: str | None = None,
+    ) -> dict[str, Any]:
         """Build query parameters for a data request.
 
         All parameters are keyword-only to support transparent forwarding
@@ -271,7 +271,7 @@ class SDMXEndpointBuilder(ABC):
         resource_type: "StructureResourceType",
         resource_id: str,
         agency: str,
-        version: Optional[str],
+        version: str | None,
     ) -> str:
         """Build the URL path for a structure query.
 
@@ -290,13 +290,13 @@ class SDMXEndpointBuilder(ABC):
     @abstractmethod
     def build_structure_params(
         self,
-        references: Optional[str] = "none",
-        detail: Optional[str] = "full",
+        references: str | None = "none",
+        detail: str | None = "full",
         # SDMX 3.0 only
-        format: Optional[str] = None,
-        format_version: Optional[str] = None,
-        compress: Optional[str] = None,
-    ) -> Dict[str, str]:
+        format: str | None = None,
+        format_version: str | None = None,
+        compress: str | None = None,
+    ) -> dict[str, str]:
         """Build query parameters for a structure request.
 
         Args:
@@ -310,4 +310,3 @@ class SDMXEndpointBuilder(ABC):
         Returns:
             Query-parameter dictionary.
         """
-

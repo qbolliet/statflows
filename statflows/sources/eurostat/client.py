@@ -4,12 +4,13 @@ High-level client for querying Eurostat data through their SDMX API and
 converting responses to pandas DataFrames. Both SDMX 3.0 (primary) and
 SDMX 2.1 API versions are supported.
 """
+
 # Importation des modules
-from dataclasses import replace
-from datetime import datetime, timezone
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from dataclasses import replace
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -30,9 +31,9 @@ from . import parsing
 from .endpoints import _ENDPOINT_BUILDERS
 from .formats import (
     AGENCY_ID,
+    SUPPORTED_API_VERSIONS,
     DataDetail,
     EurostatResponseFormat,
-    SUPPORTED_API_VERSIONS,
     StructureCompress,
     StructureDetail,
     StructureReferences,
@@ -61,8 +62,8 @@ def _to_utc(value: datetime) -> datetime:
     """
     # Datetime naïf → interprété comme UTC ; sinon conversion vers UTC
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 # Initialisation du client haut niveau pour l'API SDMX Eurostat
@@ -97,13 +98,13 @@ class EurostatClient(AbstractSDMXClient):
     PROVIDER_CONFIG_NAME = "eurostat"
 
     # URLs de base par défaut pour chaque version d'API
-    _DEFAULT_BASE_URLS: Dict[SDMXVersion, str] = {
+    _DEFAULT_BASE_URLS: dict[SDMXVersion, str] = {
         SDMXVersion.V3: "https://ec.europa.eu/eurostat/api/dissemination",
         SDMXVersion.V2_1: "https://ec.europa.eu/eurostat/api/dissemination",
     }
 
     # URLs Comext par version d'API (pour les datasets DS-*)
-    _COMEXT_BASE_URLS: Dict[SDMXVersion, str] = {
+    _COMEXT_BASE_URLS: dict[SDMXVersion, str] = {
         SDMXVersion.V3: "https://ec.europa.eu/eurostat/api/comext/dissemination",
         SDMXVersion.V2_1: "https://ec.europa.eu/eurostat/api/comext/dissemination",
     }
@@ -112,11 +113,11 @@ class EurostatClient(AbstractSDMXClient):
     def __init__(
         self,
         api_version: SDMXVersion = SDMXVersion.V3,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         timeout: int = 90,
-        structure_registry: Optional[DataflowStructureRegistry] = None,
+        structure_registry: DataflowStructureRegistry | None = None,
         auto_fetch_structure: bool = True,
-        rate_limiter: Optional[RateLimiter] = None,
+        rate_limiter: RateLimiter | None = None,
         auto_load_rate_limit: bool = True,
     ):
         # Validation du sous-ensemble de versions SDMX supportées par Eurostat
@@ -148,7 +149,10 @@ class EurostatClient(AbstractSDMXClient):
         self._timeout = timeout
 
         # Client HTTP Comext (initialisation paresseuse)
-        self._comext_client: Optional[APIClient] = None
+        self._comext_client: APIClient | None = None
+
+        # Cache des codelists parsées (agence, identifiant) → (code, label, parent)
+        self._codelist_cache: dict[tuple[str, str], pd.DataFrame] = {}
 
     # ──────────────────────────────────────────────────────────────────
     # Méthodes publiques — Données
@@ -159,24 +163,24 @@ class EurostatClient(AbstractSDMXClient):
         self,
         dataflow: str,
         version: str = "*",
-        dimensions: Optional[Dict[str, Union[str, List[str]]]] = None,
-        start_period: Optional[str] = None,
-        end_period: Optional[str] = None,
-        last_n_observations: Optional[int] = None,
-        first_n_observations: Optional[int] = None,
+        dimensions: dict[str, str | list[str]] | None = None,
+        start_period: str | None = None,
+        end_period: str | None = None,
+        last_n_observations: int | None = None,
+        first_n_observations: int | None = None,
         format: EurostatResponseFormat = EurostatResponseFormat.CSV,
         compress: bool = False,
-        attributes: Optional[str] = None,
-        measures: Optional[str] = None,
-        lang: Optional[str] = None,
-        labels: Optional[str] = None,
-        response_format_version: Optional[str] = None,
-        dimension_at_observation: Optional[str] = None,
-        detail: Optional[DataDetail] = None,
+        attributes: str | None = None,
+        measures: str | None = None,
+        lang: str | None = None,
+        labels: str | None = None,
+        response_format_version: str | None = None,
+        dimension_at_observation: str | None = None,
+        detail: DataDetail | None = None,
         on_duplicate: DuplicateHandling = "warn",
-        split_dimensions: Optional[List[str]] = None,
+        split_dimensions: list[str] | None = None,
         max_split_combinations: int = 100,
-        default_dimensions: List[str] = ["TIME_PERIOD"],
+        default_dimensions: list[str] = ["TIME_PERIOD"],
     ) -> pd.DataFrame:
         """Retrieve data from Eurostat.
 
@@ -242,7 +246,7 @@ class EurostatClient(AbstractSDMXClient):
         # Empaquetage des paramètres et délégation au pipeline mutualisé
         # (résolution structure → préparation requêtes → exécution → doublons →
         # post-filtrage de repli via _postprocess_dataframe)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "dataflow": dataflow,
             "version": version,
             "dimensions": dimensions,
@@ -262,7 +266,7 @@ class EurostatClient(AbstractSDMXClient):
             "on_duplicate": on_duplicate,
             "split_dimensions": split_dimensions,
             "max_split_combinations": max_split_combinations,
-            "default_dimensions": default_dimensions
+            "default_dimensions": default_dimensions,
         }
         return self._execute_query_pipeline(params)
 
@@ -271,9 +275,7 @@ class EurostatClient(AbstractSDMXClient):
     # ──────────────────────────────────────────────────────────────────
 
     # Implémentation du hook : résolution de la structure (non fatal en cas d'échec)
-    def _resolve_structure(
-        self, params: Dict[str, Any]
-    ) -> Optional[DataflowStructure]:
+    def _resolve_structure(self, params: dict[str, Any]) -> DataflowStructure | None:
         """Resolve the dataflow structure for a query.
 
         Tries the registry / auto-fetch path first, then falls back to a
@@ -306,9 +308,9 @@ class EurostatClient(AbstractSDMXClient):
     # Implémentation du hook : préparation des requêtes splitées
     def _prepare_requests(
         self,
-        structure: Optional[DataflowStructure],
-        params: Dict[str, Any],
-    ) -> Tuple[List[Tuple[Dict, Dict]], Dict, Dict[str, Any]]:
+        structure: DataflowStructure | None,
+        params: dict[str, Any],
+    ) -> tuple[list[tuple[dict, dict]], dict, dict[str, Any]]:
         """Normalise dimensions and build the request combinations.
 
         Args:
@@ -342,7 +344,7 @@ class EurostatClient(AbstractSDMXClient):
         # le post-filtre par combinaison (côté serveur via c[DIM]=…), donc
         # postfilter est vide ; les deux sous-dicts sont passés ensemble à
         # _execute_single_request via la clé dims_for_request.
-        request_combinations: List[Tuple[Dict, Dict]] = [
+        request_combinations: list[tuple[dict, dict]] = [
             (
                 {"dims_for_url": dims_for_url, "dims_for_params": dims_for_params},
                 {},
@@ -356,7 +358,7 @@ class EurostatClient(AbstractSDMXClient):
         )
 
         # Arguments transmis à chaque _execute_single_request
-        execute_kwargs: Dict[str, Any] = {
+        execute_kwargs: dict[str, Any] = {
             "dataflow": dataflow,
             "version": params.get("version", "*"),
             "structure": structure,
@@ -375,15 +377,15 @@ class EurostatClient(AbstractSDMXClient):
             "detail": params.get("detail"),
         }
 
-        return request_combinations, normalized_dims, execute_kwargs
+        return request_combinations, normalized_dims, execute_kwargs  # type: ignore[return-value]
 
     # Implémentation du hook : post-filtrage de repli (sans structure)
     def _postprocess_dataframe(
         self,
         df: pd.DataFrame,
-        structure: Optional[DataflowStructure],
-        normalized_dims: Optional[Dict],
-        params: Dict[str, Any],
+        structure: DataflowStructure | None,
+        normalized_dims: dict | None,
+        params: dict[str, Any],
     ) -> pd.DataFrame:
         """Apply the fallback client-side dimension filter.
 
@@ -420,15 +422,15 @@ class EurostatClient(AbstractSDMXClient):
         resource_type: StructureResourceType,
         resource_id: str,
         agency: str = AGENCY_ID,
-        version: Optional[str] = "+",
+        version: str | None = "+",
         references: StructureReferences = "none",
         detail: StructureDetail = "full",
-        format: Optional[str] = None,
-        format_version: Optional[str] = None,
-        compress: Optional[StructureCompress] = None,
-        accept_encoding: Optional[str] = None,
-        accept_language: Optional[str] = None,
-        timeout: Optional[int] = None,
+        format: str | None = None,
+        format_version: str | None = None,
+        compress: StructureCompress | None = None,
+        accept_encoding: str | None = None,
+        accept_language: str | None = None,
+        timeout: int | None = None,
     ) -> str:
         """Query an SDMX structure artefact and return raw XML.
 
@@ -555,20 +557,70 @@ class EurostatClient(AbstractSDMXClient):
 
         # Requête de l'artefact structurel
         try:
-            response = client.get(endpoint, params=params, headers=headers, timeout=timeout)
+            response = client.get(
+                endpoint, params=params, headers=headers, timeout=timeout
+            )
             # Décompression si nécessaire (réponses gzip de l'API SDMX 3.0)
             content = parsing.decompress_response_bytes(response.content)
             return content.decode("utf-8")
         # Gestion des erreurs de requête
         except Exception as e:
             # Logging
-            logger.error(
-                f"Failed to fetch {resource_type.value}/{resource_id}: {e}"
-            )
+            logger.error(f"Failed to fetch {resource_type.value}/{resource_id}: {e}")
             # Erreur
             raise ValueError(
                 f"Failed to fetch {resource_type.value} '{resource_id}': {e}"
             )
+
+    # Méthode publique de récupération d'une codelist avec ses libellés
+    def get_codelist(
+        self,
+        codelist_id: str,
+        agency: str = AGENCY_ID,
+        refresh: bool = False,
+    ) -> pd.DataFrame:
+        """Fetch a codelist with its labels and hierarchy, cached per client.
+
+        The parsed codelist is kept in memory: building split queries and
+        publishing reference tables from the same client costs a single
+        network call per codelist. Comext codelists (``CXT_*``) are routed to
+        the Comext endpoint transparently.
+
+        Args:
+            codelist_id: Codelist identifier (e.g. ``"CL_GEO"``,
+                ``"CXT_FREE_ISO"``), as given by ``DimensionInfo.codelist``.
+            agency: Maintenance agency. Defaults to Eurostat.
+            refresh: Bypass (and refresh) the cache.
+
+        Returns:
+            DataFrame with columns ``code``, ``label`` (English name, else the
+            first available language) and ``parent`` (``None`` for root
+            codes). A copy: mutating it leaves the cache untouched.
+
+        Raises:
+            ValueError: If the request or the parsing fails.
+
+        Examples:
+            >>> geo = client.get_codelist("CXT_FREE_ISO")  # doctest: +SKIP
+            >>> geo.columns.tolist()  # doctest: +SKIP
+            ['code', 'label', 'parent']
+        """
+        # Lecture du cache, sauf rafraîchissement explicite
+        cache_key = (agency, codelist_id)
+        if refresh or cache_key not in self._codelist_cache:
+            # Requête de la codelist puis parsing (libellés et parents)
+            xml_content = self.get_structure(
+                StructureResourceType.CODELIST, codelist_id, agency=agency
+            )
+            # Parsing de la liste de codes
+            codelist = parsing.parse_codelist_response(xml_content, with_parent=True)
+            # Assignation de la liste au cache
+            self._codelist_cache[cache_key] = codelist.rename(columns={"name": "label"})
+            # Logging
+            logger.info(
+                f"Codelist {agency}/{codelist_id}: {len(codelist)} codes fetched"
+            )
+        return self._codelist_cache[cache_key].copy()
 
     # Méthode publique de récupération et parsing de la DSD d'un dataflow
     def get_dataflow_structure(
@@ -600,7 +652,9 @@ class EurostatClient(AbstractSDMXClient):
         # Remapping des wildcards "data" vers "+" (dernière version) pour la structure :
         # l'API Eurostat renvoie HTTP 500 pour "*" et "~" sur l'endpoint /structure/datastructure
         _UNSUPPORTED_STRUCTURE_VERSIONS = {"*", "~"}
-        structure_version = "+" if version in _UNSUPPORTED_STRUCTURE_VERSIONS else version
+        structure_version = (
+            "+" if version in _UNSUPPORTED_STRUCTURE_VERSIONS else version
+        )
 
         # Requête du XML brut via get_structure (endpoint datastructure, avec descendants)
         xml_text = self.get_structure(
@@ -609,7 +663,7 @@ class EurostatClient(AbstractSDMXClient):
             agency=AGENCY_ID,
             version=structure_version,
             references="descendants",
-            compress="false"
+            compress="false",
         )
         # Parsing du XML et retour de la structure de dataflow
         return parsing.parse_structure_response(xml_text, dataflow)
@@ -660,7 +714,7 @@ class EurostatClient(AbstractSDMXClient):
         #   segment de version "*". Omettre le segment ou demander "+" renvoie
         #   un conteneur vide (HTTP 200 trompeur).
         # SDMX 2.1 → "+" converti en "latest" par le builder V2.1
-        version: Optional[str] = "*" if self.api_version == SDMXVersion.V3 else "+"
+        version: str | None = "*" if self.api_version == SDMXVersion.V3 else "+"
 
         # Requête du catalogue via get_structure avec wildcards
         xml_text = self.get_structure(
@@ -687,7 +741,7 @@ class EurostatClient(AbstractSDMXClient):
         self,
         dataflow: str,
         version: str = "*",
-    ) -> Optional[datetime]:
+    ) -> datetime | None:
         """Return when a dataflow's data was last updated.
 
         Eurostat has no per-observation ``updated_after`` filter, so the last
@@ -724,16 +778,14 @@ class EurostatClient(AbstractSDMXClient):
             return parsing.parse_dataconstraint_last_update(xml_text)
         except Exception as e:
             # Échec non bloquant : le caller rafraîchira par précaution
-            logger.warning(
-                f"Could not fetch data last-update for {dataflow}: {e}"
-            )
+            logger.warning(f"Could not fetch data last-update for {dataflow}: {e}")
             return None
 
     # Implémentation de la récupération incrémentale via dataconstraint
     def fetch_updates(
         self,
         query: "EurostatQueryRequest",
-        since: Optional[datetime],
+        since: datetime | None,
         n_observations: int = 10,
     ) -> pd.DataFrame:
         """Fetch Eurostat data for a query, incrementally when possible.
@@ -835,9 +887,7 @@ class EurostatClient(AbstractSDMXClient):
         # Création du client Comext si non encore initialisé
         if self._comext_client is None:
             comext_url = self._COMEXT_BASE_URLS[self.api_version]
-            self._comext_client = APIClient(
-                base_url=comext_url, timeout=self._timeout
-            )
+            self._comext_client = APIClient(base_url=comext_url, timeout=self._timeout)
         return self._comext_client
 
     # Méthode de sélection du client API approprié selon le dataflow
@@ -879,7 +929,7 @@ class EurostatClient(AbstractSDMXClient):
     # Implémentation de l'abstraction : exécution d'une seule requête de données
     def _execute_single_request(
         self,
-        dims_for_request: Dict[str, Any],
+        dims_for_request: dict[str, Any],
         **request_kwargs,
     ) -> pd.DataFrame:
         """Execute a single Eurostat data request.
@@ -899,19 +949,21 @@ class EurostatClient(AbstractSDMXClient):
             Parsed DataFrame for this single request.
         """
         # Extraction des dimensions URL et paramètres depuis le dict structuré
-        dims_for_url: Dict[str, List[str]] = dims_for_request.get("dims_for_url", {})
-        dims_for_params: Dict[str, List[str]] = dims_for_request.get("dims_for_params", {})
+        dims_for_url: dict[str, list[str]] = dims_for_request.get("dims_for_url", {})
+        dims_for_params: dict[str, list[str]] = dims_for_request.get(
+            "dims_for_params", {}
+        )
 
         dataflow: str = request_kwargs["dataflow"]
         version: str = request_kwargs.get("version", "*")
-        structure: Optional[DataflowStructure] = request_kwargs.get("structure")
+        structure: DataflowStructure | None = request_kwargs.get("structure")
         response_format: EurostatResponseFormat = request_kwargs.get(
             "response_format", EurostatResponseFormat.CSV
         )
         is_v21 = self.api_version == SDMXVersion.V2_1
 
         # Construction de la clé positionnelle
-        key_str: Optional[str] = None
+        key_str: str | None = None
         if dims_for_url and structure:
             key_str = self._build_key_string(dims_for_url, structure)
         elif is_v21:
@@ -962,7 +1014,7 @@ class EurostatClient(AbstractSDMXClient):
     # Méthode de construction de la clé positionnelle pour l'URL
     def _build_key_string(
         self,
-        dims: Dict[str, List[str]],
+        dims: dict[str, list[str]],
         structure: DataflowStructure,
     ) -> str:
         """Build a positional key string for the data endpoint URL.
@@ -1010,9 +1062,9 @@ class EurostatClient(AbstractSDMXClient):
     # Méthode statique de normalisation des dimensions (str → List[str])
     @staticmethod
     def _normalize_dimensions(
-        dimensions: Optional[Dict[str, Union[str, List[str]]]],
-        structure: Optional[DataflowStructure] = None,
-    ) -> Optional[Dict[str, List[str]]]:
+        dimensions: dict[str, str | list[str]] | None,
+        structure: DataflowStructure | None = None,
+    ) -> dict[str, list[str]] | None:
         """Normalize dimension values to ``Dict[str, List[str]]``.
 
         Args:
@@ -1028,8 +1080,7 @@ class EurostatClient(AbstractSDMXClient):
             return None
         # Conversion des valeurs scalaires en listes unitaires
         normalized = {
-            k: [v] if isinstance(v, str) else list(v)
-            for k, v in dimensions.items()
+            k: [v] if isinstance(v, str) else list(v) for k, v in dimensions.items()
         }
 
         # Validation des noms contre la structure si disponible
@@ -1046,9 +1097,7 @@ class EurostatClient(AbstractSDMXClient):
     # ──────────────────────────────────────────────────────────────────
 
     # Méthode d'assurance de la disponibilité de la structure d'un dataflow
-    def _ensure_structure(
-        self, dataflow: str, version: str = "*"
-    ) -> DataflowStructure:
+    def _ensure_structure(self, dataflow: str, version: str = "*") -> DataflowStructure:
         """Load and cache a dataflow structure.
 
         Args:
@@ -1082,12 +1131,12 @@ class EurostatClient(AbstractSDMXClient):
     # Méthode de génération des combinaisons de dimensions pour le split
     def _generate_request_combinations(
         self,
-        dimensions: Optional[Dict[str, List[str]]],
-        split_dims: Optional[List[str]],
+        dimensions: dict[str, list[str]] | None,
+        split_dims: list[str] | None,
         max_combinations: int,
         is_v21: bool,
-        structure: Optional[DataflowStructure] = None,
-    ) -> List[Tuple[Dict[str, List[str]], Dict[str, List[str]]]]:
+        structure: DataflowStructure | None = None,
+    ) -> list[tuple[dict[str, list[str]], dict[str, list[str]]]]:
         """Generate request combinations as ``(dims_for_url, dims_for_params)`` tuples.
 
         Each combination encodes which dimensions go into the positional URL
@@ -1145,10 +1194,10 @@ class EurostatClient(AbstractSDMXClient):
         split_combos = self._cartesian_split(split_dict, max_combinations)
 
         # Construction des tuples (dims_for_url, dims_for_params) pour chaque combinaison
-        result: List[Tuple[Dict[str, List[str]], Dict[str, List[str]]]] = []
+        result: list[tuple[dict[str, list[str]], dict[str, list[str]]]] = []
         for combo in split_combos:
             # Fusion des dims non-splittées avec la valeur unique de chaque dim splittée
-            combo_dims: Dict[str, List[str]] = keep_dict.copy()
+            combo_dims: dict[str, list[str]] = keep_dict.copy()
             for k, val in combo.items():
                 combo_dims[k] = [val]
 
@@ -1156,7 +1205,7 @@ class EurostatClient(AbstractSDMXClient):
             if is_v21:
                 # SDMX 2.1 : toutes les dims vont dans le key positionnel
                 dims_for_url = combo_dims
-                dims_for_params: Dict[str, List[str]] = {}
+                dims_for_params: dict[str, list[str]] = {}
             else:
                 # SDMX 3.0 : valeur unique → key positionnel, multi-valeurs → c[DIM]=...
                 dims_for_url = {k: v for k, v in combo_dims.items() if len(v) == 1}

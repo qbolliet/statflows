@@ -1,20 +1,18 @@
-"""Tests de caractérisation — :func:`statflows.storage.ducklake.tables.fact_table_exists`.
+"""Characterisation tests — :func:`statflows.storage.ducklake.tables.fact_table_exists`.
 
-Comportement figé : détection d'existence sur un DuckDB en mémoire, argument
-``table`` keyword-only. L'écriture (``write_dataframe``) sur un vrai catalogue est
-couverte par ``tests/integration/storage/ducklake``.
+Frozen behaviour: existence detection on an in-memory DuckDB, keyword-only
+``table`` argument. Writing (``write_dataframe``) on a real catalog is covered by
+``tests/integration/storage/ducklake``.
 
-``fact_table_exists`` n'utilise que ``duckdb`` (extra « ducklake ») : le module
-est ignoré à la collecte si ``duckdb`` est absent.
+``fact_table_exists`` only uses ``duckdb`` ("ducklake" extra): the module is
+skipped at collection if ``duckdb`` is missing.
 """
 
 from __future__ import annotations
 
 import pytest
 
-pytest.importorskip(
-    "duckdb", reason="requiert l'extra « ducklake » (duckdb absent)"
-)
+pytest.importorskip("duckdb", reason="requiert l'extra « ducklake » (duckdb absent)")
 
 from statflows.storage.ducklake.tables import (  # noqa: E402
     FACT_TABLE,

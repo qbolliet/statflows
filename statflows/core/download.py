@@ -5,37 +5,60 @@ Production entry point that, for a list of provider queries:
 1. Initialises (or reuses) a per-provider DuckLake catalog of downloads,
 2. Performs a first **full** download of missing series and an **incremental**
    download of series already present (only newly published observations),
-3. Persists a JSON registry of the last-download date per query,
+3. Persists a JSON registry of the last-download date per query (single file
+   or fragments, see :mod:`statflows.core.registry`),
 4. Exports the provider structure registry when a new structure was fetched,
-5. Stops gracefully after a configurable runtime (e.g. 23 h),
+5. Stops gracefully after a configurable runtime (e.g. 23 h) or on ``SIGTERM``,
 6. Closes the catalog connection cleanly.
+
+Both the registry persistence and the DuckLake writes can be buffered (see
+:class:`SDMXDownloader`), under one invariant: a registry entry never moves
+forward before the data of its query has been written successfully.
 
 The orchestration is provider-agnostic: *how* to fetch the incremental data is
 delegated to each client through
 :meth:`~statflows.core.client.AbstractSDMXClient.fetch_updates`
 """
+
 # Importation des modules
 from __future__ import annotations
 
-import argparse
-from datetime import datetime, timedelta, timezone
-from enum import Enum
 import logging
-import os
+import signal
+import threading
+import time
+from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Union
+from typing import (
+    Any,
+    cast,
+)
 
 import duckdb
 import pandas as pd
 
-# Importation des modules de connexion
-from ..storage.json import Loader, Saver
+# Importation du connecteur à la base de données
+from dt_ducklake_manager import DuckLakeConnector
+
 # Helper DuckLake partagé (création puis upsert de la table de faits)
 from ..storage.ducklake.tables import write_dataframe
 
-from dt_ducklake_manager import DuckLakeConnector
-
+# Importation des modules de connexion
+from ..storage.json import Loader, Saver
 from .client import AbstractSDMXClient
+
+# Registre des dates de dernier téléchargement (lecture publique réexportée ici)
+from .registry import (
+    REGISTRY_ROOT,
+    DownloadRegistry,
+    RegistryEntry,  # noqa: F401
+    _parse_iso,
+    iter_registry_entries,  # noqa: F401
+    sanitize_shard,
+)
 from .reports import DownloadReport, HttpStats, QueryReport, RateLimitStats
 from .structures import DataflowStructure, DataflowStructureRegistry
 
@@ -45,41 +68,20 @@ logger = logging.getLogger(__name__)
 # Nom de la dimension temporelle SDMX (incluse dans la clé primaire)
 _TIME_COLUMN = "TIME_PERIOD"
 # Clé racine du registre JSON des dates de dernier téléchargement
-_REGISTRY_ROOT = "DOWNLOADS"
+_REGISTRY_ROOT = REGISTRY_ROOT
+# Nom de l'option DuckLake d'ATTACH contrôlant l'inlining des petites écritures
+_INLINING_OPTION = "data_inlining_row_limit"
 
 
 # ──────────────────────────────────────────────────────────────────────
 # Fonctions utilitaires
 # ──────────────────────────────────────────────────────────────────────
 
+
 # Fonction de récupération de l'instant courant en UTC
 def _now() -> datetime:
     """Return the current instant as a UTC-aware datetime."""
-    return datetime.now(timezone.utc)
-
-
-# Fonction de parsing d'une chaîne ISO en datetime UTC
-def _parse_iso(value: Optional[str]) -> Optional[datetime]:
-    """Parse an ISO-8601 string into a UTC-aware datetime.
-
-    Args:
-        value: ISO-8601 string (``Z`` suffix accepted) or ``None``.
-
-    Returns:
-        UTC-aware ``datetime`` or ``None`` when ``value`` is falsy/unparseable.
-    """
-    # Court-circuit si la valeur est absente
-    if not value:
-        return None
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        logger.warning(f"Could not parse stored date '{value}'")
-        return None
-    # Normalisation en UTC (les datetimes naïfs sont interprétés comme UTC)
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+    return datetime.now(UTC)
 
 
 # Fonction de normalisation d'un nom de dataflow en identifiant de schéma SQL
@@ -112,9 +114,9 @@ def _schema_name(dataflow: str) -> str:
 
 # Fonction de calcul des clés primaires d'une table à partir de sa structure
 def _primary_keys(
-    structure: Optional[DataflowStructure],
-    df_columns: List[str],
-) -> List[str]:
+    structure: DataflowStructure | None,
+    df_columns: list[str],
+) -> list[str]:
     """Derive the primary-key columns of the DuckLake table.
 
     The primary key is the set of dataflow dimensions (which uniquely identify
@@ -134,7 +136,7 @@ def _primary_keys(
     """
     # Index insensible à la casse : nom en minuscules → nom réel de la colonne
     cols_lower = {c.lower(): c for c in df_columns}
-    primary_keys: List[str] = []
+    primary_keys: list[str] = []
 
     # Dimensions de la structure présentes dans le DataFrame
     if structure is not None:
@@ -181,8 +183,9 @@ def _json_safe(value: Any) -> Any:
 # le pendant exploitable des journaux, réutilisable par un projet consommateur
 # sans dépendre de l'orchestrateur. Ils sont réexportés ici par compatibilité.
 
+
 # Fonction auxiliaire : sources de compteurs HTTP portées par un client
-def _http_stats_sources(client: Any) -> List[HttpStats]:
+def _http_stats_sources(client: Any) -> list[HttpStats]:
     """Collect every HTTP counter object a client carries.
 
     Providers either *are* an ``APIClient`` (Comtrade, UNSD) or *hold* one or
@@ -196,7 +199,7 @@ def _http_stats_sources(client: Any) -> List[HttpStats]:
         The :class:`HttpStats` instances found, possibly empty.
     """
     # Compteurs portés par le client lui-même (héritage d'APIClient)
-    sources: List[HttpStats] = []
+    sources: list[HttpStats] = []
     own = getattr(client, "stats_", None)
     if isinstance(own, HttpStats):
         sources.append(own)
@@ -256,9 +259,7 @@ def _http_delta(before: HttpStats, after: HttpStats) -> HttpStats:
 
 
 # Fonction auxiliaire : consommation du limiteur de débit d'une requête
-def _rate_limit_delta(
-    before: RateLimitStats, after: RateLimitStats
-) -> RateLimitStats:
+def _rate_limit_delta(before: RateLimitStats, after: RateLimitStats) -> RateLimitStats:
     """Difference two rate-limit snapshots to isolate one query's waits.
 
     Args:
@@ -296,8 +297,68 @@ def _client_snapshot(client: Any) -> tuple[HttpStats, RateLimitStats]:
 
 
 # ──────────────────────────────────────────────────────────────────────
+# Tampons internes
+# ──────────────────────────────────────────────────────────────────────
+
+
+# Exception d'interruption levée par le gestionnaire de SIGTERM
+class _GracefulStop(BaseException):
+    """Abort the fetch in progress after a ``SIGTERM``.
+
+    Derives from :class:`BaseException` so the per-query ``except Exception``
+    isolation never swallows it. Only ever raised while the orchestrator is
+    waiting on the provider (never during a DuckLake write or a registry
+    flush), so the interrupted query simply stays unrecorded.
+    """
+
+
+# Requête dont les données attendent l'écriture de leur lot
+@dataclass
+class _PendingWrite:
+    """A fetched, non-empty query waiting for its write batch.
+
+    Attributes:
+        query_report: Diagnostics, published once the batch is committed or
+            has failed.
+        key: Identity key of the query.
+        entry: Registry entry to commit once the batch is written.
+        shard: Registry fragment of the entry (sharded mode), else ``None``.
+        df: Fetched data.
+    """
+
+    query_report: QueryReport
+    key: str
+    entry: dict[str, Any]
+    shard: str | None
+    df: pd.DataFrame
+
+
+# Lot en attente d'un schéma DuckLake
+@dataclass
+class _SchemaBuffer:
+    """Write batch accumulated for one DuckLake schema (one dataflow).
+
+    Attributes:
+        dataflow: Dataflow identifier (logging, primary keys).
+        structure: Dataflow structure used to resolve the primary keys.
+        items: Pending queries, in processing order.
+        rows: Total rows buffered.
+    """
+
+    dataflow: str
+    structure: DataflowStructure | None
+    items: list[_PendingWrite] = field(default_factory=list)
+    rows: int = 0
+
+
+# Marqueur : aucun gestionnaire de signal installé par run()
+_NO_HANDLER = object()
+
+
+# ──────────────────────────────────────────────────────────────────────
 # Orchestrateur
 # ──────────────────────────────────────────────────────────────────────
+
 
 # Classe orchestrant le téléchargement incrémental vers DuckLake
 class SDMXDownloader:
@@ -312,6 +373,25 @@ class SDMXDownloader:
     The orchestrator owns the DuckLake connection (opened from the supplied
     connector and closed in a ``finally`` block) but **not** the SDMX client,
     whose lifetime is managed by the caller.
+
+    **Buffering.** By default every query is written to DuckLake on its own and
+    the whole registry is rewritten after each query — safe, but quadratic on
+    10⁴-10⁵ queries. ``registry_flush_every`` / ``registry_flush_seconds``
+    space out the registry writes; ``write_batch_rows`` /
+    ``write_batch_queries`` accumulate the DataFrames per schema and write them
+    in one transaction. Whatever the settings, a registry entry never moves
+    forward before its data has been written: the entries of a buffered batch
+    are committed only after the batch write succeeds, and a failed batch
+    leaves all of them untouched (each of its queries is counted as an error;
+    the run goes on). Pending batches and the registry are flushed at the end of
+    the run, on the deadline, on ``SIGTERM`` and on any exception.
+
+    **SIGTERM.** While :meth:`run` executes in the main thread, a ``SIGTERM``
+    handler is installed (the previous one is restored on exit): a fetch in
+    progress is aborted (that query is retried next run), pending batches and
+    the registry are flushed, and :meth:`run` returns its report with
+    ``stopped_early=True``. Outside the main thread no handler can be
+    installed; a warning is logged.
 
     Args:
         client: Provider SDMX client (e.g. ``EurostatClient``, ``OECDClient``).
@@ -342,7 +422,51 @@ class SDMXDownloader:
             every processed query, successful or not. The seam through which a
             consuming project streams per-query metrics to its experiment
             tracker without this package ever knowing about it. A failing
-            callback warns and never interrupts the download.
+            callback warns and never interrupts the download. With write
+            batching, a buffered query is reported when its batch completes.
+        registry_flush_every: Persist the registry once this many entries
+            have been committed since the previous flush. ``1`` (default)
+            persists after every query, as historically.
+        registry_flush_seconds: Also persist the registry when this many
+            seconds have elapsed since the previous flush (checked at each
+            commit). ``None`` (default) disables the time threshold.
+        registry_shard_key: Optional callable ``query → str`` naming the
+            registry fragment of a query (e.g. ``lambda q: q.dataflow``). When
+            set, the registry is stored as
+            ``<last_download_path without extension>/<fragment>.json`` and only
+            the fragments touched since the previous flush are rewritten. An
+            existing single-file registry is migrated at the first flush
+            (entries of queries absent from the run go to ``_default.json``);
+            the historical file is left in place and is harmless, since readers
+            keep the most recent date per entry. Read the registry with
+            :func:`iter_registry_entries`, whatever its layout.
+        write_batch_rows: Write a schema's pending batch once it holds at
+            least this many rows. ``None`` disables this threshold.
+        write_batch_queries: Write a schema's pending batch once it holds at
+            least this many non-empty queries. ``None`` disables this
+            threshold. With both thresholds ``None`` (default), every
+            non-empty query is written immediately, as historically. A batch of
+            several queries is the concatenation of their DataFrames,
+            deduplicated on the primary key (last query wins) before writing.
+        update_options: Forwarded to
+            :func:`~statflows.storage.ducklake.tables.write_dataframe`, then to
+            ``DatabaseUpdater.update_database`` (e.g. ``allow_new_columns``).
+            Post-commit compaction follows the library default; pass
+            ``{"compact_after_update": False}`` to disable it per batch.
+        build_options: Forwarded to ``write_dataframe``, then to
+            ``DuckLakeTablesBuilder.build_schema`` (e.g. ``partition_by``).
+        ducklake_options: Optional DuckLake options applied for the duration
+            of :meth:`run`'s ``connect()``, without modifying the connector
+            durably. The ``data_inlining_row_limit`` key becomes the
+            ``DATA_INLINING_ROW_LIMIT`` ATTACH option (small writes kept in the
+            catalog instead of a Parquet file); any other key is merged into
+            the connector's post-ATTACH ``ducklake_options`` (``set_option``).
+        run_id: Optional run identifier recorded on every DuckLake snapshot
+            written by the run, with a ``"statflows <dataflow>"`` commit
+            message.
+
+    Raises:
+        ValueError: If a buffering threshold is not strictly positive.
     """
 
     # Initialisation
@@ -350,17 +474,37 @@ class SDMXDownloader:
         self,
         client: AbstractSDMXClient,
         connector: DuckLakeConnector,
-        structures_path: Union[str, Path],
-        last_download_path: Union[str, Path],
+        structures_path: str | Path,
+        last_download_path: str | Path,
         *,
         n_observations: int = 10,
         fresh_registry: bool = False,
-        max_runtime: Optional[timedelta] = timedelta(hours=23),
-        categorical_threshold: Optional[int] = None,
-        bucket: Optional[str] = None,
-        storage_options: Optional[Dict[str, Any]] = None,
-        on_query_complete: Optional[Callable[[QueryReport], None]] = None,
+        max_runtime: timedelta | None = timedelta(hours=23),
+        categorical_threshold: int | None = None,
+        bucket: str | None = None,
+        storage_options: dict[str, Any] | None = None,
+        on_query_complete: Callable[[QueryReport], None] | None = None,
+        registry_flush_every: int = 1,
+        registry_flush_seconds: float | None = None,
+        registry_shard_key: Callable[[Any], str] | None = None,
+        write_batch_rows: int | None = None,
+        write_batch_queries: int | None = None,
+        update_options: Mapping[str, Any] | None = None,
+        build_options: Mapping[str, Any] | None = None,
+        ducklake_options: dict[str, Any] | None = None,
+        run_id: str | None = None,
     ) -> None:
+        # Validation des seuils de tamponnage
+        if registry_flush_every < 1:
+            raise ValueError("registry_flush_every must be >= 1")
+        for name, value in (
+            ("registry_flush_seconds", registry_flush_seconds),
+            ("write_batch_rows", write_batch_rows),
+            ("write_batch_queries", write_batch_queries),
+        ):
+            if value is not None and value <= 0:
+                raise ValueError(f"{name} must be > 0 or None")
+
         # Dépendances injectées
         self._client = client
         self._connector = connector
@@ -371,6 +515,18 @@ class SDMXDownloader:
         self._n_observations = n_observations
         self._max_runtime = max_runtime
         self._categorical_threshold = categorical_threshold
+        self._update_options = update_options
+        self._build_options = build_options
+        self._ducklake_options = ducklake_options
+        self._run_id = run_id
+
+        # Paramètres de tamponnage du registre et des écritures
+        self._registry_flush_every = registry_flush_every
+        self._registry_flush_seconds = registry_flush_seconds
+        self._shard_key = registry_shard_key
+        self._write_batch_rows = write_batch_rows
+        self._write_batch_queries = write_batch_queries
+        self._batching = write_batch_rows is not None or write_batch_queries is not None
 
         # Accès au stockage des registres JSON (local ou S3 selon ``bucket``).
         # Instances réutilisables : la connexion S3 paresseuse est ainsi établie
@@ -387,8 +543,14 @@ class SDMXDownloader:
         # Alias du catalogue DuckLake (pour les requêtes d'introspection)
         self._catalog_alias = connector.catalog_alias
 
-        # Registre des dates de dernier téléchargement (identity_key → entrée)
-        self._registry: Dict[str, Dict[str, Any]] = {}
+        # Registre des dates de dernier téléchargement (deux formats lus)
+        self._registry_store = DownloadRegistry(
+            self._last_download_path,
+            loader=self._loader,
+            saver=self._saver,
+            bucket=self._bucket,
+            sharded=registry_shard_key is not None,
+        )
         self._load_registry()
 
         # Registre des structures, injecté dans le client pour mutualiser le cache
@@ -405,12 +567,27 @@ class SDMXDownloader:
         self._on_query_complete = on_query_complete
 
         # Instant de démarrage (renseigné dans run())
-        self._t0: Optional[datetime] = None
+        self._t0: datetime | None = None
+
+        # État d'exécution (réinitialisé par run())
+        self._buffers: dict[str, _SchemaBuffer] = {}
+        self._shard_by_key: dict[str, str] = {}
+        self._commits_since_flush = 0
+        self._last_flush = time.monotonic()
+        self._stop_requested = False
+        self._interruptible = False
+
+    # Registre validé (identity_key → entrée) : ne contient que des entrées
+    # dont les données ont été écrites
+    @property
+    def _registry(self) -> dict[str, dict[str, Any]]:
+        """Committed registry entries, keyed by identity key."""
+        return self._registry_store.entries
 
     # Méthode principale d'exécution du téléchargement
     def run(
         self,
-        queries: Union[Any, Iterable[Any]],
+        queries: Any | Iterable[Any],
     ) -> DownloadReport:
         """Run the download for the provided queries.
 
@@ -428,68 +605,151 @@ class SDMXDownloader:
         # Priorisation : jamais téléchargées d'abord, puis les plus anciennes
         query_list = self._prioritize(query_list)
 
+        # Fragments du registre : calculés une fois pour toutes les requêtes du
+        # run, ce qui range aussi les entrées héritées du fichier unique
+        if self._shard_key is not None:
+            self._shard_by_key = {
+                query.identity_key(): sanitize_shard(self._shard_key(query))
+                for query in query_list
+            }
+            self._registry_store.assign_shards(self._shard_by_key)
+
         # Initialisation du chronomètre de graceful shutdown
         self._t0 = _now()
 
         # Initialisation du rapport de téléchargement
         report = DownloadReport(n_queries_planned=len(query_list))
 
-        # Extraction des structures connues à l'initialisation : tout ajout 
-        # (par fetch_updates ou par la résolution explicite) déclenchera 
+        # Extraction des structures connues à l'initialisation : tout ajout
+        # (par fetch_updates ou par la résolution explicite) déclenchera
         # l'export du registre en fin de run
         initial_structure_keys = set(self._structure_registry.list_structures())
 
-        # Ouverture de la connexion au catalogue DuckLake
-        conn = self._connector.connect()
-        try:
-            # Parcours des requêtes
-            for index, query in enumerate(query_list):
-                # Arrêt anticipé si le délai maximal est atteint
-                if self._deadline_reached():
-                    # Requêtes laissées de côté
-                    report.n_queries_remaining = len(query_list) - index
-                    # Logging
-                    logger.warning(
-                        "Graceful shutdown: max runtime reached, stopping "
-                        f"after {report.processed} queries, "
-                        f"{report.n_queries_remaining} left"
-                    )
-                    report.stopped_early = True
-                    break
+        # Réinitialisation de l'état de tamponnage et d'arrêt
+        self._buffers = {}
+        self._commits_since_flush = 0
+        self._last_flush = time.monotonic()
+        self._stop_requested = False
+        self._interruptible = False
 
-                # Diagnostic de la requête, renseigné qu'elle aboutisse ou non
-                query_report = QueryReport(
-                    identity_key=query.identity_key(),
-                    agency=getattr(query, "agency", ""),
-                    dataflow=getattr(query, "dataflow", ""),
-                )
-                # Traitement d'une requête (les erreurs sont isolées par requête)
+        # Gestionnaire de SIGTERM, restauré quoi qu'il arrive
+        previous_handler = self._install_signal_handler()
+        try:
+            # Ouverture de la connexion au catalogue DuckLake
+            conn = self._connect()
+            try:
+                self._run_queries(conn, query_list, report)
+            finally:
                 try:
-                    self._process_query(conn, query, report, query_report)
-                # Si échec : la date n'est pas mise à jour → la requête sera retentée
-                except Exception as e:
-                    # L'échec devient une donnée du rapport, pas seulement un log
-                    query_report.error_type = type(e).__name__
-                    query_report.error_message = str(e)[:500]
-                    # Logging
-                    logger.exception(
-                        f"Query {query.identity_key()} failed: {e}"
-                    )
-                    # Incrément des erreurs
-                    report.errors += 1
+                    # Écriture des lots en attente (fin, deadline, SIGTERM, erreur)
+                    self._flush_all_buffers(conn, report)
                 finally:
-                    # Publication du diagnostic de la requête
-                    report.queries.append(query_report)
-                    self._notify(query_report)
+                    # Lignes restées en tampon (0 attendu)
+                    report.rows_pending_at_stop = sum(
+                        buffer.rows for buffer in self._buffers.values()
+                    )
+                    self._finalize_run(conn, report, initial_structure_keys)
         finally:
+            self._restore_signal_handler(previous_handler)
+
+        return report
+
+    # Méthode de parcours des requêtes
+    def _run_queries(
+        self,
+        conn: duckdb.DuckDBPyConnection,
+        query_list: list[Any],
+        report: DownloadReport,
+    ) -> None:
+        """Process the queries in order until done, deadline or SIGTERM.
+
+        Args:
+            conn: Open DuckLake connection.
+            query_list: Prioritised queries.
+            report: Run report to update in place.
+        """
+        # Parcours des requêtes
+        for index, query in enumerate(query_list):
+            # Arrêt anticipé : signal reçu ou délai maximal atteint
+            if self._stop_requested or self._deadline_reached():
+                reason = (
+                    "SIGTERM received"
+                    if self._stop_requested
+                    else "max runtime reached"
+                )
+                self._stop_early(report, len(query_list) - index, reason)
+                break
+
+            # Diagnostic de la requête, renseigné qu'elle aboutisse ou non
+            query_report = QueryReport(
+                identity_key=query.identity_key(),
+                agency=getattr(query, "agency", ""),
+                dataflow=getattr(query, "dataflow", ""),
+            )
+            # Traitement d'une requête (les erreurs sont isolées par requête)
+            deferred = False
+            try:
+                deferred = self._process_query(conn, query, report, query_report)
+            # Récupération interrompue par SIGTERM : requête non enregistrée
+            except _GracefulStop:
+                self._stop_early(report, len(query_list) - index, "SIGTERM received")
+                break
+            # Si échec : la date n'est pas mise à jour → la requête sera retentée
+            except Exception as e:
+                # Logging
+                logger.exception(f"Query {query.identity_key()} failed: {e}")
+                self._record_failure(report, query_report, e)
+            # Publication immédiate, sauf si le lot d'écriture s'en charge
+            if not deferred:
+                self._publish(report, query_report)
+
+    # Méthode de consignation d'un arrêt anticipé
+    @staticmethod
+    def _stop_early(report: DownloadReport, remaining: int, reason: str) -> None:
+        """Record a graceful early stop in the report.
+
+        Args:
+            report: Run report to update in place.
+            remaining: Queries left unprocessed.
+            reason: Human-readable cause, for the logs.
+        """
+        # Requêtes laissées de côté
+        report.n_queries_remaining = remaining
+        report.stopped_early = True
+        # Logging
+        logger.warning(
+            f"Graceful shutdown: {reason}, stopping after {report.processed} "
+            f"queries, {remaining} left"
+        )
+
+    # Méthode de clôture du run
+    def _finalize_run(
+        self,
+        conn: duckdb.DuckDBPyConnection,
+        report: DownloadReport,
+        initial_structure_keys: set,
+    ) -> None:
+        """Export structures, persist the registry, close the connection.
+
+        Args:
+            conn: Open DuckLake connection (closed here).
+            report: Run report to update in place.
+            initial_structure_keys: Structures known when the run started.
+        """
+        try:
             # Structures nouvellement téléchargées pendant le run
             report.n_structures_fetched = len(
                 set(self._structure_registry.list_structures()) - initial_structure_keys
             )
             # Durée totale du run
-            report.duration_seconds = (_now() - self._t0).total_seconds()
+            report.duration_seconds = (
+                _now() - cast(datetime, self._t0)
+            ).total_seconds()
             # Export du registre des structures si une structure a été ajoutée
-            if set(self._structure_registry.list_structures()) != initial_structure_keys:
+            if (
+                set(self._structure_registry.list_structures())
+                != initial_structure_keys
+            ):
                 # Export (routé vers le local ou S3 selon ``bucket``)
                 self._saver.save(
                     self._structures_path,
@@ -500,14 +760,16 @@ class SDMXDownloader:
                 )
                 # Logging
                 logger.info(f"Structure registry exported to {self._structures_path}")
-            # Persistance finale du registre des dates (déjà persisté par requête)
-            self._save_registry()
+            # Persistance finale du registre des dates : entrées non encore
+            # persistées, ou aucune persistance pendant le run (le fichier est
+            # alors créé ou migré, comme historiquement)
+            if self._commits_since_flush > 0 or report.n_registry_flushes == 0:
+                self._flush_registry(report)
+        finally:
             # Fermeture propre de la connexion au catalogue
             conn.close()
             # Logging
             logger.info("DuckLake connection closed")
-
-        return report
 
     # ──────────────────────────────────────────────────────────────────
     # Traitement d'une requête
@@ -520,13 +782,14 @@ class SDMXDownloader:
         query: Any,
         report: DownloadReport,
         query_report: QueryReport,
-    ) -> None:
-        """Process a single query: fetch, write to DuckLake, update registry.
+    ) -> bool:
+        """Process a single query: fetch, buffer or write, update registry.
 
-        The DuckLake write is committed **before** the JSON registry is
+        The DuckLake write is committed **before** the registry entry is
         updated, so the registry never references data absent from the
         database. The last-download date is updated whether or not new data
-        was returned.
+        was returned — immediately when the query returned nothing, after its
+        batch is written otherwise.
 
         Args:
             conn: Open DuckLake connection.
@@ -534,6 +797,13 @@ class SDMXDownloader:
             report: Run report to update in place.
             query_report: Per-query diagnostics to fill in place — volumetry,
                 sub-request outcomes, HTTP and rate-limit cost, duration.
+
+        Returns:
+            ``True`` if the query went into a write batch, whose completion
+            publishes ``query_report``; ``False`` if the caller must publish it.
+
+        Raises:
+            _GracefulStop: If ``SIGTERM`` interrupted the fetch.
         """
         # Clé identifiante de la requête
         key = query.identity_key()
@@ -551,9 +821,14 @@ class SDMXDownloader:
         http_before, rate_before = _client_snapshot(self._client)
 
         try:
+            # Seule fenêtre interruptible par SIGTERM : l'attente du fournisseur
+            self._interruptible = True
+            if self._stop_requested:
+                raise _GracefulStop()
             # Récupération des données (complète ou incrémentale selon ``since``)
             df = self._client.fetch_updates(query, since, self._n_observations)
         finally:
+            self._interruptible = False
             # Coût de la requête, imputé même si la récupération a échoué
             http_after, rate_after = _client_snapshot(self._client)
             query_report.http = _http_delta(http_before, http_after)
@@ -570,43 +845,164 @@ class SDMXDownloader:
         schema = _schema_name(query.dataflow)
         query_report.schema = schema
 
-        # Écriture en base uniquement si des données ont été récupérées
-        if df is not None and not df.empty:
-            # Résolution de la structure (pour les clés primaires) ; l'appel
-            # enregistre aussi la structure dans le registre partagé, dont
-            # l'ajout est détecté en fin de run pour déclencher l'export.
-            structure = self._client.resolve_query_structure(query)
-            query_report.table_created = self._write_dataframe(
-                conn, df, structure, schema, query.dataflow
-            )
-            # Ajout du nombre de lignes écrites
-            report.rows_written += len(df)
-            report.n_tables_created += int(query_report.table_created)
-            query_report.rows_written = len(df)
-        else:
-            # Incrément des requêtes vides
-            report.empty += 1
-            query_report.empty = True
-            # Logging
-            logger.info(f"{query.dataflow}: no new data")
-
-        # ORDRE CRITIQUE : la base est écrite avant la mise à jour du JSON.
-        # Mise à jour de la date que le DataFrame soit vide ou non.
-        self._registry[key] = {
+        # Nouvelle entrée du registre, validée une fois les données écrites
+        new_entry = {
             "agency": query.agency,
             "dataflow": query.dataflow,
             "params": _json_safe(query.to_dict()),
             "last_download": req_started.isoformat(),
         }
-        # Persistance atomique immédiate (rien n'est perdu en cas de shutdown)
-        self._save_registry()
+        shard = self._shard_for(query)
+
+        # Aucune donnée : rien à écrire, l'entrée avance immédiatement
+        if df is None or df.empty:
+            # Incrément des requêtes vides
+            report.empty += 1
+            query_report.empty = True
+            # Logging
+            logger.info(f"{query.dataflow}: no new data")
+            self._commit_entries(report, [(key, new_entry, shard)])
+            return False
+
+        # Résolution de la structure (pour les clés primaires) ; l'appel
+        # enregistre aussi la structure dans le registre partagé, dont
+        # l'ajout est détecté en fin de run pour déclencher l'export.
+        structure = self._client.resolve_query_structure(query)
+
+        # Mise en attente dans le lot du schéma (lot d'une requête sans tamponnage)
+        buffer = self._buffers.setdefault(
+            schema, _SchemaBuffer(dataflow=query.dataflow, structure=structure)
+        )
+        buffer.structure = structure
+        buffer.items.append(_PendingWrite(query_report, key, new_entry, shard, df))
+        buffer.rows += len(df)
+
+        # Écriture immédiate sans tamponnage, ou dès qu'un seuil est atteint
+        if not self._batching or self._buffer_full(buffer):
+            self._flush_buffer(conn, schema, report)
+        return True
+
+    # Méthode de test des seuils d'un lot
+    def _buffer_full(self, buffer: _SchemaBuffer) -> bool:
+        """Tell whether a schema batch reached a write threshold."""
+        if self._write_batch_rows is not None and buffer.rows >= self._write_batch_rows:
+            return True
+        return (
+            self._write_batch_queries is not None
+            and len(buffer.items) >= self._write_batch_queries
+        )
+
+    # Méthode d'écriture de tous les lots en attente
+    def _flush_all_buffers(
+        self, conn: duckdb.DuckDBPyConnection, report: DownloadReport
+    ) -> None:
+        """Write every pending batch (end of run, deadline, SIGTERM).
+
+        Args:
+            conn: Open DuckLake connection.
+            report: Run report to update in place.
+        """
+        for schema in list(self._buffers):
+            self._flush_buffer(conn, schema, report)
+
+    # Méthode d'écriture du lot en attente d'un schéma
+    def _flush_buffer(
+        self,
+        conn: duckdb.DuckDBPyConnection,
+        schema: str,
+        report: DownloadReport,
+    ) -> None:
+        """Write a schema's pending batch, then commit or fail its queries.
+
+        On success the registry entries of every query of the batch are
+        committed and their reports published. On failure no entry moves, the
+        error is recorded on every query of the batch, and the run goes on.
+
+        Args:
+            conn: Open DuckLake connection.
+            schema: Target DuckLake schema.
+            report: Run report to update in place.
+        """
+        # Lot du schéma (vidé dans tous les cas : écrit ou abandonné)
+        buffer = self._buffers.get(schema)
+        if buffer is None or not buffer.items:
+            self._buffers.pop(schema, None)
+            return
+
+        try:
+            # Lot d'une requête : DataFrame tel quel (comportement historique)
+            if len(buffer.items) == 1:
+                data = buffer.items[0].df
+            else:
+                data = self._concat_batch(buffer)
+            created = self._write_dataframe(
+                conn, data, buffer.structure, schema, buffer.dataflow
+            )
+        except Exception as e:
+            # Échec du lot : aucune entrée n'avance, erreur imputée à chaque requête
+            self._buffers.pop(schema, None)
+            # Logging
+            logger.exception(
+                f"Write of {len(buffer.items)} query(ies) into '{schema}' failed: {e}"
+            )
+            # Parcours des items du buffer
+            for item in buffer.items:
+                self._record_failure(report, item.query_report, e)
+                self._publish(report, item.query_report)
+            return
+
+        # Lot écrit : retrait du tampon, diagnostics, validation des entrées
+        self._buffers.pop(schema, None)
+        report.n_write_batches += 1
+        report.n_tables_created += int(created)
+        for position, item in enumerate(buffer.items):
+            item.query_report.rows_written = len(item.df)
+            item.query_report.table_created = created and position == 0
+            report.rows_written += len(item.df)
+        # ORDRE CRITIQUE : la base est écrite avant la mise à jour du registre
+        self._commit_entries(
+            report, [(item.key, item.entry, item.shard) for item in buffer.items]
+        )
+        for item in buffer.items:
+            self._publish(report, item.query_report)
+
+    # Méthode de concaténation d'un lot de plusieurs requêtes
+    @staticmethod
+    def _concat_batch(buffer: _SchemaBuffer) -> pd.DataFrame:
+        """Concatenate a batch and deduplicate it on the primary key.
+
+        Two queries of a batch are not expected to overlap, but the library
+        would drop *every* occurrence of a duplicated key (``keep="none"``):
+        duplicates are resolved here instead, the last query winning.
+
+        Args:
+            buffer: Batch of at least two queries.
+
+        Returns:
+            Concatenated, primary-key-unique DataFrame.
+        """
+        # Concaténation dans l'ordre de traitement
+        data = pd.concat([item.df for item in buffer.items], ignore_index=True)
+        primary_keys = _primary_keys(buffer.structure, list(data.columns))
+        if not primary_keys:
+            return data
+        # Dédoublonnage par clé primaire, dernier gagnant
+        n_rows = len(data)
+        data = data.drop_duplicates(subset=primary_keys, keep="last")
+        if len(data) < n_rows:
+            # Logging
+            logger.warning(
+                f"{buffer.dataflow}: {n_rows - len(data)} duplicated primary "
+                "key(s) dropped from the write batch (last query wins)"
+            )
+        return data
 
     # Méthode d'écriture d'un DataFrame dans le catalogue DuckLake
     def _write_dataframe(
         self,
         conn: duckdb.DuckDBPyConnection,
         df: pd.DataFrame,
-        structure: Optional[DataflowStructure],
+        structure: DataflowStructure | None,
         schema: str,
         dataflow: str,
     ) -> bool:
@@ -648,7 +1044,40 @@ class SDMXDownloader:
             schema=schema,
             categorical_threshold=self._categorical_threshold,
             label=dataflow,
+            update_options=self._update_options,
+            build_options=self._build_options,
+            run_id=self._run_id,
+            commit_message=f"statflows {dataflow}" if self._run_id else None,
         )
+
+    # Méthode de consignation de l'échec d'une requête
+    @staticmethod
+    def _record_failure(
+        report: DownloadReport, query_report: QueryReport, error: Exception
+    ) -> None:
+        """Record a query failure as data in the reports.
+
+        Args:
+            report: Run report to update in place.
+            query_report: Diagnostics of the failed query.
+            error: The exception raised.
+        """
+        # L'échec devient une donnée du rapport, pas seulement un log
+        query_report.error_type = type(error).__name__
+        query_report.error_message = str(error)[:500]
+        # Incrément des erreurs
+        report.errors += 1
+
+    # Méthode de publication du rapport final d'une requête
+    def _publish(self, report: DownloadReport, query_report: QueryReport) -> None:
+        """Append a final per-query report to the run and notify the caller.
+
+        Args:
+            report: Run report to update in place.
+            query_report: Diagnostics of the completed (or failed) query.
+        """
+        report.queries.append(query_report)
+        self._notify(query_report)
 
     # Méthode de publication du diagnostic d'une requête
     def _notify(self, query_report: QueryReport) -> None:
@@ -670,12 +1099,120 @@ class SDMXDownloader:
             logger.warning(f"on_query_complete callback failed: {exc}")
 
     # ──────────────────────────────────────────────────────────────────
+    # Connexion et signal
+    # ──────────────────────────────────────────────────────────────────
+
+    # Méthode d'ouverture de la connexion avec options DuckLake temporaires
+    def _connect(self) -> duckdb.DuckDBPyConnection:
+        """Open the DuckLake connection, applying ``ducklake_options`` if any.
+
+        The connector reads its ``data_inlining_row_limit`` and
+        ``ducklake_options`` attributes when ``connect()`` is called: they are
+        overridden for that call only, then restored.
+
+        Returns:
+            Open DuckLake connection.
+        """
+        # Aucune option : connexion telle que configurée par l'appelant
+        if not self._ducklake_options:
+            return self._connector.connect()
+
+        # Séparation de l'option d'ATTACH (insensible à la casse) et des autres
+        options = {
+            name: value
+            for name, value in self._ducklake_options.items()
+            if name.lower() != _INLINING_OPTION
+        }
+        inlining = [
+            value
+            for name, value in self._ducklake_options.items()
+            if name.lower() == _INLINING_OPTION
+        ]
+
+        # Sauvegarde de la configuration du connecteur
+        saved_inlining = getattr(self._connector, _INLINING_OPTION, None)
+        saved_options = getattr(self._connector, "ducklake_options", None)
+        try:
+            if inlining:
+                setattr(self._connector, _INLINING_OPTION, inlining[-1])
+            if options:
+                # Résolution du raccourci « recommended » du connecteur
+                base = saved_options
+                if base == "recommended":
+                    from dt_ducklake_manager.connection import (
+                        RECOMMENDED_DUCKLAKE_OPTIONS,
+                    )
+
+                    base = RECOMMENDED_DUCKLAKE_OPTIONS
+                self._connector.ducklake_options = {**(base or {}), **options}
+            return self._connector.connect()
+        finally:
+            # Restauration : le connecteur de l'appelant n'est pas modifié durablement
+            setattr(self._connector, _INLINING_OPTION, saved_inlining)
+            self._connector.ducklake_options = saved_options
+
+    # Gestionnaire de SIGTERM
+    def _handle_sigterm(self, signum: int, frame: Any) -> None:
+        """Request a graceful stop; abort the fetch in progress, if any.
+
+        Never interrupts a DuckLake write or a registry flush: outside the
+        fetch window it only sets the stop flag, checked between queries.
+
+        Args:
+            signum: Signal number.
+            frame: Current stack frame (unused).
+
+        Raises:
+            _GracefulStop: If a fetch is in progress.
+        """
+        self._stop_requested = True
+        # Logging
+        logger.warning(
+            f"Signal {signum} received: stopping after flushing pending writes"
+        )
+        if self._interruptible:
+            raise _GracefulStop()
+
+    # Méthode d'installation du gestionnaire de SIGTERM
+    def _install_signal_handler(self) -> Any:
+        """Install the SIGTERM handler for the duration of :meth:`run`.
+
+        Returns:
+            The previous handler, or :data:`_NO_HANDLER` when none could be
+            installed (not in the main thread).
+        """
+        # Les gestionnaires de signaux ne s'installent que dans le thread principal
+        if threading.current_thread() is not threading.main_thread():
+            # Logging
+            logger.warning(
+                "run() is not executing in the main thread: no SIGTERM handler "
+                "installed, pending writes are only flushed at the end of the run"
+            )
+            return _NO_HANDLER
+        return signal.signal(signal.SIGTERM, self._handle_sigterm)
+
+    # Méthode de restauration du gestionnaire de SIGTERM précédent
+    @staticmethod
+    def _restore_signal_handler(previous: Any) -> None:
+        """Restore the SIGTERM handler that was active before :meth:`run`.
+
+        Args:
+            previous: Value returned by :meth:`_install_signal_handler`.
+        """
+        if previous is _NO_HANDLER:
+            return
+        # Gestionnaire non installé depuis Python : retour au comportement par défaut
+        signal.signal(
+            signal.SIGTERM, previous if previous is not None else signal.SIG_DFL
+        )
+
+    # ──────────────────────────────────────────────────────────────────
     # Priorisation, deadline et registre des dates
     # ──────────────────────────────────────────────────────────────────
 
     # Méthode de normalisation des requêtes en liste
     @staticmethod
-    def _as_query_list(queries: Union[Any, Iterable[Any]]) -> List[Any]:
+    def _as_query_list(queries: Any | Iterable[Any]) -> list[Any]:
         """Normalise the queries argument into a list.
 
         Args:
@@ -690,7 +1227,7 @@ class SDMXDownloader:
         return list(queries)
 
     # Méthode de priorisation des requêtes
-    def _prioritize(self, queries: List[Any]) -> List[Any]:
+    def _prioritize(self, queries: list[Any]) -> list[Any]:
         """Order queries: never-downloaded first, then oldest first.
 
         Args:
@@ -700,7 +1237,7 @@ class SDMXDownloader:
             Sorted list of queries.
         """
         # Date « minimale » UTC pour départager les requêtes jamais téléchargées
-        epoch = datetime.min.replace(tzinfo=timezone.utc)
+        epoch = datetime.min.replace(tzinfo=UTC)
 
         # Fonction de tri
         def sort_key(query: Any) -> tuple[int, datetime]:
@@ -721,59 +1258,109 @@ class SDMXDownloader:
             return False
         return (_now() - self._t0) >= self._max_runtime
 
+    # Méthode de calcul du fragment de registre d'une requête
+    def _shard_for(self, query: Any) -> str | None:
+        """Return the registry fragment of a query (``None`` if not sharded)."""
+        if self._shard_key is None:
+            return None
+        key = query.identity_key()
+        if key not in self._shard_by_key:
+            self._shard_by_key[key] = sanitize_shard(self._shard_key(query))
+        return self._shard_by_key[key]
+
+    # Méthode de validation d'entrées du registre
+    def _commit_entries(
+        self,
+        report: DownloadReport,
+        entries: list[tuple[str, dict[str, Any], str | None]],
+    ) -> None:
+        """Commit registry entries whose data is written, then maybe flush.
+
+        A failed periodic flush is logged and retried at the next one: the
+        entries stay committed in memory and the data they reference is
+        already in DuckLake.
+
+        Args:
+            report: Run report to update in place.
+            entries: ``(identity_key, entry, shard)`` triples.
+        """
+        for key, entry, shard in entries:
+            self._registry_store.commit(key, entry, shard)
+        self._commits_since_flush += len(entries)
+
+        # Seuils de persistance : nombre d'entrées ou durée écoulée
+        due = self._commits_since_flush >= self._registry_flush_every or (
+            self._registry_flush_seconds is not None
+            and time.monotonic() - self._last_flush >= self._registry_flush_seconds
+        )
+        if not due:
+            return
+        try:
+            self._flush_registry(report)
+        except Exception as e:
+            # Logging
+            logger.exception(f"Registry flush failed, retried at the next one: {e}")
+
     # Méthode de chargement du registre des dates de dernier téléchargement
     def _load_registry(self) -> None:
-        """Load the last-download registry from the JSON file (empty if absent)."""
-        # Lecture du registre JSON existant (None si absent)
-        data = (
-            self._loader.load(
-                self._last_download_path, bucket=self._bucket, missing_ok=True
-            )
-            or {}
-        )
-        self._registry = data.get(_REGISTRY_ROOT, {})
+        """Load the last-download registry (single file and/or fragments)."""
+        # Lecture des deux formats (registre vide si absent)
+        self._registry_store.load()
         # Logging
         logger.info(
-            f"Loaded {len(self._registry)} download records from "
+            f"Loaded {len(self._registry_store)} download records from "
             f"{self._last_download_path}"
         )
 
-    # Méthode de sauvegarde du registre des dates
-    def _save_registry(self) -> None:
-        """Persist the last-download registry through the configured storage."""
-        self._saver.save(
-            self._last_download_path,
-            {_REGISTRY_ROOT: self._registry},
-            bucket=self._bucket,
-            indent=2,
-            ensure_ascii=False,
-        )
+    # Méthode de persistance du registre des dates
+    def _flush_registry(self, report: DownloadReport) -> None:
+        """Persist the last-download registry through the configured storage.
+
+        Args:
+            report: Run report whose flush counter is incremented.
+        """
+        written = self._registry_store.flush()
+        self._commits_since_flush = 0
+        self._last_flush = time.monotonic()
+        if written:
+            report.n_registry_flushes += 1
 
 
 # ──────────────────────────────────────────────────────────────────────
 # Fonction de convenance
 # ──────────────────────────────────────────────────────────────────────
 
+
 # Fonction utilitaire enveloppant l'orchestrateur
 def download_updates(
     client: AbstractSDMXClient,
-    queries: Union[Any, Iterable[Any]],
+    queries: Any | Iterable[Any],
     connector: DuckLakeConnector,
-    structures_path: Union[str, Path],
-    last_download_path: Union[str, Path],
+    structures_path: str | Path,
+    last_download_path: str | Path,
     *,
     n_observations: int = 10,
     fresh_registry: bool = False,
-    max_runtime: Optional[timedelta] = timedelta(hours=23),
-    categorical_threshold: Optional[int] = None,
-    bucket: Optional[str] = None,
-    storage_options: Optional[Dict[str, Any]] = None,
-    on_query_complete: Optional[Callable[[QueryReport], None]] = None,
+    max_runtime: timedelta | None = timedelta(hours=23),
+    categorical_threshold: int | None = None,
+    bucket: str | None = None,
+    storage_options: dict[str, Any] | None = None,
+    on_query_complete: Callable[[QueryReport], None] | None = None,
+    registry_flush_every: int = 1,
+    registry_flush_seconds: float | None = None,
+    registry_shard_key: Callable[[Any], str] | None = None,
+    write_batch_rows: int | None = None,
+    write_batch_queries: int | None = None,
+    update_options: Mapping[str, Any] | None = None,
+    build_options: Mapping[str, Any] | None = None,
+    ducklake_options: dict[str, Any] | None = None,
+    run_id: str | None = None,
 ) -> DownloadReport:
     """Run an incremental SDMX → DuckLake download.
 
     Thin wrapper around :class:`SDMXDownloader` for one-call usage (e.g. from a
-    Kedro node). See :class:`SDMXDownloader` for the argument semantics.
+    Kedro node). See :class:`SDMXDownloader` for the argument semantics; every
+    argument defaults to the historical, unbuffered behaviour.
 
     Returns:
         A :class:`DownloadReport` summarising the run.
@@ -791,6 +1378,14 @@ def download_updates(
         bucket=bucket,
         storage_options=storage_options,
         on_query_complete=on_query_complete,
+        registry_flush_every=registry_flush_every,
+        registry_flush_seconds=registry_flush_seconds,
+        registry_shard_key=registry_shard_key,
+        write_batch_rows=write_batch_rows,
+        write_batch_queries=write_batch_queries,
+        update_options=update_options,
+        build_options=build_options,
+        ducklake_options=ducklake_options,
+        run_id=run_id,
     )
     return downloader.run(queries)
-

@@ -1,8 +1,8 @@
 """Tests — :func:`statflows.sources.comtrade.parsing.parse_availability_last_released`.
 
-Comportement figé : une ligne par (reporter, période) en entrée, une date par
-période en sortie (la plus récente tous reporters confondus), dates absentes
-ou invalides tolérées, entrée vide ou incomplète → dictionnaire vide.
+Frozen behaviour: one row per (reporter, period) as input, one date per period as
+output (the most recent across all reporters), missing or invalid dates
+tolerated, empty or incomplete input → empty dictionary.
 """
 
 from __future__ import annotations
@@ -11,7 +11,6 @@ import pandas as pd
 import pytest
 
 from statflows.sources.comtrade.parsing import parse_availability_last_released
-
 
 # ──────────────────────────────────────────────────────────────────────
 # Entrées vides ou incomplètes
@@ -90,7 +89,13 @@ def test_missing_or_invalid_dates_are_ignored() -> None:
     rows = pd.DataFrame(
         {
             "period": [2022, 2022, 2022, 2021, 2020],
-            "lastReleased": [None, "2026-02-06T10:18:40.23", float("nan"), None, "not a date"],
+            "lastReleased": [
+                None,
+                "2026-02-06T10:18:40.23",
+                float("nan"),
+                None,
+                "not a date",
+            ],
         }
     )
     assert parse_availability_last_released(rows) == {

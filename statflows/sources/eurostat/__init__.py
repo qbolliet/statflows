@@ -5,18 +5,19 @@ Re-exports the public Eurostat API so that
 ``statflows`` re-exports) keep working after the split into
 submodules.
 """
+
 # Importation des éléments d'intérêt du sous-package
-from .formats import EurostatResponseFormat
+from .client import EurostatClient
 from .endpoints import (
-    EurostatEndpointBuilderV30,
     EurostatEndpointBuilderV21,
+    EurostatEndpointBuilderV30,
 )
+from .formats import EurostatResponseFormat
 from .queries import (
     EurostatQueryRequest,
-    EurostatQueryRequestV30,
     EurostatQueryRequestV21,
+    EurostatQueryRequestV30,
 )
-from .client import EurostatClient
 
 # Réexport des éléments d'intérêt du sous-package
 __all__ = [

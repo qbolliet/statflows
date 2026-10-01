@@ -5,10 +5,12 @@ Version-specific DTOs encapsulating the parameters of an
 parameters shared by both API versions; :class:`EurostatQueryRequestV30` and
 :class:`EurostatQueryRequestV21` add the version-specific fields.
 """
+
 # Importation des modules
 # Modules de base
 from dataclasses import dataclass
-from typing import ClassVar, Dict, List, Optional, Type, Union
+from typing import ClassVar
+
 # Modules du package
 from ...core.queries import SDMXQueryRequest
 from ...core.sdmx import DuplicateHandling, SDMXResponseFormat
@@ -39,22 +41,23 @@ class EurostatQueryRequest(SDMXQueryRequest):
         split_dimensions: Dimensions to split into separate sub-requests.
         max_split_combinations: Maximum allowed split combinations.
     """
+
     # Attributs communs aux deux versions
     dataflow: str
     version: str = "*"
-    dimensions: Optional[Dict[str, Union[str, List[str]]]] = None
-    start_period: Optional[str] = None
-    end_period: Optional[str] = None
-    last_n_observations: Optional[int] = None
-    first_n_observations: Optional[int] = None
+    dimensions: dict[str, str | list[str]] | None = None
+    start_period: str | None = None
+    end_period: str | None = None
+    last_n_observations: int | None = None
+    first_n_observations: int | None = None
     format: EurostatResponseFormat = EurostatResponseFormat.CSV
     compress: bool = False
     on_duplicate: DuplicateHandling = "warn"
-    split_dimensions: Optional[List[str]] = None
+    split_dimensions: list[str] | None = None
     max_split_combinations: int = 100
 
     # Enum de format du provider (utilisé par SDMXQueryRequest.from_dict)
-    _FORMAT_ENUM: ClassVar[Optional[Type[SDMXResponseFormat]]] = EurostatResponseFormat
+    _FORMAT_ENUM: ClassVar[type[SDMXResponseFormat] | None] = EurostatResponseFormat
 
     # Propriété d'agence (Eurostat publie toujours sous l'agence ESTAT)
     @property
@@ -111,13 +114,13 @@ class EurostatQueryRequestV30(EurostatQueryRequest):
         ... )
         >>> df = client.execute_query(query)
     """
-    # Attributs spécifiques SDMX 3.0
-    attributes: Optional[str] = None
-    measures: Optional[str] = None
-    lang: Optional[str] = None
-    labels: Optional[str] = None
-    response_format_version: Optional[str] = None
 
+    # Attributs spécifiques SDMX 3.0
+    attributes: str | None = None
+    measures: str | None = None
+    lang: str | None = None
+    labels: str | None = None
+    response_format_version: str | None = None
 
 
 # Classe représentant une requête de données Eurostat via l'API SDMX 2.1
@@ -144,7 +147,7 @@ class EurostatQueryRequestV21(EurostatQueryRequest):
         ... )
         >>> df = client_v21.execute_query(query)
     """
-    # Attributs spécifiques SDMX 2.1
-    dimension_at_observation: Optional[str] = None
-    detail: Optional[DataDetail] = None
 
+    # Attributs spécifiques SDMX 2.1
+    dimension_at_observation: str | None = None
+    detail: DataDetail | None = None

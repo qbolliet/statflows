@@ -3,7 +3,8 @@
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Literal
+
 # Modules de package
 from .local.saver import save_local
 from .s3.saver import S3Saver
@@ -40,7 +41,7 @@ class Saver(S3Saver):
     """
 
     # Initialisation
-    def __init__(self, s3_package: Optional[str] = "boto3"):
+    def __init__(self, s3_package: Literal["boto3", "s3fs"] = "boto3"):
         """Initialize the Saver with specified S3 package.
 
         Args:
@@ -50,13 +51,13 @@ class Saver(S3Saver):
         super().__init__(s3_package=s3_package)
 
     # Méthode de sauvegarde des données
-    def save(
+    def save(  # type: ignore[override]
         self,
-        filepath: Union[str, Path],
-        obj: Optional[object] = None,
-        bucket: Optional[str] = None,
+        filepath: str | Path,
+        obj: object | None = None,
+        bucket: str | None = None,
         atomic: bool = True,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """Save a JSON-serialisable object to S3 or local storage.
 
@@ -137,8 +138,12 @@ class Saver(S3Saver):
             # Création du dossier parent si nécessaire
             path.parent.mkdir(parents=True, exist_ok=True)
             # Extension du temporaire reprise de la destination : la validation de
-            # format reste ainsi celle du fichier réellement demandé
-            fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), suffix=path.suffix)
+            # format reste ainsi celle du fichier réellement demandé. Préfixe point :
+            # un temporaire orphelin (arrêt brutal) n'est jamais listé par
+            # ``Loader.list_json`` comme un fichier régulier.
+            fd, tmp_name = tempfile.mkstemp(
+                dir=str(path.parent), prefix=".tmp-", suffix=path.suffix
+            )
             # Fermeture immédiate du descripteur : save_local ouvre le fichier lui-même
             os.close(fd)
             try:

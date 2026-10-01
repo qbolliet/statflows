@@ -1,10 +1,11 @@
-"""Backends de persistance de statflows.
+"""Persistence backends of statflows.
 
-``S3Connection`` est partagée par les registres JSON (:mod:`statflows.storage.json`)
-et, côté projet consommateur, par les chargeurs tabulaires qui en héritent. Son
-import est **différé** : la classe dépend de ``boto3`` (extra ``s3``), or
-:mod:`statflows.storage.ducklake` doit rester importable sans cet extra.
+``S3Connection`` is shared by the JSON registries (:mod:`statflows.storage.json`)
+and, on the consuming project side, by the tabular loaders that inherit from it.
+Its import is **deferred**: the class depends on ``boto3`` (``s3`` extra), whereas
+:mod:`statflows.storage.ducklake` must remain importable without that extra.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

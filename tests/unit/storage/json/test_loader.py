@@ -1,8 +1,8 @@
-"""Tests de caractérisation — :class:`statflows.storage.json.Loader` (mode local).
+"""Characterisation tests — :class:`statflows.storage.json.Loader` (local mode).
 
-Comportement figé : extension non ``.json`` → ``ValueError``, aller-retour local,
-acceptation d'un ``Path``, lecture tolérante (``missing_ok``). Le mode S3 est
-couvert par ``tests/integration/storage/json``.
+Frozen behaviour: non-``.json`` extension → ``ValueError``, local round trip,
+acceptance of a ``Path``, tolerant read (``missing_ok``). S3 mode is covered by
+``tests/integration/storage/json``.
 """
 
 from __future__ import annotations
@@ -12,7 +12,6 @@ from pathlib import Path
 import pytest
 
 from statflows.storage.json import Loader, Saver
-
 
 # ──────────────────────────────────────────────────────────────────────
 # Extension non supportée
@@ -60,3 +59,42 @@ def test_missing_file_returns_none_with_missing_ok(tmp_path: Path) -> None:
 def test_missing_file_raises_without_missing_ok(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         Loader().load(tmp_path / "absent.json")
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Listage des fichiers JSON d'un répertoire (``list_json``)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_list_json_direct_children_only(tmp_path: Path) -> None:
+    for name in ("b.json", "a.json"):
+        Saver().save(tmp_path / name, {})
+    (tmp_path / "notes.txt").write_text("x", encoding="utf-8")
+    (tmp_path / ".tmp-123.json").write_text("{}", encoding="utf-8")
+    Saver().save(tmp_path / "nested" / "c.json", {})
+
+    assert Loader().list_json(tmp_path) == [
+        str(tmp_path / "a.json"),
+        str(tmp_path / "b.json"),
+    ]
+
+
+def test_list_json_missing_directory_is_empty(tmp_path: Path) -> None:
+    assert Loader().list_json(tmp_path / "absent") == []
+
+
+def test_atomic_tempfile_is_dot_prefixed(tmp_path: Path, monkeypatch) -> None:
+    """The temporary file of the atomic write is hidden from ``list_json``."""
+    import tempfile
+
+    seen = {}
+    real_mkstemp = tempfile.mkstemp
+
+    def spy(*args, **kwargs):
+        seen.update(kwargs)
+        return real_mkstemp(*args, **kwargs)
+
+    monkeypatch.setattr(tempfile, "mkstemp", spy)
+    Saver().save(tmp_path / "reg.json", {"a": 1})
+
+    assert seen["prefix"].startswith(".")

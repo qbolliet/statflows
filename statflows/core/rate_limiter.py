@@ -3,12 +3,14 @@
 This module provides a rate limiter that enforces request rate limits
 for API clients, supporting various time units.
 """
+
 # Importation des modules
-from typing import Any, Dict, List, Literal, Union
-from collections import deque
-import time
-import threading
 import logging
+import threading
+import time
+from collections import deque
+from typing import Any, Literal
+
 # Module du package
 from .reports import RateLimitStats
 
@@ -178,7 +180,7 @@ class RateLimiter:
 
     # Méthode de création d'une instance du RateLimiter à partir d'un dictionnaire de paramètres
     @staticmethod
-    def from_dict(config: Dict[str, Any]) -> "RateLimiter":
+    def from_dict(config: dict[str, Any]) -> "RateLimiter":
         """Create RateLimiter from configuration dictionary.
 
         Args:
@@ -311,7 +313,7 @@ class CompositeRateLimiter:
     """
 
     # Initialisation
-    def __init__(self, limiters: List[RateLimiter]) -> None:
+    def __init__(self, limiters: list[RateLimiter]) -> None:
         """Initialize the composite rate limiter.
 
         Args:
@@ -391,8 +393,8 @@ class CompositeRateLimiter:
 
 # Fabrique de limiteur de débit à partir d'une configuration (dict ou liste)
 def build_rate_limiter(
-    config: Union[Dict[str, Any], List[Dict[str, Any]]],
-) -> Union[RateLimiter, CompositeRateLimiter]:
+    config: dict[str, Any] | list[dict[str, Any]],
+) -> RateLimiter | CompositeRateLimiter:
     """Build a rate limiter from a configuration entry.
 
     Accepts either a single limit specification (a dict, returning a

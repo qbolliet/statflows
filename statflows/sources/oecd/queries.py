@@ -3,11 +3,13 @@
 Public DTO encapsulating all parameters of an :meth:`OECDClient.get_data`
 call, enabling type-safe construction and batching of query requests.
 """
+
 # Importation des modules
 # Modules de base
 from dataclasses import dataclass
 from datetime import datetime
-from typing import ClassVar, Dict, List, Optional, Type, Union
+from typing import ClassVar
+
 # Modules du package
 from ...core.queries import SDMXQueryRequest
 from ...core.sdmx import (
@@ -52,22 +54,24 @@ class OECDQueryRequest(SDMXQueryRequest):
         ... )
         >>> df = client.execute_query(query)
     """
+
     agency: str
     dataflow: str
     version: str = "+"
-    dimensions: Optional[Dict[Union[int, str], Union[str, List[str]]]] = None
-    start_period: Optional[str] = None
-    end_period: Optional[str] = None
-    last_n_observations: Optional[int] = None
+    dimensions: dict[int | str, str | list[str]] | None = None
+    start_period: str | None = None
+    end_period: str | None = None
+    last_n_observations: int | None = None
     format: OECDResponseFormat = OECDResponseFormat.CSV_LABELS
-    dimension_at_observation: DimensionAtObservation = DimensionAtObservation.ALL_DIMENSIONS
-    attributes: Optional[str] = None
-    measures: Optional[str] = None
+    dimension_at_observation: DimensionAtObservation = (
+        DimensionAtObservation.ALL_DIMENSIONS
+    )
+    attributes: str | None = None
+    measures: str | None = None
     on_duplicate: DuplicateHandling = "warn"
-    split_dimensions: Optional[List[Union[int, str]]] = None
+    split_dimensions: list[int | str] | None = None
     max_split_combinations: int = 100
-    updated_after: Optional[Union[str, datetime]] = None
+    updated_after: str | datetime | None = None
 
     # Enum de format du provider (utilisé par SDMXQueryRequest.from_dict)
-    _FORMAT_ENUM: ClassVar[Optional[Type[SDMXResponseFormat]]] = OECDResponseFormat
-
+    _FORMAT_ENUM: ClassVar[type[SDMXResponseFormat] | None] = OECDResponseFormat

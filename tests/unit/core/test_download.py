@@ -1,15 +1,15 @@
-"""Tests de caractérisation — helpers purs de :mod:`statflows.core.download`.
+"""Characterisation tests — pure helpers of :mod:`statflows.core.download`.
 
-Comportement figé : ``_schema_name``, ``_parse_iso``, ``_json_safe``, ``_primary_keys``.
+Frozen behaviour: ``_schema_name``, ``_parse_iso``, ``_json_safe``, ``_primary_keys``.
 
-Ces helpers sont purs, mais ils vivent dans ``download.py`` dont l'import tire
-``duckdb`` et ``dt_ducklake_manager`` (l'orchestrateur porte l'extra
-« ducklake ») : le module entier est conditionné à leur présence, dès la collecte.
+These helpers are pure, but they live in ``download.py`` whose import pulls in
+``duckdb`` and ``dt_ducklake_manager`` (the orchestrator carries the "ducklake"
+extra): the whole module is conditioned on their presence, from collection on.
 """
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from types import SimpleNamespace
 
@@ -27,7 +27,7 @@ from statflows.core.download import (  # noqa: E402  (import après le skip cond
     _schema_name,
 )
 
-UTC = timezone.utc
+UTC = UTC
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -65,7 +65,9 @@ def test_parse_iso_naive_date_assumed_utc() -> None:
 
 
 def test_parse_iso_z_suffix_is_utc() -> None:
-    assert _parse_iso("2024-01-02T03:04:05Z") == datetime(2024, 1, 2, 3, 4, 5, tzinfo=UTC)
+    assert _parse_iso("2024-01-02T03:04:05Z") == datetime(
+        2024, 1, 2, 3, 4, 5, tzinfo=UTC
+    )
 
 
 def test_parse_iso_offset_converted_to_utc() -> None:

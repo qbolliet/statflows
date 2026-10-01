@@ -17,17 +17,17 @@ translations and lets the request subdivision iterate every flow-defining
 dimension generically.
 """
 # Importation des modules
-from typing import Dict, List, Optional
 
 # Module du package
-from ...core.sdmx import SDMXResponseFormat
+from typing import cast
 
+from ...core.sdmx import SDMXResponseFormat
 
 # Identifiant d'agence (par symétrie avec ESTAT / OECD)
 AGENCY_ID = "COMTRADE"
 
 # Fréquences métier valides acceptées par le client
-VALID_FREQUENCIES: List[str] = ["annual", "monthly"]
+VALID_FREQUENCIES: list[str] = ["annual", "monthly"]
 
 
 # Format de réponse de l'API Comtrade
@@ -38,6 +38,7 @@ class ComtradeResponseFormat(SDMXResponseFormat):
         JSON: JSON response (default).
         CSV: CSV response.
     """
+
     JSON = "json"
     CSV = "csv"
 
@@ -51,20 +52,40 @@ class ComtradeResponseFormat(SDMXResponseFormat):
 #   - structure_dim : nom de la dimension de structure / colonne de réponse ;
 #   - category      : catégorie de métadonnées pour récupérer les codes valides
 #                     (None ⇒ codes non énumérables, ex. les périodes).
-DIMENSIONS: Dict[str, Dict[str, Optional[str]]] = {
-    "flows":     {"api_arg": "flowCode",     "structure_dim": "flowDesc",    "category": "flow"},
-    "products":  {"api_arg": "cmdCode",      "structure_dim": "cmdCode",     "category": "cmd:HS"},
-    "reporters": {"api_arg": "reporterCode", "structure_dim": "reporterISO", "category": "reporter"},
-    "partners":  {"api_arg": "partnerCode",  "structure_dim": "partnerISO",  "category": "partner"},
-    "partners2": {"api_arg": "partner2Code", "structure_dim": "partner2ISO", "category": "partner"},
-    "customs":   {"api_arg": "customsCode",  "structure_dim": "customsCode", "category": None},
-    "mot":       {"api_arg": "motCode",      "structure_dim": "motCode",     "category": None},
-    "periods":   {"api_arg": "period",       "structure_dim": "period",      "category": None},
+DIMENSIONS: dict[str, dict[str, str | None]] = {
+    "flows": {"api_arg": "flowCode", "structure_dim": "flowDesc", "category": "flow"},
+    "products": {
+        "api_arg": "cmdCode",
+        "structure_dim": "cmdCode",
+        "category": "cmd:HS",
+    },
+    "reporters": {
+        "api_arg": "reporterCode",
+        "structure_dim": "reporterISO",
+        "category": "reporter",
+    },
+    "partners": {
+        "api_arg": "partnerCode",
+        "structure_dim": "partnerISO",
+        "category": "partner",
+    },
+    "partners2": {
+        "api_arg": "partner2Code",
+        "structure_dim": "partner2ISO",
+        "category": "partner",
+    },
+    "customs": {
+        "api_arg": "customsCode",
+        "structure_dim": "customsCode",
+        "category": None,
+    },
+    "mot": {"api_arg": "motCode", "structure_dim": "motCode", "category": None},
+    "periods": {"api_arg": "period", "structure_dim": "period", "category": None},
 }
 
 # Ordre de préférence des dimensions testées pour subdiviser une requête trop
 # large (les flux d'abord, les périodes en dernier recours).
-SUBDIVISION_ORDER: List[str] = [
+SUBDIVISION_ORDER: list[str] = [
     "flows",
     "products",
     "reporters",
@@ -93,11 +114,11 @@ def api_arg_for(name: str) -> str:
         >>> api_arg_for("reporters")
         'reporterCode'
     """
-    return DIMENSIONS[name]["api_arg"]
+    return cast(str, DIMENSIONS[name]["api_arg"])
 
 
 # Fonction d'extraction de la catégorie de métadonnées d'un nom convivial
-def category_for(name: str) -> Optional[str]:
+def category_for(name: str) -> str | None:
     """Return the metadata category used to list a dimension's valid codes.
 
     Args:

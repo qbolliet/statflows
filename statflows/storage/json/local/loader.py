@@ -31,5 +31,5 @@ def load_local(filepath: str, **kwargs) -> Any:
             f"Unsupported extension '.{extension}': only '.json' files are supported."
         )
     # Lecture du fichier JSON
-    with open(filepath, "r", encoding="utf-8") as f:
+    with open(filepath, encoding="utf-8") as f:
         return json.load(f, **kwargs)

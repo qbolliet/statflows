@@ -5,24 +5,27 @@ script, Kedro nodes, notebooks). Kept in :mod:`statflows.core` so the relative
 imports of the provider clients and query DTOs resolve correctly and the logic
 is reusable rather than duplicated in each script.
 """
+
 # Importation des modules
 import logging
 import re
-from typing import Any, Dict, Iterable, List, Optional, Type
+from collections.abc import Iterable
+from typing import Any
 
-import yaml
+import pandas as pd
 
-from .client import AbstractSDMXClient
-from .queries import SDMXQueryRequest
 from ..sources.eurostat.queries import EurostatQueryRequestV30
 from ..sources.oecd.queries import OECDQueryRequest
+from .client import AbstractSDMXClient
+from .queries import SDMXQueryRequest
+from .structures import DataflowStructure
 
 # Initialisation du logger
 logger = logging.getLogger(__name__)
 
 
 # Table de correspondance provider → classe de requête par défaut
-_QUERY_CLASSES: Dict[str, Type[SDMXQueryRequest]] = {
+_QUERY_CLASSES: dict[str, type[SDMXQueryRequest]] = {
     "eurostat": EurostatQueryRequestV30,
     "oecd": OECDQueryRequest,
 }
@@ -54,9 +57,7 @@ def build_client(provider: str) -> AbstractSDMXClient:
 
 
 # Fonction de construction des requêtes à partir d'une liste de spécifications
-def build_queries(
-    provider: str, specs: List[Dict[str, Any]]
-) -> List[SDMXQueryRequest]:
+def build_queries(provider: str, specs: list[dict[str, Any]]) -> list[SDMXQueryRequest]:
     """Build provider query objects from a list of JSON specifications.
 
     Each specification is passed to the provider query DTO
@@ -88,11 +89,11 @@ def build_queries(
 # Fonction de filtrage d'une liste de codes par inclusion/exclusion
 def filter_codes(
     available: Iterable[str],
-    include: Optional[List[str]] = None,
-    exclude: Optional[List[str]] = None,
-    include_regex: Optional[str] = None,
-    exclude_regex: Optional[str] = None,
-) -> List[str]:
+    include: list[str] | None = None,
+    exclude: list[str] | None = None,
+    include_regex: str | None = None,
+    exclude_regex: str | None = None,
+) -> list[str]:
     """Filter a codelist by include/exclude lists and regular expressions.
 
     Selects the codes to keep when iterating a split dimension (e.g. the
@@ -155,3 +156,72 @@ def filter_codes(
 
     # Retour trié déterministe
     return sorted(selected)
+
+
+# Fonction de récupération d'une codelist avec libellés, quel que soit le client
+def codelist_frame(
+    client: Any,
+    dimension: str,
+    structure: DataflowStructure | None = None,
+    **kwargs: Any,
+) -> pd.DataFrame:
+    """Return a codelist with its labels, for Eurostat and Comtrade alike.
+
+    Resolves the codelist of a dataflow dimension (``DimensionInfo.codelist``)
+    and delegates to the client's cached ``get_codelist``: building the split
+    queries and publishing reference tables (product and country labels) from
+    the same client costs one network call per codelist, none once it is in
+    cache.
+
+    Args:
+        client: A client exposing ``get_codelist`` (``EurostatClient``,
+            ``ComtradeClient``).
+        dimension: Dimension name looked up in ``structure`` (matched
+            case-insensitively) or, without ``structure``, the codelist
+            identifier itself (Eurostat ``"CL_GEO"`` / ``"CXT_FREE_ISO"``,
+            Comtrade ``"reporter"`` / ``"cmd:HS"``…).
+        structure: Dataflow structure carrying the dimension → codelist
+            mapping (e.g. ``client.get_dataflow_structure(...)`` or
+            ``client.resolve_query_structure(query)``).
+        **kwargs: Forwarded to ``get_codelist`` (e.g. ``refresh=True``, or
+            Comtrade's ``keep_metadata=True``).
+
+    Returns:
+        DataFrame with columns ``code``, ``label`` and, when the codelist is
+        hierarchical, ``parent``.
+
+    Raises:
+        TypeError: If the client exposes no ``get_codelist``.
+        KeyError: If ``dimension`` is not a dimension of ``structure``.
+        ValueError: If the dimension declares no codelist.
+
+    Examples:
+        >>> structure = client.get_dataflow_structure("DS-045409")  # doctest: +SKIP
+        >>> products = codelist_frame(client, "product", structure)  # doctest: +SKIP
+        >>> countries = codelist_frame(ComtradeClient(), "reporter")  # doctest: +SKIP
+    """
+    # Client compatible : codelists avec libellés mises en cache
+    get_codelist = getattr(client, "get_codelist", None)
+    if not callable(get_codelist):
+        raise TypeError(
+            f"{type(client).__name__} exposes no get_codelist(): codelists with "
+            "labels are available for EurostatClient and ComtradeClient"
+        )
+
+    # Sans structure : la dimension désigne directement la codelist
+    if structure is None:
+        return get_codelist(dimension, **kwargs)
+
+    # Résolution de la codelist de la dimension (insensible à la casse)
+    matches = [d for d in structure.dimensions if d.name.lower() == dimension.lower()]
+    if not matches:
+        raise KeyError(
+            f"Dimension '{dimension}' not found in {structure.dataflow}: "
+            f"{[d.name for d in structure.dimensions]}"
+        )
+    codelist_id = matches[0].codelist
+    if not codelist_id:
+        raise ValueError(
+            f"Dimension '{dimension}' of {structure.dataflow} declares no codelist"
+        )
+    return get_codelist(codelist_id, **kwargs)

@@ -1,12 +1,12 @@
-"""Tests unitaires — :func:`statflows.storage.ducklake.tables.write_dataframe`.
+"""Unit tests — :func:`statflows.storage.ducklake.tables.write_dataframe`.
 
-Les classes de ``dt_ducklake_manager`` sont remplacées par des mocks
-``autospec`` : les appels sont validés contre les **signatures réelles** de la
-version installée. Un paramètre renommé ou supprimé par la librairie (par ex.
-``ducklake_catalog_alias`` → ``catalog_alias``) fait donc échouer ces tests sans
-qu'aucun catalogue DuckLake ne soit nécessaire.
+The ``dt_ducklake_manager`` classes are replaced by ``autospec`` mocks: calls are
+validated against the **real signatures** of the installed version. A parameter
+renamed or removed by the library (e.g. ``ducklake_catalog_alias`` →
+``catalog_alias``) therefore makes these tests fail without any DuckLake catalog
+being needed.
 
-Requiert l'extra « ducklake » : le module est ignoré à la collecte sinon.
+Requires the "ducklake" extra: the module is skipped at collection otherwise.
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ pytest.importorskip(
     reason="requiert l'extra « ducklake » (dt_ducklake_manager absent)",
 )
 
-import duckdb  # noqa: E402
 import dt_ducklake_manager  # noqa: E402
+import duckdb  # noqa: E402
 
 from statflows.storage.ducklake.tables import write_dataframe  # noqa: E402
 
@@ -39,14 +39,14 @@ def data() -> pd.DataFrame:
 
 @pytest.fixture
 def conn():
-    """Connexion en mémoire, avec ou sans table de faits selon le test."""
+    """In-memory connection, with or without a fact table depending on the test."""
     connection = duckdb.connect(":memory:")
     yield connection
     connection.close()
 
 
 def _make_fact_table_visible(conn, alias: str, schema: str) -> None:
-    """Fait exister ``{alias}.{schema}.fact_table`` pour ``fact_table_exists``."""
+    """Make ``{alias}.{schema}.fact_table`` exist for ``fact_table_exists``."""
     conn.execute(f"ATTACH ':memory:' AS {alias}")
     conn.execute(f"CREATE SCHEMA {alias}.{schema}")
     conn.execute(f"CREATE TABLE {alias}.{schema}.fact_table (id INTEGER)")
@@ -54,7 +54,7 @@ def _make_fact_table_visible(conn, alias: str, schema: str) -> None:
 
 @pytest.fixture
 def updater_cls():
-    """``DatabaseUpdater`` mocké avec la signature réelle ; mise à jour réussie."""
+    """``DatabaseUpdater`` mocked with the real signature; successful update."""
     with mock.patch.object(
         dt_ducklake_manager, "DatabaseUpdater", autospec=True
     ) as cls:
@@ -64,7 +64,7 @@ def updater_cls():
 
 @pytest.fixture
 def builder_cls():
-    """``DuckLakeTablesBuilder`` mocké avec la signature réelle."""
+    """``DuckLakeTablesBuilder`` mocked with the real signature."""
     with mock.patch.object(
         dt_ducklake_manager, "DuckLakeTablesBuilder", autospec=True
     ) as cls:
@@ -98,7 +98,7 @@ def test_upsert_passes_catalog_alias_and_schema_to_updater(
         schema=SCHEMA,
     )
     updater_cls.return_value.update_database.assert_called_once_with(
-        data, use_transaction=True, compact_after_update=True
+        data, use_transaction=True
     )
 
 
@@ -167,11 +167,9 @@ def test_create_does_not_update(conn, data, updater_cls, builder_cls) -> None:
 # ──────────────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize(
-    "cls_name", ["DatabaseUpdater", "DuckLakeTablesBuilder"]
-)
+@pytest.mark.parametrize("cls_name", ["DatabaseUpdater", "DuckLakeTablesBuilder"])
 def test_library_classes_accept_catalog_alias(cls_name: str) -> None:
-    """Les deux classes exposent ``catalog_alias`` et ``schema`` (pas l'ancien nom)."""
+    """Both classes expose ``catalog_alias`` and ``schema`` (not the old name)."""
     params = inspect.signature(getattr(dt_ducklake_manager, cls_name)).parameters
 
     assert "catalog_alias" in params
@@ -180,7 +178,7 @@ def test_library_classes_accept_catalog_alias(cls_name: str) -> None:
 
 
 def test_write_leaves_session_position_untouched(conn, data, builder_cls) -> None:
-    """``write_dataframe`` ne déplace plus la connexion (plus de ``USE``)."""
+    """``write_dataframe`` no longer moves the connection (no more ``USE``)."""
     conn.execute("ATTACH ':memory:' AS other")
     conn.execute("USE other")
 
@@ -190,7 +188,75 @@ def test_write_leaves_session_position_untouched(conn, data, builder_cls) -> Non
 
 
 def test_missing_dependency_raises_import_error(conn, data) -> None:
-    """Sans ``dt_ducklake_manager``, l'erreur est explicite et précède tout effet."""
+    """Without ``dt_ducklake_manager``, the error is explicit and precedes any effect."""
     with mock.patch.dict("sys.modules", {"dt_ducklake_manager": None}):
         with pytest.raises(ImportError, match=r"statflows\[ducklake\]"):
             write_dataframe(conn, data, ["id"], catalog_alias=ALIAS, schema=SCHEMA)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Options transmises à la librairie (compaction, colonnes, commit)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_upsert_forwards_explicit_options(conn, data, updater_cls) -> None:
+    _make_fact_table_visible(conn, ALIAS, SCHEMA)
+
+    write_dataframe(
+        conn,
+        data,
+        ["id"],
+        catalog_alias=ALIAS,
+        schema=SCHEMA,
+        update_options={"allow_new_columns": True, "compact_after_update": True},
+        run_id="run-1",
+        commit_message="msg",
+    )
+
+    updater_cls.return_value.update_database.assert_called_once_with(
+        data,
+        use_transaction=True,
+        compact_after_update=True,
+        allow_new_columns=True,
+        run_id="run-1",
+        commit_message="msg",
+    )
+
+
+def test_create_forwards_commit_options_to_build_schema(
+    conn, data, builder_cls
+) -> None:
+    write_dataframe(
+        conn, data, ["id"], catalog_alias=ALIAS, schema=SCHEMA, run_id="run-1"
+    )
+
+    builder_cls.return_value.build_schema.assert_called_once_with(run_id="run-1")
+
+
+def test_create_forwards_build_options(conn, data, builder_cls) -> None:
+    write_dataframe(
+        conn,
+        data,
+        ["id"],
+        catalog_alias=ALIAS,
+        schema=SCHEMA,
+        build_options={"partition_by": ["id"], "run_id": "ignored"},
+        run_id="run-1",
+    )
+
+    # Les options de commit explicites priment sur celles du dictionnaire
+    builder_cls.return_value.build_schema.assert_called_once_with(
+        partition_by=["id"], run_id="run-1"
+    )
+
+
+@pytest.mark.parametrize(
+    "param", ["compact_after_update", "allow_new_columns", "run_id", "commit_message"]
+)
+def test_library_update_accepts_forwarded_options(param: str) -> None:
+    """The installed version's ``update_database`` accepts the forwarded options."""
+    params = inspect.signature(
+        dt_ducklake_manager.DatabaseUpdater.update_database
+    ).parameters
+
+    assert param in params

@@ -1,0 +1,52 @@
+name: Deploy Docs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Un seul déploiement de documentation à la fois ; on ne coupe pas un
+# déploiement en cours (cancel-in-progress: false) pour éviter de publier
+# un site partiellement construit.
+concurrency:
+  group: docs-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Déploiement de la documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      # Pas de --all-extras : mkdocstrings analyse le code de façon statique
+      # (griffe), sans importer les dépendances optionnelles.
+      - name: Installer les dépendances de documentation
+        run: uv sync --group docs
+
+      - name: Cache MkDocs
+        uses: actions/cache@v6
+        with:
+          key: mkdocs-material-${{ hashFiles('mkdocs.yml', 'docs/**', 'README.md') }}
+          path: .cache
+
+      - name: Vérifier que le site se construit sans avertissement
+        run: uv run mkdocs build --strict
+
+      - name: Configurer les credentials Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Déployer la documentation sur GitHub Pages
+        run: uv run mkdocs gh-deploy --force

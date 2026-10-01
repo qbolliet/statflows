@@ -16,23 +16,23 @@ The *catalogue* itself (base URL, file names, sheet radicals, vintages) lives in
 publishes a new vintage, whereas this module holds the reading logic's
 constants.
 """
+
 # Importation des modules
 # Modules de base
 import re
-from typing import Dict, List
+from typing import Literal
 
 # Module du package
 from ...core.sdmx import SDMXResponseFormat
-
 
 # Identifiant d'agence (par symétrie avec ESTAT / OECD / COMTRADE)
 AGENCY_ID = "UNSD"
 
 # Types de correspondance exposés par le client (radicaux des noms de feuilles)
-CORRESPONDENCE_KINDS: List[str] = ["conversion", "correlation"]
+CORRESPONDENCE_KINDS: list[str] = ["conversion", "correlation"]
 
 # Schéma canonique de sortie, identique quel que soit le millésime
-CANONICAL_COLUMNS: List[str] = [
+CANONICAL_COLUMNS: list[str] = [
     "source_classification",
     "source_code",
     "target_classification",
@@ -44,7 +44,7 @@ CANONICAL_COLUMNS: List[str] = [
 HS_CODE_LENGTH: int = 6
 
 # Relations valides de la feuille Correlation
-VALID_RELATIONSHIPS: List[str] = ["1:1", "1:n", "n:1", "n:n"]
+VALID_RELATIONSHIPS: list[str] = ["1:1", "1:n", "n:1", "n:n"]
 
 
 # Format de réponse du serveur de fichiers UNSD
@@ -57,6 +57,7 @@ class UNSDResponseFormat(SDMXResponseFormat):
         CSV: Comma-separated table (cross-classification tables).
         TXT: Text table (cross-classification tables).
     """
+
     XLSX = "xlsx"
     XLS = "xls"
     CSV = "csv"
@@ -69,7 +70,7 @@ class UNSDResponseFormat(SDMXResponseFormat):
 
 # Moteur pandas requis par extension : les .xls ne sont lisibles que par xlrd,
 # les .xlsx que par openpyxl (les deux sont déclarés dans pyproject.toml).
-EXCEL_ENGINES: Dict[str, str] = {
+EXCEL_ENGINES: dict[str, Literal["xlrd", "openpyxl"]] = {
     ".xls": "xlrd",
     ".xlsx": "openpyxl",
 }
@@ -92,10 +93,10 @@ MAX_HEADER_SCAN_ROWS: int = 30
 
 # Valeurs de la colonne de marqueur de correspondance partielle intercalée entre
 # les colonnes de codes des .xls ("ex" ou "ex." selon les millésimes).
-PARTIAL_MARKERS: List[str] = ["ex", "ex."]
+PARTIAL_MARKERS: list[str] = ["ex", "ex."]
 
 # Fragments d'en-tête entraînant le rejet d'une colonne (modèle de lookup.py)
-REJECTED_COLUMN_TOKENS: List[str] = ["partial"]
+REJECTED_COLUMN_TOKENS: list[str] = ["partial"]
 
 # Motif de normalisation des relations rédigées en toutes lettres : les
 # classeurs HS2012 écrivent "n to 1" là où les autres écrivent "n:1".
@@ -103,7 +104,7 @@ RELATIONSHIP_SEPARATOR_PATTERN: str = r"\s+to\s+"
 
 
 # Fonction d'extraction du moteur de lecture associé à une extension
-def engine_for(extension: str) -> str:
+def engine_for(extension: str) -> Literal["xlrd", "openpyxl"]:
     """Return the pandas Excel engine required by a workbook extension.
 
     Args:

@@ -2,32 +2,64 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches-ignore:
+      - main
   pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
+# Un nouveau push sur la même réf annule le run précédent encore en cours.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # Suite complète : tous les extras installés, DuckLake et S3 (moto) couverts.
-  test:
+  lint:
+    name: Lint & Type check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
+          python-version: "3.13"
           enable-cache: true
 
-      - name: Sync with all extras and dev group
+      - name: Installer les dépendances
         run: uv sync --all-extras
 
-      - name: Run pytest
-        run: uv run pytest --cov --cov-report=xml --cov-report=term-missing
+      - name: Vérification du style (ruff)
+        run: uv run ruff check .
 
-      - name: Upload coverage to Codecov
+      - name: Vérification du formatage (ruff)
+        run: uv run ruff format --check .
+
+      - name: Vérification des types (mypy)
+        run: uv run mypy statflows/
+
+  # Suite complète : tous les extras installés, DuckLake et S3 (moto) couverts.
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Installer avec tous les extras et le groupe dev
+        run: uv sync --all-extras
+
+      - name: Exécution des tests unitaires
+        run: uv run pytest -m "not integration" --cov --cov-report=xml
+
+      - name: Exécution des tests d'intégration
+        run: uv run pytest -m integration --cov --cov-append --cov-report=xml --cov-report=term-missing
+
+      - name: Envoi de la couverture à Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -36,28 +68,64 @@ jobs:
 
   # Installation nue : le socle doit s'importer sans aucun extra.
   bare-imports:
+    name: Installation nue (sans extras)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
+          python-version: "3.13"
           enable-cache: true
 
-      - name: Set up Python
-        run: uv python install 3.13
-
-      # Environnement nu : ni extras ni groupe dev, on cible directement .venv.
-      - name: Install the bare package (no extras)
+      - name: Installer le paquet nu (sans extras)
         run: |
           uv venv
           uv pip install . pytest
 
-      - name: Verify base imports
+      - name: Vérifier les imports de base
         run: .venv/bin/python -c "import statflows, statflows.core, statflows.sources, statflows.storage"
 
-      # tests/unit tourne sur une install nue : imports + I/O locale JSON ;
-      # les tests DuckLake / S3 sont ignorés (importorskip) faute d'extras.
-      - name: Run the unit suite (no extras)
+      # Les tests DuckLake / S3 sont ignorés (importorskip) faute d'extras.
+      - name: Exécution des tests unitaires (sans extras)
         run: .venv/bin/python -m pytest tests/unit
+
+  # La documentation doit se construire sans avertissement (docstrings, liens).
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Installer les dépendances de documentation
+        run: uv sync --group docs
+
+      - name: Construire le site (mode strict)
+        run: uv run mkdocs build --strict
+
+  # Le paquet doit se construire et ses métadonnées être valides (PyPI).
+  build:
+    name: Build & métadonnées
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Construire sdist et wheel
+        run: uv build
+
+      - name: Valider les métadonnées
+        run: uvx twine check dist/*
+
+      - name: Vérifier que les JSON de parameters/ sont dans la wheel
+        run: |
+          unzip -l dist/*.whl | grep -q "statflows/parameters/comtrade.json"
+          unzip -l dist/*.whl | grep -q "statflows/py.typed"

@@ -6,33 +6,35 @@ This module provides:
   SDMX provider clients (structure registry, duplicate checking, split-request
   execution, CSV parsing, context manager, etc.).
 """
+
 # Importation des modules
-from abc import ABC, abstractmethod
-from datetime import datetime
-from functools import reduce
-from io import StringIO
 import itertools
 import json
 import logging
 import operator
-from pathlib import Path
 import time
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
-from urllib.parse import urljoin
 import warnings
+from abc import ABC, abstractmethod
+from datetime import datetime
+from functools import reduce
+from io import StringIO
+from pathlib import Path
+
+# Imports internes — éviter les imports circulaires en utilisant TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar, Optional
+from urllib.parse import urljoin
 
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .rate_limiter import CompositeRateLimiter, RateLimiter, build_rate_limiter
+
 # Import runtime du rate limiter (rate_limiter.py n'a pas de dépendance interne
 # au package, aucun risque de circularité)
 from .reports import FetchReport, HttpStats
-from .rate_limiter import CompositeRateLimiter, RateLimiter, build_rate_limiter
 
-# Imports internes — éviter les imports circulaires en utilisant TYPE_CHECKING
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .sdmx import DuplicateHandling
     from .structures import DataflowStructure, DataflowStructureRegistry
@@ -44,6 +46,7 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────────
 # Client HTTP générique
 # ──────────────────────────────────────────────────────────────────────
+
 
 # Classe permettant d'effectuer des requêtes API avec 'requests'
 class APIClient:
@@ -71,7 +74,7 @@ class APIClient:
         timeout: int = 30,
         max_retries: int = 3,
         backoff_factor: float = 0.5,
-        headers: Optional[Dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         # Initialisation des attributs
         self.base_url = base_url.rstrip("/")
@@ -85,7 +88,9 @@ class APIClient:
         self.stats_ = HttpStats()
 
     # Méthode auxiliaire de création de la session 'request'
-    def _create_session(self, max_retries: int, backoff_factor: float) -> requests.Session:
+    def _create_session(
+        self, max_retries: int, backoff_factor: float
+    ) -> requests.Session:
         """Create a session with retry configuration.
 
         Args:
@@ -117,9 +122,9 @@ class APIClient:
     def get(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
-        timeout: Optional[int] = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        timeout: int | None = None,
     ) -> requests.Response:
         """Make a GET request.
 
@@ -197,9 +202,9 @@ class APIClient:
     # Constructeur de sortie comme contexte manager
     def __exit__(
         self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
+        exc_type: type | None,
+        exc_val: BaseException | None,
+        exc_tb: Any | None,
     ) -> None:
         """Context manager exit."""
         self.close()
@@ -208,6 +213,7 @@ class APIClient:
 # ──────────────────────────────────────────────────────────────────────
 # Client SDMX abstrait — logique mutualisée entre tous les providers
 # ──────────────────────────────────────────────────────────────────────
+
 
 class AbstractSDMXClient(ABC):
     """Abstract base class for SDMX provider clients.
@@ -268,7 +274,7 @@ class AbstractSDMXClient(ABC):
     # Nom du fichier de configuration du provider (sans extension) utilisé pour
     # le chargement automatique du rate limiter depuis parameters/{nom}.json.
     # Laissé à None dans la base ; surchargé par chaque client concret.
-    PROVIDER_CONFIG_NAME: ClassVar[Optional[str]] = None
+    PROVIDER_CONFIG_NAME: ClassVar[str | None] = None
 
     # Initialisation
     def __init__(
@@ -283,21 +289,20 @@ class AbstractSDMXClient(ABC):
 
         # Initialisation des attributs
         # Registre des structures de dataflows
-        self.structure_registry: "DataflowStructureRegistry" = (
+        self.structure_registry: DataflowStructureRegistry = (
             structure_registry if structure_registry is not None else _Registry()
         )
         self.auto_fetch_structure = auto_fetch_structure
 
         # Chargement automatique du rate limiter si demandé
+        resolved_limiter: RateLimiter | CompositeRateLimiter | None = rate_limiter
         if auto_load_rate_limit and rate_limiter is None:
-            rate_limiter = self._load_rate_limiter()
-        self.rate_limiter: Optional[Union[RateLimiter, CompositeRateLimiter]] = (
-            rate_limiter
-        )
+            resolved_limiter = self._load_rate_limiter()
+        self.rate_limiter: RateLimiter | CompositeRateLimiter | None = resolved_limiter
 
         # Diagnostics de la dernière récupération (convention sklearn du dépôt :
         # attribut suffixé d'un underscore, renseigné à l'exécution)
-        self.last_fetch_report_: Optional[FetchReport] = None
+        self.last_fetch_report_: FetchReport | None = None
         # Nombre de structures effectivement téléchargées (défauts de cache)
         self.n_structures_fetched_: int = 0
 
@@ -323,7 +328,7 @@ class AbstractSDMXClient(ABC):
     # Méthode de chargement du rate-limiter depuis le fichier de configuration
     def _load_rate_limiter(
         self,
-    ) -> Optional[Union[RateLimiter, CompositeRateLimiter]]:
+    ) -> RateLimiter | CompositeRateLimiter | None:
         """Load the rate limiter from ``parameters/{PROVIDER_CONFIG_NAME}.json``.
 
         Reads the ``RATE_LIMIT`` section of the provider configuration file and
@@ -349,7 +354,7 @@ class AbstractSDMXClient(ABC):
             )
             # Lecture et parsing du fichier de configuration si présent
             if params_path.exists():
-                with open(params_path, "r", encoding="utf-8") as f:
+                with open(params_path, encoding="utf-8") as f:
                     config = json.load(f)
                 # Extraction de la configuration du rate limiter
                 if "RATE_LIMIT" in config:
@@ -395,7 +400,7 @@ class AbstractSDMXClient(ABC):
     @abstractmethod
     def _execute_single_request(
         self,
-        dims_for_request: Dict,
+        dims_for_request: dict,
         **request_kwargs,
     ) -> pd.DataFrame:
         """Execute one API request for a given dimension combination.
@@ -417,7 +422,7 @@ class AbstractSDMXClient(ABC):
     # Méthode abstraite de résolution de la structure d'une requête
     @abstractmethod
     def _resolve_structure(
-        self, params: Dict[str, Any]
+        self, params: dict[str, Any]
     ) -> Optional["DataflowStructure"]:
         """Resolve (and cache) the dataflow structure for a query.
 
@@ -439,8 +444,8 @@ class AbstractSDMXClient(ABC):
     def _prepare_requests(
         self,
         structure: Optional["DataflowStructure"],
-        params: Dict[str, Any],
-    ) -> Tuple[List[Tuple[Dict, Dict]], Dict, Dict[str, Any]]:
+        params: dict[str, Any],
+    ) -> tuple[list[tuple[dict, dict]], dict, dict[str, Any]]:
         """Build the split-request combinations and execution arguments.
 
         Called by :meth:`_execute_query_pipeline` after structure resolution.
@@ -471,7 +476,7 @@ class AbstractSDMXClient(ABC):
     def fetch_updates(
         self,
         query: Any,
-        since: Optional[datetime],
+        since: datetime | None,
         n_observations: int = 10,
     ) -> pd.DataFrame:
         """Fetch the data for a query, incrementally when possible.
@@ -526,9 +531,7 @@ class AbstractSDMXClient(ABC):
         return self.get_data(**query.to_dict())
 
     # Méthode de résolution de la structure associée à un objet requête
-    def resolve_query_structure(
-        self, query: Any
-    ) -> Optional["DataflowStructure"]:
+    def resolve_query_structure(self, query: Any) -> Optional["DataflowStructure"]:
         """Resolve the dataflow structure backing a provider query object.
 
         Thin adapter delegating to the provider :meth:`_resolve_structure`
@@ -548,7 +551,7 @@ class AbstractSDMXClient(ABC):
         return self._resolve_structure(query.to_dict())
 
     # Méthode patron orchestrant la récupération des données
-    def _execute_query_pipeline(self, params: Dict[str, Any]) -> pd.DataFrame:
+    def _execute_query_pipeline(self, params: dict[str, Any]) -> pd.DataFrame:
         """Run the shared data-retrieval pipeline (template method).
 
         Orchestrates the steps common to every provider: structure
@@ -578,9 +581,7 @@ class AbstractSDMXClient(ABC):
         # Résolution de la structure du dataflow (spécifique au provider)
         structure = self._resolve_structure(params)
         if structure is not None:
-            report.structure_from_cache = (
-                self.n_structures_fetched_ == n_fetched_before
-            )
+            report.structure_from_cache = self.n_structures_fetched_ == n_fetched_before
 
         # Préparation des requêtes : combinaisons, dims normalisées, kwargs d'exécution
         request_combinations, normalized_dims, execute_kwargs = self._prepare_requests(
@@ -611,8 +612,8 @@ class AbstractSDMXClient(ABC):
         self,
         df: pd.DataFrame,
         structure: Optional["DataflowStructure"],
-        normalized_dims: Dict,
-        params: Dict[str, Any],
+        normalized_dims: dict,
+        params: dict[str, Any],
     ) -> pd.DataFrame:
         """Post-process the retrieved DataFrame (hook, no-op by default).
 
@@ -635,9 +636,9 @@ class AbstractSDMXClient(ABC):
     # Méthode statique de génération du produit cartésien des dimensions à splitter
     @staticmethod
     def _cartesian_split(
-        split_values: Dict[Any, List[str]],
+        split_values: dict[Any, list[str]],
         max_combinations: int,
-    ) -> List[Dict[Any, str]]:
+    ) -> list[dict[Any, str]]:
         """Build the cartesian product of split-dimension values.
 
         Args:
@@ -761,9 +762,9 @@ class AbstractSDMXClient(ABC):
     #  Méthode auxiliaire d'exécution de requêtes multiples
     def _execute_split_requests(
         self,
-        request_combinations: List[Tuple[Dict, Dict]],
+        request_combinations: list[tuple[dict, dict]],
         *,
-        report: Optional[FetchReport] = None,
+        report: FetchReport | None = None,
         **request_kwargs,
     ) -> pd.DataFrame:
         """Execute multiple API requests and concatenate the results.
@@ -798,9 +799,9 @@ class AbstractSDMXClient(ABC):
                 DataFrame.
         """
         # Initialisation de la liste des jeux de données requêtés
-        all_dataframes: List[pd.DataFrame] = []
+        all_dataframes: list[pd.DataFrame] = []
         # Initialisation de la liste des erreurs
-        errors: List[str] = []
+        errors: list[str] = []
         # Calcul du nombre de combinaisons
         n = len(request_combinations)
 
@@ -812,7 +813,9 @@ class AbstractSDMXClient(ABC):
         logger.info(f"Executing {n} split API requests")
 
         # Parcours des requêtes
-        for i, (dims_for_request, dims_for_postfilter) in enumerate(request_combinations):
+        for i, (dims_for_request, dims_for_postfilter) in enumerate(
+            request_combinations
+        ):
             # Application du rate limiter avant chaque sous-requête
             if self.rate_limiter:
                 self.rate_limiter.acquire()
@@ -848,7 +851,9 @@ class AbstractSDMXClient(ABC):
                     # Requête valide sans donnée : comptée à part des erreurs
                     report.n_no_records += 1
                     # Logging
-                    logger.info(f"Request {i + 1}/{n} returned no records (empty result)")
+                    logger.info(
+                        f"Request {i + 1}/{n} returned no records (empty result)"
+                    )
                     continue
                 # Erreur véritable
                 report.n_request_errors += 1
@@ -870,7 +875,9 @@ class AbstractSDMXClient(ABC):
                 )
             # Aucune erreur réelle : toutes les requêtes ont réussi mais ne renvoient
             # aucune donnée (no-records et/ou vide après post-filtrage) → DataFrame vide
-            logger.info("All requests returned empty results; returning empty DataFrame")
+            logger.info(
+                "All requests returned empty results; returning empty DataFrame"
+            )
             return pd.DataFrame()
 
         # Logging si les requêtes ont partiellement échoué
@@ -894,7 +901,7 @@ class AbstractSDMXClient(ABC):
     @staticmethod
     def _filter_dataframe_by_dimensions(
         df: pd.DataFrame,
-        dimension_filters: Dict[str, List[str]],
+        dimension_filters: dict[str, list[str]],
     ) -> pd.DataFrame:
         """Filter a DataFrame to retain only allowed dimension values.
 
@@ -946,10 +953,10 @@ class AbstractSDMXClient(ABC):
     @staticmethod
     def _check_duplicates(
         df: pd.DataFrame,
-        dimensions: Union[Dict[int, Any], Dict[str, Any]],
+        dimensions: dict[int, Any] | dict[str, Any],
         structure: Optional["DataflowStructure"],
         on_duplicate: "DuplicateHandling",
-        default_dimensions: List[str] = [],
+        default_dimensions: list[str] = [],
     ) -> int:
         """Detect and handle duplicate rows in the result DataFrame.
 
@@ -981,7 +988,7 @@ class AbstractSDMXClient(ABC):
             return 0
 
         # Détermination des colonnes de vérification
-        check_columns: List[str] = default_dimensions
+        check_columns: list[str] = default_dimensions
 
         # Parcours des dimensions de filtre
         for key in dimensions.keys():
@@ -999,7 +1006,8 @@ class AbstractSDMXClient(ABC):
         # Fallback : toutes les colonnes sauf la valeur observée
         if not check_columns:
             check_columns = [
-                col for col in df.columns
+                col
+                for col in df.columns
                 if col.lower() not in ("value", "obs_value", "obsvalue")
             ]
 
@@ -1063,9 +1071,9 @@ class AbstractSDMXClient(ABC):
     # Constructeur de sortie du contexte manager
     def __exit__(
         self,
-        exc_type: Optional[type],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
+        exc_type: type | None,
+        exc_val: BaseException | None,
+        exc_tb: Any | None,
     ) -> None:
         """Context manager exit."""
         self.close()

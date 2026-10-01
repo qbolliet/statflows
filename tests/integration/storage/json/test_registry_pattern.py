@@ -1,16 +1,14 @@
-"""Tests d'intégration — convention « racine nommée + fusion » des scripts.
+"""Integration tests — "named root + merge" convention of the scripts.
 
-Les scripts du pipeline composent ``Loader`` / ``Saver`` selon un motif fixe
-(cf. :mod:`tests.utils.registries`) : lecture des entrées sous une racine nommée,
-fusion incrémentale des seules clés fournies, forme persistée ``{root: {...}}``.
-Ce contrat est vérifié en local et sur S3 (moto).
+The pipeline scripts compose ``Loader`` / ``Saver`` following a fixed pattern
+(see :mod:`tests.utils.registries`): reading the entries under a named root,
+incremental merge of the supplied keys only, persisted shape ``{root: {...}}``.
+This contract is checked locally and on S3 (moto).
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-
-import pytest
 
 from statflows.storage.json import Loader
 from tests.utils.registries import merge_named_registry, read_named_registry
@@ -29,7 +27,9 @@ def test_read_missing_file_returns_empty_dict(tmp_path: Path) -> None:
 
 def test_read_missing_root_returns_empty_dict(tmp_path: Path) -> None:
     path = tmp_path / "reg.json"
-    merge_named_registry(path, {}, root="AUTRE")  # crée le fichier sous une autre racine
+    merge_named_registry(
+        path, {}, root="AUTRE"
+    )  # crée le fichier sous une autre racine
 
     assert read_named_registry(path, root=ROOT) == {}
 

@@ -1,0 +1,42 @@
+# Installation des types de hooks nécessaires lors de `pre-commit install`
+# (sans cette directive, le hook commit-msg ci-dessous ne serait pas posé).
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+ - repo: https://github.com/pre-commit/pre-commit-hooks
+   rev: v5.0.0
+   hooks:
+     - id: trailing-whitespace
+     - id: end-of-file-fixer
+     - id: check-yaml
+     - id: check-toml
+     - id: check-added-large-files
+       args: ["--maxkb=1000"]
+       exclude: ^uv\.lock$
+     - id: debug-statements
+
+ - repo: https://github.com/astral-sh/ruff-pre-commit
+   rev: v0.15.17
+   hooks:
+     - id: ruff
+       args: [--fix]
+     - id: ruff-format
+
+ # mypy via l'environnement du projet (dépendances et stubs réels).
+ - repo: local
+   hooks:
+     - id: mypy
+       name: mypy
+       entry: uv run mypy statflows/
+       language: system
+       types: [python]
+       pass_filenames: false
+
+ # Validation du format Conventional Commits sur le message de commit.
+ # Indispensable au changelog : release-please n'incrémente la version et
+ # ne génère les notes qu'à partir de commits conventionnels.
+ - repo: https://github.com/compilerla/conventional-pre-commit
+   rev: v3.6.0
+   hooks:
+     - id: conventional-pre-commit
+       stages: [commit-msg]

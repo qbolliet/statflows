@@ -1,9 +1,9 @@
-"""Tests de caractérisation — :class:`statflows.storage.json.Saver` (mode local).
+"""Characterisation tests — :class:`statflows.storage.json.Saver` (local mode).
 
-Comportement figé : extension non ``.json`` → ``ValueError``, transmission de
-``indent`` / ``ensure_ascii`` jusqu'à ``json.dump``, création du dossier parent,
-écriture atomique (``atomic``) sans temporaire résiduel. Le mode S3 est couvert
-par ``tests/integration/storage/json``.
+Frozen behaviour: non-``.json`` extension → ``ValueError``, forwarding of
+``indent`` / ``ensure_ascii`` down to ``json.dump``, creation of the parent
+folder, atomic write (``atomic``) without a residual temporary file. S3 mode is
+covered by ``tests/integration/storage/json``.
 """
 
 from __future__ import annotations

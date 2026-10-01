@@ -1,8 +1,8 @@
-"""Tests d'intégration — :mod:`statflows.storage.json` contre S3 (moto).
+"""Integration tests — :mod:`statflows.storage.json` against S3 (moto).
 
-Comportement figé : validation d'extension côté S3, aller-retour, lecture
-tolérante (``missing_ok`` avale l'absence d'objet mais pas l'erreur de format),
-conversion d'un ``Path`` en clé POSIX, transmission de ``indent`` / ``ensure_ascii``.
+Frozen behaviour: extension validation on the S3 side, round trip, tolerant read
+(``missing_ok`` swallows a missing object but not a format error), conversion of
+a ``Path`` into a POSIX key, forwarding of ``indent`` / ``ensure_ascii``.
 """
 
 from __future__ import annotations
@@ -70,7 +70,9 @@ def test_path_converted_to_posix_key(s3_bucket: str, s3_client) -> None:
 
 
 def test_missing_key_returns_none_with_missing_ok(s3_bucket: str) -> None:
-    assert Loader().load(Path("reg/state.json"), bucket=s3_bucket, missing_ok=True) is None
+    assert (
+        Loader().load(Path("reg/state.json"), bucket=s3_bucket, missing_ok=True) is None
+    )
 
 
 def test_missing_key_raises_without_missing_ok(s3_bucket: str) -> None:
@@ -97,3 +99,26 @@ def test_honours_indent_and_non_ascii(s3_bucket: str, s3_client) -> None:
     assert "Suède" in text
 
     assert Loader().load(key, bucket=s3_bucket) == payload
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Listage d'un préfixe (``list_json``)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_list_json_on_prefix_direct_children_only(s3_bucket: str) -> None:
+    saver = Saver()
+    for key in (
+        "reg/b.json",
+        "reg/a.json",
+        "reg/nested/c.json",
+        "reg/.tmp.json",
+        "regx/d.json",
+    ):
+        saver.save(key, {}, bucket=s3_bucket)
+
+    assert Loader().list_json(Path("reg"), bucket=s3_bucket) == [
+        "reg/a.json",
+        "reg/b.json",
+    ]
+    assert Loader().list_json("absent", bucket=s3_bucket) == []

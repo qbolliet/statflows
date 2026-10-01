@@ -14,10 +14,11 @@ source vintage, a target vintage and a kind of sheet, rather than by a generic
 :meth:`identity_key` override projects the selection fields onto the canonical
 identity-key format shared with the SDMX DTOs.
 """
+
 # Importation des modules
 # Modules de base
 from dataclasses import dataclass
-from typing import ClassVar, Optional, Type
+from typing import ClassVar
 
 # Modules du package
 from ...core.queries import SDMXQueryRequest
@@ -51,6 +52,7 @@ class UNSDCorrespondenceRequest(SDMXQueryRequest):
         'HS2022-HS2017'
         >>> df_table = client.execute_query(query)  # doctest: +SKIP
     """
+
     # Sélection de la table (champs explicites propres à UNSD)
     source: str
     target: str
@@ -59,7 +61,7 @@ class UNSDCorrespondenceRequest(SDMXQueryRequest):
     format: UNSDResponseFormat = UNSDResponseFormat.XLSX
 
     # Enum de format du provider (utilisé par SDMXQueryRequest.from_dict)
-    _FORMAT_ENUM: ClassVar[Optional[Type[SDMXResponseFormat]]] = UNSDResponseFormat
+    _FORMAT_ENUM: ClassVar[type[SDMXResponseFormat] | None] = UNSDResponseFormat
 
     # Propriété d'agence (UNSD publie sous l'agence UNSD)
     @property
@@ -119,6 +121,4 @@ class UNSDCorrespondenceRequest(SDMXQueryRequest):
         }
         # Retrait des champs non renseignés pour une clé stable et compacte
         dimensions = {k: v for k, v in dimensions.items() if v is not None}
-        return build_identity_key(
-            self.agency, self.dataflow, self.version, dimensions
-        )
+        return build_identity_key(self.agency, self.dataflow, self.version, dimensions)
