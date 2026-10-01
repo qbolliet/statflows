@@ -380,8 +380,8 @@ wheels = [
 
 [[package]]
 name = "dt-ducklake-manager"
-version = "0.3.1"
-source = { git = "https://github.com/qbolliet/dt-ducklake-manager?tag=v0.3.1#0af27c23b229cec07036a75ea383aa62edfc0148" }
+version = "0.4.0"
+source = { git = "https://github.com/qbolliet/dt-ducklake-manager?tag=v0.4.0#db9195186e04ccbe69f826120d894bd32195954f" }
 dependencies = [
     { name = "duckdb" },
     { name = "narwhals" },
@@ -894,8 +894,8 @@ dev = [
 requires-dist = [
     { name = "boto3", marker = "extra == 'all'", specifier = ">=1.43.34" },
     { name = "boto3", marker = "extra == 's3'", specifier = ">=1.43.34" },
-    { name = "dt-ducklake-manager", marker = "extra == 'all'", git = "https://github.com/qbolliet/dt-ducklake-manager?tag=v0.3.1" },
-    { name = "dt-ducklake-manager", marker = "extra == 'ducklake'", git = "https://github.com/qbolliet/dt-ducklake-manager?tag=v0.3.1" },
+    { name = "dt-ducklake-manager", marker = "extra == 'all'", git = "https://github.com/qbolliet/dt-ducklake-manager?tag=v0.4.0" },
+    { name = "dt-ducklake-manager", marker = "extra == 'ducklake'", git = "https://github.com/qbolliet/dt-ducklake-manager?tag=v0.4.0" },
     { name = "duckdb", marker = "extra == 'all'", specifier = ">=1.4" },
     { name = "duckdb", marker = "extra == 'ducklake'", specifier = ">=1.4" },
     { name = "pandas", specifier = ">=2.3.3" },

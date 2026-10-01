@@ -173,6 +173,11 @@ class ComtradeClient(APIClient):
         # d'une même période
         self._availability_cache: Dict[Tuple, Optional[datetime]] = {}
 
+        # Cache des métadonnées de référence par catégorie (None : registre des
+        # catégories) : la construction des requêtes et la publication des
+        # codelists partagent ainsi les mêmes appels réseau
+        self._metadata_cache: Dict[Optional[str], pd.DataFrame] = {}
+
     # ──────────────────────────────────────────────────────────────────
     # Chargement de la configuration
     # ──────────────────────────────────────────────────────────────────
@@ -798,15 +803,25 @@ class ComtradeClient(APIClient):
     # ──────────────────────────────────────────────────────────────────
 
     # Méthode de chargement des métadonnées d'une catégorie de référence
-    def get_metadata(self, category: Optional[Union[str, None]] = None) -> pd.DataFrame:
+    def get_metadata(
+        self,
+        category: Optional[Union[str, None]] = None,
+        refresh: bool = False,
+    ) -> pd.DataFrame:
         """Fetch metadata for a reference category from UN Comtrade.
+
+        Results are cached per client and category: the registry of reference
+        files and each category file are downloaded once, then served from
+        memory (no rate-limiter slot is consumed on a cache hit).
 
         Args:
             category: Reference category. When ``None``, returns the registry
                 of available categories.
+            refresh: Bypass (and refresh) the cache.
 
         Returns:
-            DataFrame with the metadata for the requested category.
+            DataFrame with the metadata for the requested category (a copy:
+            mutating it leaves the cache untouched).
 
         Raises:
             ValueError: If ``category`` is invalid.
@@ -816,19 +831,25 @@ class ComtradeClient(APIClient):
             >>> categories = client.get_metadata()  # doctest: +SKIP
             >>> reporters = client.get_metadata(category="reporter")  # doctest: +SKIP
         """
+        # Lecture du cache, sauf rafraîchissement explicite
+        if not refresh and category in self._metadata_cache:
+            return self._metadata_cache[category].copy()
+
         # Application du rate limiter avant l'appel API
         self._acquire()
 
-        # Chargement du registre des références
-        metadata_index = pd.json_normalize(
-            self._get_json(
-                self.REFERENCES_URL, context="Comtrade reference list call"
-            )["results"]
-        )
+        # Chargement du registre des références (mis en cache)
+        if refresh or None not in self._metadata_cache:
+            self._metadata_cache[None] = pd.json_normalize(
+                self._get_json(
+                    self.REFERENCES_URL, context="Comtrade reference list call"
+                )["results"]
+            )
+        metadata_index = self._metadata_cache[None]
 
         # Catégorie non spécifiée → registre des méta-données
         if category is None:
-            return metadata_index
+            return metadata_index.copy()
 
         # Catégorie inconnue → erreur avec les modalités valides
         matches = metadata_index[metadata_index["category"] == category]
@@ -844,7 +865,45 @@ class ComtradeClient(APIClient):
             matches["fileuri"].iloc[0],
             context=f"Comtrade reference call for category {category}",
         )
-        return pd.json_normalize(data["results"])
+        self._metadata_cache[category] = pd.json_normalize(data["results"])
+        return self._metadata_cache[category].copy()
+
+    # Méthode de récupération d'une codelist avec ses libellés
+    def get_codelist(
+        self,
+        category: str,
+        refresh: bool = False,
+        keep_metadata: bool = False,
+    ) -> pd.DataFrame:
+        """Return the valid codes of a reference category with their labels.
+
+        Built from :meth:`get_metadata`, whose cache is shared with the query
+        building (``_extract_codes``): no extra network call once the
+        category was used to split queries.
+
+        Args:
+            category: ``"flow"``, ``"reporter"``, ``"partner"`` or ``"cmd:HS"``
+                (the ``codelist`` of the dimensions declared in
+                ``parameters/comtrade.json``).
+            refresh: Bypass (and refresh) the metadata cache.
+            keep_metadata: Append the remaining metadata columns (ISO codes,
+                ``isGroup``…).
+
+        Returns:
+            DataFrame with ``code``, ``label`` and, for ``cmd:HS``, ``parent``.
+
+        Raises:
+            ValueError: If ``category`` is not supported.
+
+        Examples:
+            >>> products = client.get_codelist("cmd:HS")  # doctest: +SKIP
+            >>> products.columns.tolist()  # doctest: +SKIP
+            ['code', 'label', 'parent']
+        """
+        # Extraction des métadonnées
+        metadata = self.get_metadata(category=category, refresh=refresh)
+        # Parsing des listes
+        return parsing.build_codelist(metadata, category, keep_metadata=keep_metadata)
 
     # Méthode auxiliaire de validation du format d'une période
     def _validate_date(self, period: Union[str, int]) -> str:

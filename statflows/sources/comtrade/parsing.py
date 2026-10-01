@@ -105,6 +105,63 @@ def extract_codes(df, category: str) -> List[Any]:
     )
 
 
+# Colonnes portant le code et le libellé dans les métadonnées de référence
+# (par défaut : « id » et « text », communs à toutes les catégories)
+_CODE_COLUMNS = {"reporter": "reporterCode", "partner": "PartnerCode"}
+_LABEL_COLUMNS = {"reporter": "reporterDesc", "partner": "PartnerDesc"}
+
+
+# Fonction de mise en forme d'une codelist avec libellés
+def build_codelist(
+    df: pd.DataFrame, category: str, keep_metadata: bool = False
+) -> pd.DataFrame:
+    """Turn reference metadata into a ``(code, label[, parent])`` codelist.
+
+    Only the valid codes of :func:`extract_codes` are kept (expired reporters
+    and partners are dropped), in the order of the metadata.
+
+    Args:
+        df: Metadata DataFrame returned by ``ComtradeClient.get_metadata``.
+        category: ``"flow"``, ``"reporter"``, ``"partner"`` or ``"cmd:HS"``.
+        keep_metadata: Append the remaining metadata columns (ISO codes,
+            ``isGroup``…) after the standard ones.
+
+    Returns:
+        DataFrame with ``code`` (text), ``label`` and, when the metadata
+        carries one (``cmd:HS``), ``parent`` (text, ``None`` at the root).
+
+    Raises:
+        ValueError: If ``category`` is not supported.
+
+    Examples:
+        >>> meta = pd.DataFrame({"id": ["01", "0101"], "text": ["Animals", "Horses"],
+        ...                      "parent": ["TOTAL", "01"]})
+        >>> build_codelist(meta, "cmd:HS")["parent"].tolist()
+        ['TOTAL', '01']
+    """
+    # Codes valides et colonnes de code / libellé de la catégorie
+    valid = {str(code) for code in extract_codes(df, category)}
+    code_column = _CODE_COLUMNS.get(category, "id")
+    label_column = _LABEL_COLUMNS.get(category, "text")
+    if label_column not in df.columns:
+        label_column = "text" if "text" in df.columns else None
+    rows = df[df[code_column].astype(str).isin(valid)].reset_index(drop=True)
+
+    # Colonnes normalisées
+    codelist = pd.DataFrame({"code": rows[code_column].astype(str)})
+    codelist["label"] = rows[label_column] if label_column is not None else None
+    if "parent" in rows.columns:
+        codelist["parent"] = rows["parent"].map(
+            lambda value: None if pd.isna(value) else str(value)
+        )
+
+    # Métadonnées restantes, sur demande
+    if keep_metadata:
+        extra = [c for c in rows.columns if c not in codelist.columns]
+        codelist = pd.concat([codelist, rows[extra]], axis=1)
+    return codelist
+
+
 # Fonction d'extraction de la date de dernière publication d'une disponibilité
 def parse_availability_last_released(
     availability,

@@ -150,6 +150,9 @@ class EurostatClient(AbstractSDMXClient):
         # Client HTTP Comext (initialisation paresseuse)
         self._comext_client: Optional[APIClient] = None
 
+        # Cache des codelists parsées (agence, identifiant) → (code, label, parent)
+        self._codelist_cache: Dict[Tuple[str, str], pd.DataFrame] = {}
+
     # ──────────────────────────────────────────────────────────────────
     # Méthodes publiques — Données
     # ──────────────────────────────────────────────────────────────────
@@ -569,6 +572,56 @@ class EurostatClient(AbstractSDMXClient):
             raise ValueError(
                 f"Failed to fetch {resource_type.value} '{resource_id}': {e}"
             )
+
+    # Méthode publique de récupération d'une codelist avec ses libellés
+    def get_codelist(
+        self,
+        codelist_id: str,
+        agency: str = AGENCY_ID,
+        refresh: bool = False,
+    ) -> pd.DataFrame:
+        """Fetch a codelist with its labels and hierarchy, cached per client.
+
+        The parsed codelist is kept in memory: building split queries and
+        publishing reference tables from the same client costs a single
+        network call per codelist. Comext codelists (``CXT_*``) are routed to
+        the Comext endpoint transparently.
+
+        Args:
+            codelist_id: Codelist identifier (e.g. ``"CL_GEO"``,
+                ``"CXT_FREE_ISO"``), as given by ``DimensionInfo.codelist``.
+            agency: Maintenance agency. Defaults to Eurostat.
+            refresh: Bypass (and refresh) the cache.
+
+        Returns:
+            DataFrame with columns ``code``, ``label`` (English name, else the
+            first available language) and ``parent`` (``None`` for root
+            codes). A copy: mutating it leaves the cache untouched.
+
+        Raises:
+            ValueError: If the request or the parsing fails.
+
+        Examples:
+            >>> geo = client.get_codelist("CXT_FREE_ISO")  # doctest: +SKIP
+            >>> geo.columns.tolist()  # doctest: +SKIP
+            ['code', 'label', 'parent']
+        """
+        # Lecture du cache, sauf rafraîchissement explicite
+        cache_key = (agency, codelist_id)
+        if refresh or cache_key not in self._codelist_cache:
+            # Requête de la codelist puis parsing (libellés et parents)
+            xml_content = self.get_structure(
+                StructureResourceType.CODELIST, codelist_id, agency=agency
+            )
+            # Parsing de la liste de codes
+            codelist = parsing.parse_codelist_response(xml_content, with_parent=True)
+            # Assignation de la liste au cache
+            self._codelist_cache[cache_key] = codelist.rename(columns={"name": "label"})
+            # Logging
+            logger.info(
+                f"Codelist {agency}/{codelist_id}: {len(codelist)} codes fetched"
+            )
+        return self._codelist_cache[cache_key].copy()
 
     # Méthode publique de récupération et parsing de la DSD d'un dataflow
     def get_dataflow_structure(

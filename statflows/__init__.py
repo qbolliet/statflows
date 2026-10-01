@@ -21,6 +21,8 @@ from .core import (
     DimensionInfo,
     DataflowStructure,
     DataflowStructureRegistry,
+    RegistryEntry,
+    iter_registry_entries,
 )
 # Sources
 from .sources import (
@@ -68,6 +70,8 @@ __all__ = [
     'DimensionInfo',
     'DataflowStructure',
     'DataflowStructureRegistry',
+    'RegistryEntry',
+    'iter_registry_entries',
     # OECD
     'OECDResponseFormat',
     'OECDEndpointBuilder',

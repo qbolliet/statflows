@@ -25,6 +25,8 @@ from .sdmx import (
 from .queries import SDMXQueryRequest
 # Structures
 from .structures import DimensionInfo, DataflowStructure, DataflowStructureRegistry
+# Registre des dates de dernier téléchargement (lecture, tous formats)
+from .registry import RegistryEntry, iter_registry_entries
 
 # Réexport des éléments d'intérêt du module
 __all__ = [
@@ -49,4 +51,6 @@ __all__ = [
     'DimensionInfo',
     'DataflowStructure',
     'DataflowStructureRegistry',
+    'RegistryEntry',
+    'iter_registry_entries',
 ]

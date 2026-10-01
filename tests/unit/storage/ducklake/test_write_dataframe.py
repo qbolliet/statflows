@@ -98,7 +98,7 @@ def test_upsert_passes_catalog_alias_and_schema_to_updater(
         schema=SCHEMA,
     )
     updater_cls.return_value.update_database.assert_called_once_with(
-        data, use_transaction=True, compact_after_update=True
+        data, use_transaction=True, compact_after_update=False
     )
 
 
@@ -194,3 +194,67 @@ def test_missing_dependency_raises_import_error(conn, data) -> None:
     with mock.patch.dict("sys.modules", {"dt_ducklake_manager": None}):
         with pytest.raises(ImportError, match=r"statflows\[ducklake\]"):
             write_dataframe(conn, data, ["id"], catalog_alias=ALIAS, schema=SCHEMA)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Options transmises à la librairie (compaction, colonnes, commit)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_upsert_forwards_explicit_options(conn, data, updater_cls) -> None:
+    _make_fact_table_visible(conn, ALIAS, SCHEMA)
+
+    write_dataframe(
+        conn,
+        data,
+        ["id"],
+        catalog_alias=ALIAS,
+        schema=SCHEMA,
+        update_options={"allow_new_columns": True, "compact_after_update": True},
+        run_id="run-1",
+        commit_message="msg",
+    )
+
+    updater_cls.return_value.update_database.assert_called_once_with(
+        data,
+        use_transaction=True,
+        compact_after_update=True,
+        allow_new_columns=True,
+        run_id="run-1",
+        commit_message="msg",
+    )
+
+
+def test_create_forwards_commit_options_to_build_schema(conn, data, builder_cls) -> None:
+    write_dataframe(
+        conn, data, ["id"], catalog_alias=ALIAS, schema=SCHEMA, run_id="run-1"
+    )
+
+    builder_cls.return_value.build_schema.assert_called_once_with(run_id="run-1")
+
+
+def test_create_forwards_build_options(conn, data, builder_cls) -> None:
+    write_dataframe(
+        conn,
+        data,
+        ["id"],
+        catalog_alias=ALIAS,
+        schema=SCHEMA,
+        build_options={"partition_by": ["id"], "run_id": "ignored"},
+        run_id="run-1",
+    )
+
+    # Les options de commit explicites priment sur celles du dictionnaire
+    builder_cls.return_value.build_schema.assert_called_once_with(
+        partition_by=["id"], run_id="run-1"
+    )
+
+
+@pytest.mark.parametrize(
+    "param", ["compact_after_update", "allow_new_columns", "run_id", "commit_message"]
+)
+def test_library_update_accepts_forwarded_options(param: str) -> None:
+    """``update_database`` de la version installée accepte les options transmises."""
+    params = inspect.signature(dt_ducklake_manager.DatabaseUpdater.update_database).parameters
+
+    assert param in params

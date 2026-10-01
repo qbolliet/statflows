@@ -319,7 +319,16 @@ class DownloadReport:
         n_tables_created: Schemas created during the run (vs. upserted).
         n_structures_fetched: Dataflow structures downloaded (registry misses).
         duration_seconds: Wall-clock duration of the whole run.
-        queries: Per-query diagnostics, in processing order.
+        n_registry_flushes: Times the last-download registry was persisted
+            (one per flush, whatever the number of fragments rewritten).
+        n_write_batches: DuckLake write calls (one snapshot transaction each);
+            equal to the number of non-empty queries without write batching.
+        rows_pending_at_stop: Rows still buffered, unwritten, when the run
+            ended. Always ``0`` unless the final flush itself was interrupted;
+            any other value means data was fetched but neither written nor
+            recorded (those queries will simply be downloaded again).
+        queries: Per-query diagnostics, in completion order (a buffered query
+            completes when its write batch is committed or fails).
     """
     processed: int = 0
     rows_written: int = 0
@@ -332,6 +341,10 @@ class DownloadReport:
     n_tables_created: int = 0
     n_structures_fetched: int = 0
     duration_seconds: float = 0.0
+    # Tamponnage du registre et des écritures DuckLake
+    n_registry_flushes: int = 0
+    n_write_batches: int = 0
+    rows_pending_at_stop: int = 0
     # Détail par requête (principe « les diagnostics sont des données »)
     queries: List[QueryReport] = field(default_factory=list)
 

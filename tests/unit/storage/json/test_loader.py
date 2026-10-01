@@ -60,3 +60,42 @@ def test_missing_file_returns_none_with_missing_ok(tmp_path: Path) -> None:
 def test_missing_file_raises_without_missing_ok(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         Loader().load(tmp_path / "absent.json")
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Listage des fichiers JSON d'un répertoire (``list_json``)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_list_json_direct_children_only(tmp_path: Path) -> None:
+    for name in ("b.json", "a.json"):
+        Saver().save(tmp_path / name, {})
+    (tmp_path / "notes.txt").write_text("x", encoding="utf-8")
+    (tmp_path / ".tmp-123.json").write_text("{}", encoding="utf-8")
+    Saver().save(tmp_path / "nested" / "c.json", {})
+
+    assert Loader().list_json(tmp_path) == [
+        str(tmp_path / "a.json"),
+        str(tmp_path / "b.json"),
+    ]
+
+
+def test_list_json_missing_directory_is_empty(tmp_path: Path) -> None:
+    assert Loader().list_json(tmp_path / "absent") == []
+
+
+def test_atomic_tempfile_is_dot_prefixed(tmp_path: Path, monkeypatch) -> None:
+    """Le temporaire de l'écriture atomique est masqué pour ``list_json``."""
+    import tempfile
+
+    seen = {}
+    real_mkstemp = tempfile.mkstemp
+
+    def spy(*args, **kwargs):
+        seen.update(kwargs)
+        return real_mkstemp(*args, **kwargs)
+
+    monkeypatch.setattr(tempfile, "mkstemp", spy)
+    Saver().save(tmp_path / "reg.json", {"a": 1})
+
+    assert seen["prefix"].startswith(".")

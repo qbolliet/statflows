@@ -16,12 +16,12 @@ s3 = [
     "s3fs>=0.4.2",
 ]
 ducklake = [
-    "dt-ducklake-manager",
+    "dt-ducklake-manager>=0.4.0",
     "duckdb>=1.4",
 ]
 all = [
     "boto3>=1.43.34",
-    "dt-ducklake-manager",
+    "dt-ducklake-manager>=0.4.0",
     "duckdb>=1.4",
     "s3fs>=0.4.2",
 ]
@@ -31,7 +31,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-dt-ducklake-manager = { git = "https://github.com/qbolliet/dt-ducklake-manager", tag = "v0.3.1" }
+dt-ducklake-manager = { git = "https://github.com/qbolliet/dt-ducklake-manager", tag = "v0.4.0" }
 
 [dependency-groups]
 dev = [

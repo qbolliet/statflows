@@ -14,7 +14,7 @@ the optional ``ducklake`` extra.
 from __future__ import annotations
 # Modules de base
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence
 
 # Module de manipulation de la base de données : usage purement annotatif, donc
 # importé au seul typage (annotations différées par `from __future__`)
@@ -63,6 +63,24 @@ def fact_table_exists(
     return bool(row and row[0] > 0)
 
 
+# Fonction auxiliaire : options de commit DuckLake renseignées
+def _commit_options(
+    run_id: Optional[str], commit_message: Optional[str]
+) -> dict[str, str]:
+    """Keep the commit options that were actually provided.
+
+    Args:
+        run_id: Run identifier, or ``None``.
+        commit_message: Commit message, or ``None``.
+
+    Returns:
+        Keyword arguments for ``update_database`` / ``build_schema``.
+    """
+    # Instanciation des options
+    options = {"run_id": run_id, "commit_message": commit_message}
+    return {name: value for name, value in options.items() if value is not None}
+
+
 # Fonction d'écriture d'un jeu de données dans un schéma DuckLake (création ou upsert)
 def write_dataframe(
     conn: duckdb.DuckDBPyConnection,
@@ -73,12 +91,20 @@ def write_dataframe(
     schema: str,
     categorical_threshold: Optional[int] = None,
     label: Optional[str] = None,
+    update_options: Optional[Mapping[str, Any]] = None,
+    build_options: Optional[Mapping[str, Any]] = None,
+    run_id: Optional[str] = None,
+    commit_message: Optional[str] = None,
 ) -> bool:
     """Create the schema on first encounter, upsert by primary key afterwards.
 
     The distinction is made on the sole existence of the fact table, so the same
     call initialises a brand-new schema and incrementally updates an existing
     one — no caller ever has to branch on it.
+
+    Each call is one DuckLake transaction, hence at least one snapshot and one
+    Parquet file: batching rows into fewer, larger calls is what keeps the
+    catalog small (see ``SDMXDownloader(write_batch_rows=..., ...)``).
 
     Args:
         conn: Open DuckLake connection, owned by the caller.
@@ -93,6 +119,21 @@ def write_dataframe(
             into a dimension table. ``None`` disables dimension tables.
         label: Optional prefix identifying the run in the logs (dataflow,
             vintage…).
+        update_options: Extra keyword arguments forwarded to
+            ``DatabaseUpdater.update_database`` (upsert path only), e.g.
+            ``{"allow_new_columns": True}``. The post-commit compaction of the
+            library is **disabled by default** (``compact_after_update=False``):
+            compacting after every write is wasteful when writes are batched, and
+            is better left to a single end-of-run or planned maintenance pass.
+            Pass ``{"compact_after_update": True}`` to opt back in.
+        build_options: Extra keyword arguments forwarded to
+            ``DuckLakeTablesBuilder.build_schema`` (creation path only), e.g.
+            ``{"partition_by": ["reporter"]}``.
+        run_id: Run identifier recorded on the resulting DuckLake snapshot
+            (``ducklake_set_commit_message``), on both paths. Takes precedence
+            over the same key in ``update_options`` / ``build_options``.
+        commit_message: Commit message recorded alongside ``run_id``; same
+            precedence.
 
     Returns:
         ``True`` if the schema was created, ``False`` if it was upserted.
@@ -125,11 +166,10 @@ def write_dataframe(
             catalog_alias=catalog_alias,
             schema=schema,
         )
-        success = updater.update_database(
-            data,
-            use_transaction=True,
-            compact_after_update=True,
-        )
+        # Options transmises surchargeables ; les options de commit priment
+        options = update_options.copy() or {}
+        options.update(_commit_options(run_id, commit_message))
+        success = updater.update_database(data, use_transaction=True, **options)
 
         # Vérification de la bonne réalisation de la mise à jour
         if not success:
@@ -150,7 +190,9 @@ def write_dataframe(
         schema=schema,
         catalog_alias=catalog_alias,
     )
-    builder.build_schema()
+    builder.build_schema(
+        **{**(build_options or {}), **_commit_options(run_id, commit_message)}
+    )
 
     # Logging
     logger.info(

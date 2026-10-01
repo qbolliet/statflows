@@ -137,8 +137,12 @@ class Saver(S3Saver):
             # Création du dossier parent si nécessaire
             path.parent.mkdir(parents=True, exist_ok=True)
             # Extension du temporaire reprise de la destination : la validation de
-            # format reste ainsi celle du fichier réellement demandé
-            fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), suffix=path.suffix)
+            # format reste ainsi celle du fichier réellement demandé. Préfixe point :
+            # un temporaire orphelin (arrêt brutal) n'est jamais listé par
+            # ``Loader.list_json`` comme un fichier régulier.
+            fd, tmp_name = tempfile.mkstemp(
+                dir=str(path.parent), prefix=".tmp-", suffix=path.suffix
+            )
             # Fermeture immédiate du descripteur : save_local ouvre le fichier lui-même
             os.close(fd)
             try:

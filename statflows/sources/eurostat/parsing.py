@@ -512,7 +512,34 @@ def parse_dataflow_list_response(xml_content: str) -> pd.DataFrame:
 
 
 # Fonction de parsing d'une réponse SDMX-ML contenant une liste de codes
-def parse_codelist_response(xml_content: str) -> pd.DataFrame:
+# Fonction auxiliaire d'extraction du code parent d'un code SDMX
+def _code_parent(code_elem: ET.Element, namespaces: Dict[str, str]) -> Optional[str]:
+    """Return the parent code of an SDMX ``Code`` element, if any.
+
+    Args:
+        code_elem: ``str:Code`` element.
+        namespaces: Namespaces of the document (SDMX 3.0 or 2.1).
+
+    Returns:
+        The parent code, or ``None`` for a root code.
+    """
+    # Extraction du parent
+    parent_elem = code_elem.find("str:Parent", namespaces)
+    if parent_elem is None:
+        return None
+    # SDMX 3.0 : identifiant en texte ; SDMX 2.1 : élément enfant Ref@id
+    if parent_elem.text and parent_elem.text.strip():
+        return parent_elem.text.strip()
+    # Parcours du parent
+    for ref in parent_elem:
+        if ref.get("id"):
+            return ref.get("id")
+    return None
+
+
+def parse_codelist_response(
+    xml_content: str, with_parent: bool = False
+) -> pd.DataFrame:
     """Parse an SDMX-ML codelist response into a ``(code, name)`` DataFrame.
 
     Tries SDMX 3.0 namespaces first, then falls back to 2.1. Extracts every
@@ -525,10 +552,14 @@ def parse_codelist_response(xml_content: str) -> pd.DataFrame:
         xml_content: XML response content (already decompressed), typically
             from ``EurostatClient.get_structure(StructureResourceType.CODELIST,
             ...)``.
+        with_parent: When ``True``, add a ``parent`` column holding the parent
+            code of hierarchical codelists (``str:Parent`` — a plain ID in SDMX
+            3.0, a ``Ref`` child in SDMX 2.1), ``None`` for root codes.
 
     Returns:
-        DataFrame with columns: ``code``, ``name``. Empty (with those columns)
-        when the response carries no code.
+        DataFrame with columns: ``code``, ``name`` (and ``parent`` when
+        ``with_parent``). Empty (with those columns) when the response carries
+        no code.
 
     Raises:
         ValueError: If XML parsing or element extraction fails.
@@ -558,11 +589,16 @@ def parse_codelist_response(xml_content: str) -> pd.DataFrame:
                 if name is None or lang == "en":
                     name = name_elem.text
 
-            rows.append({"code": code_id, "name": name})
+            row = {"code": code_id, "name": name}
+            # Code parent des codelists hiérarchiques
+            if with_parent:
+                row["parent"] = _code_parent(code_elem, namespaces)
+            rows.append(row)
 
         # Logging
         logger.info(f"Parsed {len(rows)} codes from codelist response")
-        return pd.DataFrame(rows, columns=["code", "name"])
+        columns = ["code", "name", "parent"] if with_parent else ["code", "name"]
+        return pd.DataFrame(rows, columns=columns)
     # Gestion des erreurs de parsing XML
     except Exception as e:
         logger.error(f"Codelist parsing failed: {e}")

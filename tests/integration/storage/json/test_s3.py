@@ -97,3 +97,17 @@ def test_honours_indent_and_non_ascii(s3_bucket: str, s3_client) -> None:
     assert "Suède" in text
 
     assert Loader().load(key, bucket=s3_bucket) == payload
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Listage d'un préfixe (``list_json``)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_list_json_on_prefix_direct_children_only(s3_bucket: str) -> None:
+    saver = Saver()
+    for key in ("reg/b.json", "reg/a.json", "reg/nested/c.json", "reg/.tmp.json", "regx/d.json"):
+        saver.save(key, {}, bucket=s3_bucket)
+
+    assert Loader().list_json(Path("reg"), bucket=s3_bucket) == ["reg/a.json", "reg/b.json"]
+    assert Loader().list_json("absent", bucket=s3_bucket) == []
