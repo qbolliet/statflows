@@ -19,6 +19,7 @@ constants.
 
 # Importation des modules
 # Modules de base
+import importlib.util
 import re
 from typing import Literal
 
@@ -69,7 +70,7 @@ class UNSDResponseFormat(SDMXResponseFormat):
 # ──────────────────────────────────────────────────────────────────────
 
 # Moteur pandas requis par extension : les .xls ne sont lisibles que par xlrd,
-# les .xlsx que par openpyxl (les deux sont déclarés dans pyproject.toml).
+# les .xlsx que par openpyxl (les deux sont fournis par l'extra « unsd »).
 EXCEL_ENGINES: dict[str, Literal["xlrd", "openpyxl"]] = {
     ".xls": "xlrd",
     ".xlsx": "openpyxl",
@@ -135,6 +136,33 @@ def engine_for(extension: str) -> Literal["xlrd", "openpyxl"]:
             f"Expected one of {sorted(EXCEL_ENGINES)}."
         )
     return EXCEL_ENGINES[normalised]
+
+
+# Fonction de vérification de la disponibilité du moteur de lecture d'une extension
+def ensure_engine_available(extension: str) -> None:
+    """Check that the Excel engine required by a workbook extension is installed.
+
+    ``openpyxl`` and ``xlrd`` belong to the optional ``unsd`` extra: they are
+    imported lazily by pandas, so their absence would otherwise only surface as
+    a generic pandas error.
+
+    Args:
+        extension: File extension, with or without its leading dot.
+
+    Raises:
+        ValueError: If the extension is not a supported workbook extension.
+        ImportError: If the engine package is not installed.
+
+    Examples:
+        >>> ensure_engine_available(".xlsx")  # doctest: +SKIP
+    """
+    # Moteur requis (ValueError si l'extension n'est pas prise en charge)
+    engine = engine_for(extension)
+    if importlib.util.find_spec(engine) is None:
+        raise ImportError(
+            f"Reading '{extension}' workbooks requires the optional '{engine}' "
+            "dependency. Install it with: pip install 'statflows[unsd]'"
+        )
 
 
 # Fonction de construction de la clé de catalogue d'une paire de millésimes

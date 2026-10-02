@@ -988,7 +988,8 @@ class AbstractSDMXClient(ABC):
             return 0
 
         # Détermination des colonnes de vérification
-        check_columns: list[str] = default_dimensions
+        # Copie : la liste reçue (y compris le défaut `[]`) ne doit pas être mutée
+        check_columns: list[str] = list(default_dimensions)
 
         # Parcours des dimensions de filtre
         for key in dimensions.keys():

@@ -54,6 +54,7 @@ from .formats import (
     REJECTED_COLUMN_TOKENS,
     RELATIONSHIP_SEPARATOR_PATTERN,
     engine_for,
+    ensure_engine_available,
     vintage_year,
 )
 
@@ -186,7 +187,10 @@ def read_sheet(content: bytes, extension: str, sheet: str) -> pd.DataFrame:
 
     Raises:
         ValueError: If the extension has no associated engine.
+        ImportError: If the engine is not installed (extra ``unsd``).
     """
+    # Moteur disponible ? (message explicite sur l'extra à installer)
+    ensure_engine_available(extension)
     # Lecture avec le moteur imposé par l'extension
     return pd.read_excel(
         BytesIO(content),
@@ -386,7 +390,11 @@ def parse_correspondence(
     Raises:
         ValueError: If the sheet, the header row or a code column cannot be
             resolved.
+        ImportError: If the Excel engine is not installed (extra ``unsd``).
     """
+    # Moteur disponible ? (message explicite sur l'extra à installer)
+    ensure_engine_available(extension)
+
     # Sélection de la feuille et lecture en texte brut
     sheet = select_sheet(
         cast(

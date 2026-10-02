@@ -34,15 +34,13 @@ with open(
 def build_structure_from_parameters(
     agency: str,
     dataflow: str,
-) -> DataflowStructure | None:
-    """Build a :class:`DataflowStructure` for a Comtrade dataflow.
+) -> DataflowStructure:
+    """Build a :class:`DataflowStructure` for a declared Comtrade dataflow.
 
     UN Comtrade exposes no structure endpoint, so the dataflow dimensions are
     declared in the module-level :data:`PARAMETERS` (``parameters/comtrade.json``).
-    A ``STRUCTURES`` entry matching the requested dataflow is returned as-is;
-    otherwise the canonical tariffline entry is cloned and re-stamped with the
-    requested ``dataflow`` (every ``typeCode_freqCode_clCode`` dataflow shares
-    the same dimension layout).
+    The structure is the primary key of the target table: it is never guessed,
+    and a dataflow absent from the ``STRUCTURES`` section is rejected.
 
     Args:
         agency: Maintaining agency (``"COMTRADE"``).
@@ -53,7 +51,8 @@ def build_structure_from_parameters(
         identifier columns.
 
     Raises:
-        ValueError: If no ``STRUCTURES`` entry is declared at all.
+        ValueError: If no ``STRUCTURES`` entry matches ``agency`` and
+            ``dataflow``. Declare the dataflow in ``parameters/comtrade.json``.
 
     Examples:
         >>> structure = build_structure_from_parameters("COMTRADE", "C_A_HS")
@@ -68,7 +67,14 @@ def build_structure_from_parameters(
         if entry.get("agency") == agency and entry.get("dataflow") == dataflow:
             return DataflowStructure.from_dict(entry)
 
-    return None
+    declared = sorted(
+        entry["dataflow"] for entry in structures if entry.get("agency") == agency
+    )
+    raise ValueError(
+        f"No structure declared for {agency}::{dataflow}. Declared dataflows: "
+        f"{declared}. Add an entry to the STRUCTURES section of "
+        "parameters/comtrade.json."
+    )
 
 
 # Fonction d'extraction des codes valides d'un jeu de métadonnées

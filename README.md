@@ -179,7 +179,7 @@ observations (incremental mode), based on the dates recorded in
 
 By default, `download_updates` / `SDMXDownloader` reproduce the historical
 behaviour: **every** non-empty query gets its own DuckLake transaction (upsert,
-audit, post-write compaction) and **the whole registry** is rewritten after each
+audit, etc ...) and **the whole registry** is rewritten after each
 query. This is safe but expensive on a full catch-up (10⁴ to 10⁵ queries): the
 registry weighs several tens of MB and rewriting it repeatedly has a quadratic
 cost, and each query creates snapshots and Parquet files.
@@ -281,11 +281,9 @@ run's connection, without permanently modifying the connector (the other keys
 are merged into its `set_option` options). Writes of fewer than `N` rows are then
 kept in the catalog rather than in Parquet files; they stay there until an
 explicit flush (`ducklake_flush_inlined_data`), which the post-write compaction
-does not perform. On the test bench, the DuckLake extension shipped with
-DuckDB 1.5 already inlines small writes by default; with large batches, inlining
-only concerns the last partial batches.
+does not perform.
 
-### Recommended configuration for 10⁵ queries
+### Recommended configuration for 100 000 and more queries
 
 ```python
 from datetime import timedelta
