@@ -32,11 +32,17 @@ ducklake = [
     "dt-ducklake-manager>=0.4.0",
     "duckdb>=1.4",
 ]
+unsd = [
+    "openpyxl>=3.1",
+    "xlrd>=2.0.1",
+]
 all = [
     "boto3>=1.43.34",
     "dt-ducklake-manager>=0.4.0",
     "duckdb>=1.4",
+    "openpyxl>=3.1",
     "s3fs>=0.4.2",
+    "xlrd>=2.0.1",
 ]
 
 [project.urls]

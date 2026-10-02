@@ -666,6 +666,15 @@ wheels = [
 ]
 
 [[package]]
+name = "et-xmlfile"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/38/af70d7ab1ae9d4da450eeec1fa3918940a5fafb9055e934af8d6eb0c2313/et_xmlfile-2.0.0.tar.gz", hash = "sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54", size = 17234, upload-time = "2024-10-25T17:25:40.039Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl", hash = "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa", size = 18059, upload-time = "2024-10-25T17:25:39.051Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "4.0.8"
 source = { registry = "https://pypi.org/simple" }
@@ -1375,6 +1384,18 @@ wheels = [
 ]
 
 [[package]]
+name = "openpyxl"
+version = "3.1.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "et-xmlfile" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3d/f9/88d94a75de065ea32619465d2f77b29a0469500e99012523b91cc4141cd1/openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050", size = 186464, upload-time = "2024-06-28T14:03:44.161Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2", size = 250910, upload-time = "2024-06-28T14:03:41.161Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "26.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1880,7 +1901,9 @@ all = [
     { name = "boto3" },
     { name = "dt-ducklake-manager" },
     { name = "duckdb" },
+    { name = "openpyxl" },
     { name = "s3fs" },
+    { name = "xlrd" },
 ]
 ducklake = [
     { name = "dt-ducklake-manager" },
@@ -1889,6 +1912,10 @@ ducklake = [
 s3 = [
     { name = "boto3" },
     { name = "s3fs" },
+]
+unsd = [
+    { name = "openpyxl" },
+    { name = "xlrd" },
 ]
 
 [package.dev-dependencies]
@@ -1917,14 +1944,18 @@ requires-dist = [
     { name = "dt-ducklake-manager", marker = "extra == 'ducklake'", git = "https://github.com/qbolliet/dt-ducklake-manager?tag=v0.4.0" },
     { name = "duckdb", marker = "extra == 'all'", specifier = ">=1.4" },
     { name = "duckdb", marker = "extra == 'ducklake'", specifier = ">=1.4" },
+    { name = "openpyxl", marker = "extra == 'all'", specifier = ">=3.1" },
+    { name = "openpyxl", marker = "extra == 'unsd'", specifier = ">=3.1" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "pyarrow", specifier = ">=24.0.0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "requests", specifier = ">=2.32.5" },
     { name = "s3fs", marker = "extra == 'all'", specifier = ">=0.4.2" },
     { name = "s3fs", marker = "extra == 's3'", specifier = ">=0.4.2" },
+    { name = "xlrd", marker = "extra == 'all'", specifier = ">=2.0.1" },
+    { name = "xlrd", marker = "extra == 'unsd'", specifier = ">=2.0.1" },
 ]
-provides-extras = ["s3", "ducklake", "all"]
+provides-extras = ["s3", "ducklake", "unsd", "all"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2103,6 +2134,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/1d/374cec175b6087e1067a780374d81d74ca966e1e5e39e666402eaee19a65/wrapt-2.5.0-cp315-cp315t-win_amd64.whl", hash = "sha256:1d4da5f0e9a719471502b0db80d5c97503aeca796b7aeb9ab8f47403b2be76e6", size = 109671, upload-time = "2026-09-27T01:41:35.553Z" },
     { url = "https://files.pythonhosted.org/packages/c7/93/fc9e477a1771bec52d7677eee5e8404afe662a47efe1859405a18fff206c/wrapt-2.5.0-cp315-cp315t-win_arm64.whl", hash = "sha256:78b7bdaa8b27b7f7607c66bdb6ab15c1dcbd9e9a1556a253a347dad511f615d1", size = 105969, upload-time = "2026-09-27T01:41:36.973Z" },
     { url = "https://files.pythonhosted.org/packages/87/7d/5ed859fad4b5eddd598a846150aaab2703730ed4886c5c5e03b0df0cfdd5/wrapt-2.5.0-py3-none-any.whl", hash = "sha256:107eea1a511e98a3a5033b0c2cb403fbb37f05dee6ac1fb85c0460d311ec278c", size = 81586, upload-time = "2026-09-27T01:41:55.479Z" },
+]
+
+[[package]]
+name = "xlrd"
+version = "2.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/07/5a/377161c2d3538d1990d7af382c79f3b2372e880b65de21b01b1a2b78691e/xlrd-2.0.2.tar.gz", hash = "sha256:08b5e25de58f21ce71dc7db3b3b8106c1fa776f3024c54e45b45b374e89234c9", size = 100167, upload-time = "2025-06-14T08:46:39.039Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1a/62/c8d562e7766786ba6587d09c5a8ba9f718ed3fa8af7f4553e8f91c36f302/xlrd-2.0.2-py2.py3-none-any.whl", hash = "sha256:ea762c3d29f4cca48d82df517b6d89fbce4db3107f9d78713e48cd321d5c9aa9", size = 96555, upload-time = "2025-06-14T08:46:37.766Z" },
 ]
 
 [[package]]
