@@ -1290,8 +1290,9 @@ class ComtradeClient(APIClient):
         """Return the structure of a Comtrade dataflow.
 
         UN Comtrade has no structure endpoint, so the structure is read from the
-        registry (populated from ``parameters/comtrade.json``) or derived from
-        the declared identifier columns and cached.
+        registry, which is populated from ``parameters/comtrade.json``. A
+        dataflow absent from that file is rejected rather than guessed: the
+        structure defines the primary key of the target table.
 
         Args:
             dataflow: Logical dataflow identifier (e.g. ``"C_A_HS"``).
@@ -1299,17 +1300,18 @@ class ComtradeClient(APIClient):
 
         Returns:
             The resolved :class:`DataflowStructure`.
+
+        Raises:
+            ValueError: If the dataflow is not declared in
+                ``parameters/comtrade.json``.
         """
         # Recherche dans le registre avant toute construction
         cached = self.structure_registry.get(agency, dataflow)
         if cached is not None:
             return cached
 
-        # Construction depuis les paramètres déclarés et mise en cache
-        structure = cast(
-            DataflowStructure,
-            parsing.build_structure_from_parameters(agency, dataflow),
-        )
+        # Construction depuis les paramètres déclarés (ValueError si absent) et mise en cache
+        structure = parsing.build_structure_from_parameters(agency, dataflow)
         self.structure_registry.register(structure)
         return structure
 
