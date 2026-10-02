@@ -127,29 +127,30 @@ nav:
     - DimensionInfo: api/core/DimensionInfo.md
     - DataflowStructure: api/core/DataflowStructure.md
     - DataflowStructureRegistry: api/core/DataflowStructureRegistry.md
-  - sources.eurostat:
-    - EurostatClient: api/sources/eurostat/EurostatClient.md
-    - EurostatQueryRequest: api/sources/eurostat/EurostatQueryRequest.md
-    - EurostatQueryRequestV30: api/sources/eurostat/EurostatQueryRequestV30.md
-    - EurostatQueryRequestV21: api/sources/eurostat/EurostatQueryRequestV21.md
-    - EurostatEndpointBuilderV30: api/sources/eurostat/EurostatEndpointBuilderV30.md
-    - EurostatEndpointBuilderV21: api/sources/eurostat/EurostatEndpointBuilderV21.md
-    - EurostatResponseFormat: api/sources/eurostat/EurostatResponseFormat.md
-  - sources.oecd:
-    - OECDClient: api/sources/oecd/OECDClient.md
-    - OECDQueryRequest: api/sources/oecd/OECDQueryRequest.md
-    - OECDEndpointBuilder: api/sources/oecd/OECDEndpointBuilder.md
-    - OECDEndpointBuilderV1: api/sources/oecd/OECDEndpointBuilderV1.md
-    - OECDEndpointBuilderV2: api/sources/oecd/OECDEndpointBuilderV2.md
-    - OECDResponseFormat: api/sources/oecd/OECDResponseFormat.md
-  - sources.comtrade:
-    - ComtradeClient: api/sources/comtrade/ComtradeClient.md
-    - ComtradeQueryRequest: api/sources/comtrade/ComtradeQueryRequest.md
-    - ComtradeResponseFormat: api/sources/comtrade/ComtradeResponseFormat.md
-  - sources.unsd:
-    - UNSDClient: api/sources/unsd/UNSDClient.md
-    - UNSDCorrespondenceRequest: api/sources/unsd/UNSDCorrespondenceRequest.md
-    - UNSDResponseFormat: api/sources/unsd/UNSDResponseFormat.md
+  - sources:
+    - eurostat:
+      - EurostatClient: api/sources/eurostat/EurostatClient.md
+      - EurostatQueryRequest: api/sources/eurostat/EurostatQueryRequest.md
+      - EurostatQueryRequestV30: api/sources/eurostat/EurostatQueryRequestV30.md
+      - EurostatQueryRequestV21: api/sources/eurostat/EurostatQueryRequestV21.md
+      - EurostatEndpointBuilderV30: api/sources/eurostat/EurostatEndpointBuilderV30.md
+      - EurostatEndpointBuilderV21: api/sources/eurostat/EurostatEndpointBuilderV21.md
+      - EurostatResponseFormat: api/sources/eurostat/EurostatResponseFormat.md
+    - oecd:
+      - OECDClient: api/sources/oecd/OECDClient.md
+      - OECDQueryRequest: api/sources/oecd/OECDQueryRequest.md
+      - OECDEndpointBuilder: api/sources/oecd/OECDEndpointBuilder.md
+      - OECDEndpointBuilderV1: api/sources/oecd/OECDEndpointBuilderV1.md
+      - OECDEndpointBuilderV2: api/sources/oecd/OECDEndpointBuilderV2.md
+      - OECDResponseFormat: api/sources/oecd/OECDResponseFormat.md
+    - comtrade:
+      - ComtradeClient: api/sources/comtrade/ComtradeClient.md
+      - ComtradeQueryRequest: api/sources/comtrade/ComtradeQueryRequest.md
+      - ComtradeResponseFormat: api/sources/comtrade/ComtradeResponseFormat.md
+    - unsd:
+      - UNSDClient: api/sources/unsd/UNSDClient.md
+      - UNSDCorrespondenceRequest: api/sources/unsd/UNSDCorrespondenceRequest.md
+      - UNSDResponseFormat: api/sources/unsd/UNSDResponseFormat.md
   - storage:
     - S3Connection: api/storage/S3Connection.md
     - Loader: api/storage/Loader.md
