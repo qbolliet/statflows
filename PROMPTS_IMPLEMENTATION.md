@@ -91,8 +91,9 @@ Vérifications (toutes doivent passer) :
   exportés dans l'environnement (adapte la syntaxe au shell)
 - `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy statflows/`
 
-Termine par un résumé des changements, puis crée un commit (sans push) :
+Termine par un résumé des changements, puis propose-moi un message de commit :
 `test: make the test suite hermetic (no network, no ambient credentials)`.
+Ne lance aucun `git commit` : je relirai le diff avant toute validation.
 ```
 
 ---
@@ -164,9 +165,10 @@ Vérifications (toutes doivent passer, sauf l'étape 3 qui est un constat) :
 4. `uv run mypy statflows/`, `uv run ruff check .`, `uv run ruff format --check .`
 
 Termine par un résumé (risques confirmés / écartés, défauts signalés non corrigés),
-puis crée un commit (sans push) dont le titre est
+puis propose-moi un message de commit dont le titre est
 `chore(deps)!: require pandas >= 3.0` et dont le corps explique en deux ou trois
 lignes que pandas 2 n'est plus supporté.
+Ne lance aucun `git commit` : je relirai le diff avant toute validation.
 ```
 
 ---
@@ -235,8 +237,9 @@ Vérifications : `uv sync --all-extras`, `uv run pytest` (suite complète),
 `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy statflows/`.
 
 Termine par un résumé (couverture avant/après, défauts éventuels marqués xfail),
-puis crée un commit (sans push) :
+puis propose-moi un message de commit :
 `test(core): cover SDMXDownloader orchestration with unit tests`.
+Ne lance aucun `git commit` : je relirai le diff avant toute validation.
 ```
 
 ---
@@ -293,8 +296,9 @@ Vérifications :
   puis `.venv-bare/Scripts/python -m pytest tests/unit` (Windows ; `bin/` ailleurs) ;
   supprime `.venv-bare` ensuite.
 
-Termine par un résumé (couverture avant/après), puis crée un commit (sans push) :
+Termine par un résumé (couverture avant/après), puis propose-moi un message de commit :
 `test(storage): cover S3 code paths without AWS credentials`.
+Ne lance aucun `git commit` : je relirai le diff avant toute validation.
 ```
 
 ---
@@ -352,8 +356,9 @@ Vérifications : `uv sync --all-extras`, `uv run pytest`, `uv run ruff check .`,
 `uv run ruff format --check .`, `uv run mypy statflows/`.
 
 Termine par un résumé (couverture avant/après, branches volontairement ignorées),
-puis crée un commit (sans push) :
+puis propose-moi un message de commit :
 `test: cover query identity keys and remaining provider gaps`.
+Ne lance aucun `git commit` : je relirai le diff avant toute validation.
 ```
 
 ---
@@ -439,8 +444,9 @@ Vérifications : `uv sync --all-extras`, `uv run pytest`, `uv run ruff check .`,
 `uv run pytest --doctest-modules statflows/core/factory.py` pour les exemples
 ajoutés (pas `python -m doctest` : le module utilise des imports relatifs).
 
-Termine par un résumé (API finale, écarts par rapport au plan), puis crée un commit
-(sans push) : `feat(core): add ClientFactory and extend build_client to all providers`.
+Termine par un résumé (API finale, écarts par rapport au plan), puis propose-moi un
+message de commit : `feat(core): add ClientFactory and extend build_client to all providers`.
+Ne lance aucun `git commit` : je relirai le diff avant toute validation.
 ```
 
 ---
@@ -490,6 +496,7 @@ Tâche :
    un commit `chore: remove implementation working notes`.
 
 Termine par un tableau récapitulatif (commande → résultat, couverture par module
-sous 95 %), puis crée un commit (sans push) : `ci: enforce a minimum test coverage`.
+sous 95 %), puis propose-moi un message de commit : `ci: enforce a minimum test coverage`.
+Ne lance aucun `git commit` : je relirai le diff avant toute validation.
 Suggère ensuite de lancer `/code-review high` sur la branche.
 ```
