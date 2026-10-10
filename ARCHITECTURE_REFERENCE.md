@@ -237,29 +237,37 @@ Module : `statflows/core/factory.py` (il héberge déjà `build_client`,
 
 ```python
 # Table alias → chemin pointé (import paresseux : aucun client importé au chargement)
-CLIENT_PATHS: Final[Mapping[str, str]] = MappingProxyType({
-    "eurostat": "statflows.sources.eurostat.client.EurostatClient",
-    "oecd": "statflows.sources.oecd.client.OECDClient",
-    "comtrade": "statflows.sources.comtrade.client.ComtradeClient",
-    "unsd": "statflows.sources.unsd.client.UNSDClient",
-})
+CLIENT_PATHS: Final[Mapping[str, str]] = MappingProxyType(
+    {
+        "eurostat": "statflows.sources.eurostat.client.EurostatClient",
+        "oecd": "statflows.sources.oecd.client.OECDClient",
+        "comtrade": "statflows.sources.comtrade.client.ComtradeClient",
+        "unsd": "statflows.sources.unsd.client.UNSDClient",
+    }
+)
 
-def _import_object(path: str) -> Any: ...            # privé ; "a.b.C" ou "a.b:C"
+
+def _import_object(path: str) -> Any: ...  # privé ; "a.b.C" ou "a.b:C"
+
 
 class ClientFactory:
     def __init__(
         self,
-        target: str,                                  # alias ou chemin pointé
+        target: str,  # alias ou chemin pointé
         options: Mapping[str, Any] | None = None,
         credentials: Mapping[str, Any] | None = None,
     ) -> None: ...
-    target: str            # tel que fourni
-    path: str              # chemin pointé résolu
-    options: dict[str, Any]          # après coercition des enums
-    def __call__(self) -> Any: ...   # nouveau client à chaque appel
+
+    target: str  # tel que fourni
+    path: str  # chemin pointé résolu
+    options: dict[str, Any]  # après coercition des enums
+
+    def __call__(self) -> Any: ...  # nouveau client à chaque appel
     def __repr__(self) -> str: ...
     def __eq__(self, other: object) -> bool: ...
+
     __hash__ = None
+
 
 @overload
 def build_client(provider: Literal["eurostat"], **options: Any) -> EurostatClient: ...
