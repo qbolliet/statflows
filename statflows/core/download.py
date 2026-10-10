@@ -31,6 +31,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import Enum
+from itertools import accumulate, pairwise
 from pathlib import Path
 from typing import (
     Any,
@@ -933,8 +934,9 @@ class SDMXDownloader:
             # Lot d'une requête : DataFrame tel quel (comportement historique)
             if len(buffer.items) == 1:
                 data = buffer.items[0].df
+                rows_per_item = [len(data)]
             else:
-                data = self._concat_batch(buffer)
+                data, rows_per_item = self._concat_batch(buffer)
             created = self._write_dataframe(
                 conn, data, buffer.structure, schema, buffer.dataflow
             )
@@ -955,10 +957,14 @@ class SDMXDownloader:
         self._buffers.pop(schema, None)
         report.n_write_batches += 1
         report.n_tables_created += int(created)
-        for position, item in enumerate(buffer.items):
-            item.query_report.rows_written = len(item.df)
+        # Lignes réellement écrites : celles supplantées par une requête
+        # ultérieure du lot ne sont imputées à aucune requête
+        for position, (item, rows) in enumerate(
+            zip(buffer.items, rows_per_item, strict=True)
+        ):
+            item.query_report.rows_written = rows
             item.query_report.table_created = created and position == 0
-            report.rows_written += len(item.df)
+            report.rows_written += rows
         # ORDRE CRITIQUE : la base est écrite avant la mise à jour du registre
         self._commit_entries(
             report, [(item.key, item.entry, item.shard) for item in buffer.items]
@@ -968,7 +974,7 @@ class SDMXDownloader:
 
     # Méthode de concaténation d'un lot de plusieurs requêtes
     @staticmethod
-    def _concat_batch(buffer: _SchemaBuffer) -> pd.DataFrame:
+    def _concat_batch(buffer: _SchemaBuffer) -> tuple[pd.DataFrame, list[int]]:
         """Concatenate a batch and deduplicate it on the primary key.
 
         Two queries of a batch are not expected to overlap, but the library
@@ -979,23 +985,32 @@ class SDMXDownloader:
             buffer: Batch of at least two queries.
 
         Returns:
-            Concatenated, primary-key-unique DataFrame.
+            Tuple ``(data, rows_per_item)``: the concatenated,
+            primary-key-unique DataFrame, and the number of its rows coming
+            from each query of the batch, in order (rows superseded by a later
+            query are not counted).
         """
         # Concaténation dans l'ordre de traitement
         data = pd.concat([item.df for item in buffer.items], ignore_index=True)
+        # Bornes des lignes de chaque requête dans la concaténation
+        bounds = list(accumulate((len(item.df) for item in buffer.items), initial=0))
         primary_keys = _primary_keys(buffer.structure, list(data.columns))
         if not primary_keys:
-            return data
+            return data, [len(item.df) for item in buffer.items]
         # Dédoublonnage par clé primaire, dernier gagnant
         n_rows = len(data)
-        data = data.drop_duplicates(subset=primary_keys, keep="last")
+        kept = ~data.duplicated(subset=primary_keys, keep="last")
+        rows_per_item = [
+            int(kept.iloc[start:end].sum()) for start, end in pairwise(bounds)
+        ]
+        data = data[kept]
         if len(data) < n_rows:
             # Logging
             logger.warning(
                 f"{buffer.dataflow}: {n_rows - len(data)} duplicated primary "
                 "key(s) dropped from the write batch (last query wins)"
             )
-        return data
+        return data, rows_per_item
 
     # Méthode d'écriture d'un DataFrame dans le catalogue DuckLake
     def _write_dataframe(

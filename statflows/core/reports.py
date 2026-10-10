@@ -267,7 +267,9 @@ class QueryReport:
         schema: DuckLake schema the data was written to.
         incremental: Whether the query was an incremental download (a previous
             download date existed) rather than a full one.
-        rows_written: Rows written or upserted into DuckLake.
+        rows_written: Rows written or upserted into DuckLake. In a write
+            batch, rows superseded by a later query of the batch (same
+            primary key) are not counted.
         table_created: Whether the schema was created (vs. upserted).
         empty: Whether the query returned no new data.
         duration_seconds: Wall-clock duration of the whole query processing.
