@@ -1,8 +1,10 @@
-"""Tests — :func:`statflows.sources.comtrade.parsing.parse_availability_last_released`.
+"""Tests — :mod:`statflows.sources.comtrade.parsing`.
 
-Frozen behaviour: one row per (reporter, period) as input, one date per period as
-output (the most recent across all reporters), missing or invalid dates
-tolerated, empty or incomplete input → empty dictionary.
+Frozen behaviour of ``parse_availability_last_released``: one row per
+(reporter, period) as input, one date per period as output (the most recent
+across all reporters), missing or invalid dates tolerated, empty or incomplete
+input → empty dictionary. Frozen behaviour of ``build_codelist``: rows without a
+code are dropped, the root ``parent`` is a missing value.
 """
 
 from __future__ import annotations
@@ -10,7 +12,10 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from statflows.sources.comtrade.parsing import parse_availability_last_released
+from statflows.sources.comtrade.parsing import (
+    build_codelist,
+    parse_availability_last_released,
+)
 
 # ──────────────────────────────────────────────────────────────────────
 # Entrées vides ou incomplètes
@@ -103,3 +108,27 @@ def test_missing_or_invalid_dates_are_ignored() -> None:
         "2021": None,
         "2020": None,
     }
+
+
+# ──────────────────────────────────────────────────────────────────────
+# build_codelist
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_build_codelist_drops_rows_without_code() -> None:
+    # Un code manquant est écarté : il ne devient pas le code littéral "None"/"nan"
+    meta = pd.DataFrame({"id": ["01", None, "0101"], "text": ["A", "B", "C"]})
+    codelist = build_codelist(meta, "cmd:HS")
+    assert codelist["code"].tolist() == ["01", "0101"]
+    assert codelist["label"].tolist() == ["A", "C"]
+
+
+def test_build_codelist_parent_is_missing_at_the_root() -> None:
+    # Colonne texte par défaut : la racine est un manquant (NaN), pas None
+    meta = pd.DataFrame(
+        {"id": ["TOTAL", "01"], "text": ["All", "Animals"], "parent": [None, "TOTAL"]}
+    )
+    parent = build_codelist(meta, "cmd:HS")["parent"]
+    assert parent.dtype == "str"
+    assert pd.isna(parent.iloc[0])
+    assert parent.iloc[1] == "TOTAL"

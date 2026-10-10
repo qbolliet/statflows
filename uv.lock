@@ -1946,7 +1946,7 @@ requires-dist = [
     { name = "duckdb", marker = "extra == 'ducklake'", specifier = ">=1.4" },
     { name = "openpyxl", marker = "extra == 'all'", specifier = ">=3.1" },
     { name = "openpyxl", marker = "extra == 'unsd'", specifier = ">=3.1" },
-    { name = "pandas", specifier = ">=2.3.3" },
+    { name = "pandas", specifier = ">=3.0" },
     { name = "pyarrow", specifier = ">=24.0.0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "requests", specifier = ">=2.32.5" },
@@ -1961,7 +1961,7 @@ provides-extras = ["s3", "ducklake", "unsd", "all"]
 dev = [
     { name = "moto", extras = ["s3"], specifier = ">=5.2.3" },
     { name = "mypy", specifier = ">=2.1.0" },
-    { name = "pandas-stubs", specifier = ">=2.3.0" },
+    { name = "pandas-stubs", specifier = ">=3.0" },
     { name = "pre-commit", specifier = ">=4.6.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-cov", specifier = ">=6.0.0" },

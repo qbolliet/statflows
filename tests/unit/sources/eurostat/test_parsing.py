@@ -11,6 +11,7 @@ import gzip
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 
+import pandas as pd
 import pytest
 
 from statflows.sources.eurostat.parsing import (
@@ -81,6 +82,22 @@ def test_tsv_is_melted_to_long_format_and_flags_dropped() -> None:
     fr = df[df["DIM_1"] == "FR"].set_index("TIME_PERIOD")["value"]
     assert fr.isna()["2020"]
     assert fr["2021"] == 2.0
+
+
+def test_tsv_missing_flagged_and_padded_cells() -> None:
+    # Cellule vide, ":" et valeur flaguée → manquants ; espaces de fin tolérés.
+    # La conversion en texte ne doit jamais laisser passer un "nan" littéral.
+    text = (
+        "freq,geo\\TIME_PERIOD\t2020\t2021\t2022\t2023\n"
+        "A,FR\t\t:\t12.3 p\t3 \n"
+        "A,DE\t1.5\t2\t4\t5\n"
+    )
+    df = parse_tsv_response(text)
+    assert df["value"].dtype == "float64"
+    fr = df[df["DIM_1"] == "FR"].set_index("TIME_PERIOD")["value"]
+    assert fr[["2020", "2021", "2022"]].isna().all()
+    assert fr["2023"] == 3.0
+    assert df[df["DIM_1"] == "DE"]["value"].tolist() == [1.5, 2.0, 4.0, 5.0]
 
 
 def test_tsv_invalid_input_raises_value_error() -> None:
@@ -353,6 +370,19 @@ def test_codelist_sdmx21_parent_reference_and_no_parent_column_by_default() -> N
     with_parent = parse_codelist_response(xml, with_parent=True)
     assert [r["parent"] for r in _records(with_parent)] == ["EU", None]
     assert list(parse_codelist_response(xml).columns) == ["code", "name"]
+
+
+def test_codelist_parent_is_missing_for_root_codes() -> None:
+    # Colonne texte par défaut : la racine est un manquant (NaN), pas None
+    body = """
+    <str:Codelist id="CL">
+      <str:Code id="EU"><com:Name xml:lang="en">Europe</com:Name></str:Code>
+      <str:Code id="FR"><str:Parent>EU</str:Parent></str:Code>
+    </str:Codelist>"""
+    df = parse_codelist_response(_message(NS3, body), with_parent=True)
+    assert df["parent"].dtype == "str"
+    assert pd.isna(df["parent"].iloc[0])
+    assert df["parent"].iloc[1] == "EU"
 
 
 def test_codelist_empty_keeps_columns() -> None:
