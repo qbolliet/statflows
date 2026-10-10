@@ -134,6 +134,7 @@ branch = true
 
 [tool.coverage.report]
 show_missing = true
+fail_under = 95
 exclude_also = [
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
