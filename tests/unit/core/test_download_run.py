@@ -785,18 +785,27 @@ def test_write_batch_rows_threshold(tmp_path: Path, clock, conn, writes) -> None
 
 @dataclass
 class _OverlappingClient(FakeClient):
-    """Client whose queries all return the same keys, valued by query index."""
+    """Client whose rows of ``overlapping`` products all fall on ``R00000``.
+
+    Values carry the query index, so the winner of a duplicated key is visible.
+    """
+
+    overlapping: tuple[str, ...] = ("P1", "P2")
 
     def fetch_updates(
         self, query: FakeQuery, since: datetime | None, n_observations: int
     ) -> pd.DataFrame:
         df = super().fetch_updates(query, since, n_observations)
-        return df.assign(REF_AREA="R00000", OBS_VALUE=float(query.index))
+        df.loc[df["PRODUCT"].isin(self.overlapping), "REF_AREA"] = "R00000"
+        return df.assign(OBS_VALUE=float(query.index))
 
 
-def _run_overlapping_batch(tmp_path: Path, clock: FakeClock) -> DownloadReport:
+def _run_overlapping_batch(
+    tmp_path: Path, clock: FakeClock, overlapping: tuple[str, ...] = ("P1", "P2")
+) -> DownloadReport:
     """Run two overlapping queries of one dataflow in a single write batch."""
-    downloader = _downloader(tmp_path, _OverlappingClient(clock), write_batch_queries=2)
+    client = _OverlappingClient(clock, overlapping=overlapping)
+    downloader = _downloader(tmp_path, client, write_batch_queries=2)
     return downloader.run(_alpha(0, 1))
 
 
@@ -817,20 +826,28 @@ def test_batch_with_duplicate_primary_keys_keeps_last_and_warns(
     assert len(_read_registry(tmp_path)) == 2
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DownloadReport.rows_written sums the buffered DataFrames before the "
-        "primary-key deduplication of the batch, so it overstates the rows "
-        "actually written/upserted into DuckLake"
-    ),
+@pytest.mark.parametrize(
+    ("overlapping", "rows_per_query"),
+    [
+        # Toutes les clés de la 1re requête supplantées par la 2e
+        (("P1", "P2"), [0, 4]),
+        # Seules les lignes P1 se recouvrent : 2 lignes de la 1re requête survivent
+        (("P1",), [2, 4]),
+    ],
 )
 def test_rows_written_counts_rows_after_deduplication(
-    tmp_path: Path, clock, conn, writes
+    tmp_path: Path,
+    clock,
+    conn,
+    writes,
+    overlapping: tuple[str, ...],
+    rows_per_query: list[int],
 ) -> None:
-    report = _run_overlapping_batch(tmp_path, clock)
+    report = _run_overlapping_batch(tmp_path, clock, overlapping)
 
-    assert report.rows_written == len(writes.calls[0]["data"])
+    # Lignes réellement transmises à l'écriture, réparties entre les requêtes
+    assert report.rows_written == len(writes.calls[0]["data"]) == sum(rows_per_query)
+    assert [r.rows_written for r in report.queries] == rows_per_query
 
 
 def test_empty_queries_in_batched_mode_write_nothing(
