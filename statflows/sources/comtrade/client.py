@@ -60,6 +60,26 @@ with open(
 
 
 # Exception levée lorsqu'un appel à l'API UN Comtrade échoue
+def _is_flag_column(series: pd.Series) -> bool:
+    """Tell whether a column is a boolean flag, nulls allowed.
+
+    Args:
+        series: Column to inspect.
+
+    Returns:
+        True for a bool dtype, or an object column whose non-null values are
+        all booleans.
+    """
+    if pd.api.types.is_bool_dtype(series):
+        return True
+    non_null = series.dropna()
+    return (
+        series.dtype == object
+        and not non_null.empty
+        and all(isinstance(v, (bool, np.bool_)) for v in non_null)
+    )
+
+
 class ComtradeAPIError(RuntimeError):
     """Raised when a UN Comtrade API call fails.
 
@@ -1281,7 +1301,7 @@ class ComtradeClient(APIClient):
         flags = [
             c
             for c in non_keys
-            if c not in measures and pd.api.types.is_bool_dtype(df[c])
+            if c not in measures and _is_flag_column(df[c])
         ]
         others = [c for c in non_keys if c not in measures and c not in flags]
 
@@ -1293,7 +1313,18 @@ class ComtradeClient(APIClient):
         if measures:
             parts.append(grouped[measures].sum(min_count=1))
         if flags:
-            parts.append(grouped[flags].any())
+            # « ou » sur les indicateurs ; un groupe entièrement nul reste nul
+            nullable = [c for c in flags if df[c].isna().any()]
+            strict = [c for c in flags if c not in nullable]
+            if strict:
+                parts.append(grouped[strict].any())
+            if nullable:
+                as_boolean = df[nullable].astype("boolean")
+                parts.append(
+                    as_boolean.groupby(
+                        [df[k] for k in dimension_keys], sort=False, dropna=False
+                    ).max()
+                )
         if others:
             parts.append(grouped[others].first())
         aggregated = (

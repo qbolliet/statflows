@@ -100,9 +100,13 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
             value_name="value",
         )
 
-        # Conversion numérique : les valeurs portant un flag (ex. « 12.3 p ») ne
-        # sont pas numériques et deviennent NaN, comme les manquants (« : », vide)
-        df_long["value"] = df_long["value"].astype(str).str.strip()
+        # Conversion numérique : suppression des flags de fin de valeur
+        # (ex. « 12.3 p », « 5 e ») ; les manquants (« : », vide) deviennent NaN
+        df_long["value"] = (
+            df_long["value"]
+            .astype(str)
+            .str.extract(r"^\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?:\s+[A-Za-z]+)?\s*$")[0]
+        )
         df_long["value"] = pd.to_numeric(df_long["value"], errors="coerce")
 
         return df_long

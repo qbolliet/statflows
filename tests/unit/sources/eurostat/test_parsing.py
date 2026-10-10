@@ -68,7 +68,7 @@ def test_decompress_leaves_other_content_untouched(content) -> None:
 # ──────────────────────────────────────────────────────────────────────
 
 
-def test_tsv_is_melted_to_long_format_and_flags_dropped() -> None:
+def test_tsv_is_melted_to_long_format_and_flags_stripped() -> None:
     text = (
         "freq,geo\\TIME_PERIOD\t2020\t2021\tcomment\n"
         "A,FR\t1.5 e\t2\tfoo\n"
@@ -78,14 +78,17 @@ def test_tsv_is_melted_to_long_format_and_flags_dropped() -> None:
     assert list(df.columns) == ["DIM_0", "DIM_1", "TIME_PERIOD", "value"]
     # La colonne "comment" ne porte pas de chiffre : elle est écartée
     assert len(df) == 4
-    # Une valeur suivie d'un flag n'est pas numérique : elle devient NaN
+    # Le flag de fin de valeur est retiré, la valeur numérique est conservée
     fr = df[df["DIM_1"] == "FR"].set_index("TIME_PERIOD")["value"]
-    assert fr.isna()["2020"]
+    assert fr["2020"] == 1.5
     assert fr["2021"] == 2.0
+    de = df[df["DIM_1"] == "DE"].set_index("TIME_PERIOD")["value"]
+    assert de.isna()["2020"]
+    assert de["2021"] == 3.0
 
 
 def test_tsv_missing_flagged_and_padded_cells() -> None:
-    # Cellule vide, ":" et valeur flaguée → manquants ; espaces de fin tolérés.
+    # Cellule vide et ":" → manquants ; valeur flaguée conservée ; espaces tolérés.
     # La conversion en texte ne doit jamais laisser passer un "nan" littéral.
     text = (
         "freq,geo\\TIME_PERIOD\t2020\t2021\t2022\t2023\n"
@@ -95,7 +98,8 @@ def test_tsv_missing_flagged_and_padded_cells() -> None:
     df = parse_tsv_response(text)
     assert df["value"].dtype == "float64"
     fr = df[df["DIM_1"] == "FR"].set_index("TIME_PERIOD")["value"]
-    assert fr[["2020", "2021", "2022"]].isna().all()
+    assert fr[["2020", "2021"]].isna().all()
+    assert fr["2022"] == 12.3
     assert fr["2023"] == 3.0
     assert df[df["DIM_1"] == "DE"]["value"].tolist() == [1.5, 2.0, 4.0, 5.0]
 

@@ -742,6 +742,31 @@ def test_execute_query_aggregation_rule_depends_on_the_column_kind(client) -> No
     assert df["classificationSearchCode"].tolist() == ["HS", "HS"]
 
 
+def test_execute_query_ors_flags_containing_nulls(client) -> None:
+    # Colonne d'indicateurs de dtype object (valeurs nulles) : « ou » conservé
+    client.get_data = mock.Mock(  # type: ignore[method-assign]
+        return_value=(
+            pd.DataFrame(
+                {
+                    "period": [2022, 2022, 2022, 2022],
+                    "reporterCode": [251, 251, 276, 380],
+                    "refYear": [2022, 2022, 2022, 2022],
+                    "classificationSearchCode": ["HS"] * 4,
+                    "primaryValue": [1.0, 2.0, 5.0, 1.0],
+                    "isQtyEstimated": [None, True, None, False],
+                }
+            ),
+            {},
+        )
+    )
+
+    df = client.execute_query(_query()).set_index("reporterCode")
+
+    assert df.loc[251, "isQtyEstimated"] is True or df.loc[251, "isQtyEstimated"]
+    assert pd.isna(df.loc[276, "isQtyEstimated"])
+    assert not df.loc[380, "isQtyEstimated"]
+
+
 def test_execute_query_returns_an_empty_response_as_is(client) -> None:
     client.get_data = mock.Mock(return_value=(pd.DataFrame(), {}))  # type: ignore[method-assign]
     assert client.execute_query(_query()).empty
