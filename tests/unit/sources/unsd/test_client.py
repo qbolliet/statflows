@@ -147,6 +147,12 @@ def test_execute_query_delegates_to_get_correspondence(client, parsed) -> None:
 # ──────────────────────────────────────────────────────────────────────
 
 
+def test_close_closes_the_session(client) -> None:
+    client.session = mock.Mock()
+    client.close()
+    client.session.close.assert_called_once()
+
+
 def test_request_derived_properties() -> None:
     query = UNSDCorrespondenceRequest("HS2022", "HS2017")
     assert query.agency == "UNSD"

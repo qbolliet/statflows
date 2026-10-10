@@ -19,6 +19,7 @@ import pytest
 import requests
 
 from statflows.core.rate_limiter import CompositeRateLimiter
+from statflows.core.structures import DataflowStructureRegistry
 from statflows.sources.comtrade import client as client_module
 from statflows.sources.comtrade.client import ComtradeAPIError, ComtradeClient
 from statflows.sources.comtrade.queries import ComtradeQueryRequest
@@ -90,6 +91,23 @@ def test_load_rate_limiter_without_section_or_with_bad_section(monkeypatch) -> N
 
 def test_declared_structures_are_preloaded(client) -> None:
     assert client.structure_registry.has("COMTRADE", "C_A_HS")
+
+
+def test_injected_structure_registry_is_used_as_is() -> None:
+    registry = DataflowStructureRegistry()
+    comtrade = ComtradeClient(structure_registry=registry, auto_load_rate_limit=False)
+    assert comtrade.structure_registry is registry
+    # Aucune structure déclarée n'a été préchargée dans le registre injecté
+    assert not registry.has("COMTRADE", "C_A_HS")
+
+
+def test_get_structure_builds_from_parameters_on_cache_miss_and_caches() -> None:
+    registry = DataflowStructureRegistry()
+    comtrade = ComtradeClient(structure_registry=registry, auto_load_rate_limit=False)
+    structure = comtrade.get_structure("C_A_HS")
+    assert structure.dataflow == "C_A_HS"
+    assert registry.get("COMTRADE", "C_A_HS") is structure
+    assert comtrade.get_structure("C_A_HS") is structure
 
 
 def test_close_closes_the_session(client) -> None:

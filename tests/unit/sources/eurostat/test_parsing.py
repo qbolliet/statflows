@@ -148,6 +148,14 @@ def test_jsonstat_missing_category_index_gives_none_codes() -> None:
     assert df.iloc[0].tolist() == [None, None, 1.0]
 
 
+def test_jsonstat_unusable_category_index_gives_none_codes() -> None:
+    # Index présent mais ni objet ni liste : positions inconnues
+    data = _jsonstat({"0": 1.0})
+    data["dimension"]["geo"]["category"]["index"] = None
+    df = parse_json_response(data)
+    assert df.iloc[0].tolist() == [None, "2020", 1.0]
+
+
 @pytest.mark.parametrize(
     "data",
     [{}, {"id": ["a"], "size": []}, {"id": ["a", "b"], "size": [1]}],
@@ -209,6 +217,15 @@ def test_dataconstraint_prefers_data_update_over_other_updates() -> None:
         _annotation("UPDATE_STRUCTURE", "2024-01-01")
         + _annotation("UPDATE_DATA", "2024-02-02")
         + _annotation("OTHER", "2030-01-01"),
+    )
+    assert parse_dataconstraint_last_update(xml) == datetime(2024, 2, 2, tzinfo=UTC)
+
+
+def test_dataconstraint_keeps_data_update_when_a_later_annotation_is_not_data() -> None:
+    xml = _message(
+        NS3,
+        _annotation("UPDATE_DATA", "2024-02-02")
+        + _annotation("UPDATE_STRUCTURE", "2030-01-01"),
     )
     assert parse_dataconstraint_last_update(xml) == datetime(2024, 2, 2, tzinfo=UTC)
 
@@ -332,6 +349,16 @@ def test_dataflow_list_prefers_english_name(ns) -> None:
     ]
 
 
+def test_dataflow_list_keeps_english_name_listed_before_other_languages() -> None:
+    body = """
+    <str:Dataflow id="A" agencyID="ESTAT" version="1.0">
+      <com:Name xml:lang="en">Alpha</com:Name>
+      <com:Name xml:lang="fr">Alpha FR</com:Name>
+    </str:Dataflow>"""
+    df = parse_dataflow_list_response(_message(NS3, body))
+    assert _records(df)[0]["name"] == "Alpha"
+
+
 def test_dataflow_list_invalid_xml_raises() -> None:
     with pytest.raises(ValueError, match="Failed to parse dataflow catalogue"):
         parse_dataflow_list_response("<not xml")
@@ -370,6 +397,18 @@ def test_codelist_sdmx21_parent_reference_and_no_parent_column_by_default() -> N
     with_parent = parse_codelist_response(xml, with_parent=True)
     assert [r["parent"] for r in _records(with_parent)] == ["EU", None]
     assert list(parse_codelist_response(xml).columns) == ["code", "name"]
+
+
+def test_codelist_keeps_english_name_listed_before_other_languages() -> None:
+    body = """
+    <str:Codelist id="CL">
+      <str:Code id="FR">
+        <com:Name xml:lang="en">France</com:Name>
+        <com:Name xml:lang="fr">La France</com:Name>
+      </str:Code>
+    </str:Codelist>"""
+    df = parse_codelist_response(_message(NS3, body))
+    assert _records(df) == [{"code": "FR", "name": "France"}]
 
 
 def test_codelist_parent_is_missing_for_root_codes() -> None:
