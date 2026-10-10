@@ -1137,9 +1137,14 @@ class ComtradeClient(APIClient):
             # Dates de publication par reporter
             released = parsing.parse_availability_last_released(availability)
             dates = [value for value in released.values() if value is not None]
-            # Date de publication la plus récente sur l'ensemble des reporters
+            # Date de publication la plus récente sur l'ensemble des reporters,
+            # tronquée à la microseconde : un datetime ne porte pas les
+            # nanosecondes des dates Comtrade à 7 décimales (sans troncature,
+            # to_pydatetime émet un UserWarning)
             last_released = (
-                pd.to_datetime(max(dates), utc=True).to_pydatetime() if dates else None
+                pd.to_datetime(max(dates), utc=True).floor("us").to_pydatetime()
+                if dates
+                else None
             )
         except Exception as e:
             # Échec non bloquant : la période sera rafraîchie par précaution
@@ -1224,11 +1229,18 @@ class ComtradeClient(APIClient):
         request metadata, returning only the DataFrame for symmetry with the
         SDMX clients' ``execute_query``.
 
+        Tariffline rows sharing the same primary key are not true duplicates and
+        are aggregated into one row: the measures declared in the ``MEASURES``
+        section of ``parameters/comtrade.json`` are summed (a group whose values
+        are all missing stays missing), boolean flags are combined with a
+        logical *or* (an aggregate is estimated as soon as one of its parts is),
+        and every other column keeps its first non-missing value.
+
         Args:
             query: Comtrade query request.
 
         Returns:
-            DataFrame with the retrieved data.
+            DataFrame with the retrieved data, one row per primary key.
         """
         # Délégation à get_data avec les champs de sélection de la requête
         df, _ = self.get_data(
@@ -1263,10 +1275,35 @@ class ComtradeClient(APIClient):
             for d in self.resolve_query_structure(query=query).dimensions
             if d.name in df.columns
         ]
-        # Agrégation
-        df = df.groupby(dimension_keys, sort=False, as_index=False, dropna=False).sum()
+        # Répartition des colonnes hors clé selon leur règle d'agrégation
+        non_keys = [c for c in df.columns if c not in dimension_keys]
+        measures = [c for c in non_keys if c in PARAMETERS["MEASURES"]]
+        flags = [
+            c
+            for c in non_keys
+            if c not in measures and pd.api.types.is_bool_dtype(df[c])
+        ]
+        others = [c for c in non_keys if c not in measures and c not in flags]
 
-        return df
+        # Agrégation : mesures sommées (un groupe entièrement manquant reste
+        # manquant au lieu de devenir 0), indicateurs combinés par « ou »,
+        # attributs constants dans la clé réduits à leur première valeur
+        grouped = df.groupby(dimension_keys, sort=False, dropna=False)
+        parts = []
+        if measures:
+            parts.append(grouped[measures].sum(min_count=1))
+        if flags:
+            parts.append(grouped[flags].any())
+        if others:
+            parts.append(grouped[others].first())
+        aggregated = (
+            pd.concat(parts, axis=1)
+            if parts
+            else pd.DataFrame(index=grouped.size().index)
+        )
+
+        # Restauration des clés en colonnes et de l'ordre d'origine des colonnes
+        return aggregated.reset_index()[list(df.columns)]
 
     # Méthode de résolution de la structure d'une requête
     def resolve_query_structure(

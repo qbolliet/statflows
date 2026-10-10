@@ -4,6 +4,7 @@
     { "requests": 500, "unit": "days", "count": 1 }
   ],
   "LIMIT": 100000,
+  "MEASURES": ["qty", "altQty", "netWgt", "grossWgt", "cifvalue", "fobvalue", "primaryValue"],
   "STRUCTURES": [
     {
       "agency": "COMTRADE",
