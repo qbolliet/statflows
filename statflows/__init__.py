@@ -48,6 +48,10 @@ from .sources import (
     UNSDResponseFormat,
 )
 
+# Fabrique de clients (importée en dernier : core.factory importe les sources)
+# isort: split
+from .core.factory import ClientFactory, build_client
+
 # Réexport des éléments d'intérêt du module
 __all__ = [
     # Core
@@ -96,4 +100,7 @@ __all__ = [
     "UNSDResponseFormat",
     "UNSDCorrespondenceRequest",
     "UNSDClient",
+    # Factory
+    "ClientFactory",
+    "build_client",
 ]

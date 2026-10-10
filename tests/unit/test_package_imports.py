@@ -36,6 +36,17 @@ def test_toplevel_reexports_one_client_per_provider() -> None:
         assert hasattr(statflows, name), name
 
 
+def test_client_factory_exported_from_toplevel_only() -> None:
+    # ``core.factory`` importe ``sources`` : l'exporter depuis ``statflows.core``
+    # créerait un cycle d'import.
+    import statflows
+    import statflows.core
+
+    for name in ("ClientFactory", "build_client"):
+        assert name in statflows.__all__, name
+        assert name not in statflows.core.__all__, name
+
+
 def test_storage_json_importable_without_s3_extra() -> None:
     # Après le découplage : ``Loader`` / ``Saver`` s'importent sans ``boto3`` ;
     # la connexion S3 n'est tentée qu'en présence d'un argument ``bucket``.

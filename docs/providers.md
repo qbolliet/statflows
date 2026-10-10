@@ -63,9 +63,62 @@ the [`HttpStats`][statflows.core.reports.HttpStats] and
 
 ## Factories
 
+[`ClientFactory`][statflows.core.factory.ClientFactory],
 [`build_client`][statflows.core.factory.build_client],
 [`build_queries`][statflows.core.factory.build_queries],
 [`filter_codes`][statflows.core.factory.filter_codes] and
 [`codelist_frame`][statflows.core.factory.codelist_frame] turn declarative
 specifications (plain dictionaries) into clients and query objects, so that
 download jobs can be described in configuration files.
+
+`ClientFactory` is a small picklable recipe — a target and its options — that
+builds a **new** client each time it is called. It is the object to hand over
+when the client is created elsewhere: in another process, in a pipeline node,
+or from a YAML/JSON configuration.
+
+- The target is a provider alias (`"eurostat"`, `"oecd"`, `"comtrade"`,
+  `"unsd"`) or the dotted path of any callable (`"package.module.Name"` or
+  `"package.module:Name"`, e.g. a test double).
+- Everything is checked when the factory is created, not at the first call:
+  the target is imported, an unknown or missing option raises `TypeError`, and
+  a string is coerced into the enum a parameter expects (`"v3"` or `"V3"` →
+  `SDMXVersion.V3`).
+- `credentials` (API keys…) are passed to the client but never shown: the
+  `repr` only displays their count.
+
+```yaml
+# conf/eurostat.yml
+client:
+  target: eurostat
+  options:
+    api_version: v3
+    timeout: 120
+```
+
+```python
+import yaml
+
+from statflows import ClientFactory
+from statflows.core.download import download_updates
+
+with open("conf/eurostat.yml", encoding="utf-8") as f:
+    config = yaml.safe_load(f)
+
+factory = ClientFactory(**config["client"])
+# ClientFactory('eurostat', options={'api_version': <SDMXVersion.V3: 'v3'>, 'timeout': 120})
+
+with factory() as client:
+    report = download_updates(
+        client=client,
+        queries=queries,
+        connector=connector,
+        structures_path="registries/eurostat_structures.json",
+        last_download_path="registries/eurostat_last_download.json",
+    )
+```
+
+For Comtrade, pass the subscription key as a credential, e.g.
+`ClientFactory("comtrade", credentials={"subscription_key": key})`. When the
+client is needed right away, `build_client(provider, **options)` is the
+one-shot equivalent for the provider aliases: `build_client("comtrade")` is
+typed as `ComtradeClient`.
