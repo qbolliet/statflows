@@ -31,6 +31,7 @@ from typing import (
     get_type_hints,
     overload,
 )
+
 # Module de manipulation de données
 import pandas as pd
 
