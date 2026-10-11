@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/qbolliet/statflows/compare/v0.1.1...v0.2.0) (2026-10-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** require pandas >= 3.0
+
+### Features
+
+* **core:** add ClientFactory and extend build_client to all providers ([f3957a3](https://github.com/qbolliet/statflows/commit/f3957a3ed6b918d5053c0e7aef1bfe17ab7cbf41))
+
+
+### Bug Fixes
+
+* **comtrade:** aggregate duplicate tariffline rows per column kind ([173d0da](https://github.com/qbolliet/statflows/commit/173d0da170752baae71f958246eddbc08a1a867b))
+* **core:** count only written rows in rows_written of write batches ([6cfdf86](https://github.com/qbolliet/statflows/commit/6cfdf86737904f50275c38d576c84faabdf03a40))
+* minor aggregation + parsing bugs ([02c3c2f](https://github.com/qbolliet/statflows/commit/02c3c2f1448450c367ccdf9d5a706d77f1bcec70))
+
+
+### Documentation
+
+* implementation specification ([801b8be](https://github.com/qbolliet/statflows/commit/801b8be7a83c4d63d57ff03068bdc93b16332d15))
+
+
+### Miscellaneous Chores
+
+* **deps:** require pandas &gt;= 3.0 ([df71dc5](https://github.com/qbolliet/statflows/commit/df71dc56f74962cf6dd80f8633ff89211a1b611b))
+
 ## [0.1.1](https://github.com/qbolliet/statflows/compare/v0.1.0...v0.1.1) (2026-10-02)
 
 
