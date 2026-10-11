@@ -1298,11 +1298,7 @@ class ComtradeClient(APIClient):
         # Répartition des colonnes hors clé selon leur règle d'agrégation
         non_keys = [c for c in df.columns if c not in dimension_keys]
         measures = [c for c in non_keys if c in PARAMETERS["MEASURES"]]
-        flags = [
-            c
-            for c in non_keys
-            if c not in measures and _is_flag_column(df[c])
-        ]
+        flags = [c for c in non_keys if c not in measures and _is_flag_column(df[c])]
         others = [c for c in non_keys if c not in measures and c not in flags]
 
         # Agrégation : mesures sommées (un groupe entièrement manquant reste

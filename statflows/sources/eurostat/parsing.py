@@ -105,7 +105,9 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
         df_long["value"] = (
             df_long["value"]
             .astype(str)
-            .str.extract(r"^\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?:\s+[A-Za-z]+)?\s*$")[0]
+            .str.extract(
+                r"^\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?:\s+[A-Za-z]+)?\s*$"
+            )[0]
         )
         df_long["value"] = pd.to_numeric(df_long["value"], errors="coerce")
 
