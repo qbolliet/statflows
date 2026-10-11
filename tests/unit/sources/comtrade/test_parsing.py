@@ -1,8 +1,12 @@
-"""Tests — :func:`statflows.sources.comtrade.parsing.parse_availability_last_released`.
+"""Tests — :mod:`statflows.sources.comtrade.parsing`.
 
-Frozen behaviour: one row per (reporter, period) as input, one date per period as
-output (the most recent across all reporters), missing or invalid dates
-tolerated, empty or incomplete input → empty dictionary.
+Frozen behaviour of ``parse_availability_last_released``: one row per
+(reporter, period) as input, one date per period as output (the most recent
+across all reporters), missing or invalid dates tolerated, empty or incomplete
+input → empty dictionary. Frozen behaviour of ``build_codelist``: rows without a
+code are dropped, the root ``parent`` is a missing value, the label column falls
+back on ``text`` (or is empty) when the category-specific one is absent.
+``extract_codes`` and ``build_structure_from_parameters`` reject unknown input.
 """
 
 from __future__ import annotations
@@ -10,7 +14,12 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from statflows.sources.comtrade.parsing import parse_availability_last_released
+from statflows.sources.comtrade.parsing import (
+    build_codelist,
+    build_structure_from_parameters,
+    extract_codes,
+    parse_availability_last_released,
+)
 
 # ──────────────────────────────────────────────────────────────────────
 # Entrées vides ou incomplètes
@@ -103,3 +112,71 @@ def test_missing_or_invalid_dates_are_ignored() -> None:
         "2021": None,
         "2020": None,
     }
+
+
+# ──────────────────────────────────────────────────────────────────────
+# build_codelist
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_build_codelist_drops_rows_without_code() -> None:
+    # Un code manquant est écarté : il ne devient pas le code littéral "None"/"nan"
+    meta = pd.DataFrame({"id": ["01", None, "0101"], "text": ["A", "B", "C"]})
+    codelist = build_codelist(meta, "cmd:HS")
+    assert codelist["code"].tolist() == ["01", "0101"]
+    assert codelist["label"].tolist() == ["A", "C"]
+
+
+def test_build_codelist_parent_is_missing_at_the_root() -> None:
+    # Colonne texte par défaut : la racine est un manquant (NaN), pas None
+    meta = pd.DataFrame(
+        {"id": ["TOTAL", "01"], "text": ["All", "Animals"], "parent": [None, "TOTAL"]}
+    )
+    parent = build_codelist(meta, "cmd:HS")["parent"]
+    assert parent.dtype == "str"
+    assert pd.isna(parent.iloc[0])
+    assert parent.iloc[1] == "TOTAL"
+
+
+def test_build_codelist_label_falls_back_on_text_column() -> None:
+    # Pas de « reporterDesc » : le libellé est lu dans la colonne « text »
+    meta = pd.DataFrame(
+        {
+            "reporterCode": [251, 276],
+            "text": ["France", "Germany"],
+            "entryExpiredDate": [None, None],
+        }
+    )
+    assert build_codelist(meta, "reporter")["label"].tolist() == ["France", "Germany"]
+
+
+def test_build_codelist_label_is_empty_without_any_label_column() -> None:
+    meta = pd.DataFrame({"reporterCode": [251], "entryExpiredDate": [None]})
+    codelist = build_codelist(meta, "reporter")
+    assert codelist["code"].tolist() == ["251"]
+    assert codelist["label"].isna().all()
+
+
+# ──────────────────────────────────────────────────────────────────────
+# extract_codes et build_structure_from_parameters
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_extract_codes_partner_drops_expired_entries() -> None:
+    meta = pd.DataFrame(
+        {
+            "PartnerCode": [0, 251, 999],
+            "entryExpiredDate": [None, None, "2010-01-01"],
+        }
+    )
+    assert extract_codes(meta, "partner") == [0, 251]
+
+
+def test_extract_codes_rejects_unknown_category() -> None:
+    with pytest.raises(ValueError, match="Unsupported category 'unknown'"):
+        extract_codes(pd.DataFrame({"id": ["M"]}), "unknown")
+
+
+def test_build_structure_from_parameters_rejects_unknown_dataflow() -> None:
+    with pytest.raises(ValueError, match="No structure declared for COMTRADE::NOPE"):
+        build_structure_from_parameters("COMTRADE", "NOPE")

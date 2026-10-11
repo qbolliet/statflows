@@ -57,7 +57,7 @@ jobs:
         run: uv run pytest -m "not integration" --cov --cov-report=xml
 
       - name: Exécution des tests d'intégration
-        run: uv run pytest -m integration --cov --cov-append --cov-report=xml --cov-report=term-missing
+        run: uv run pytest -m integration --cov --cov-append --cov-fail-under=95 --cov-report=xml --cov-report=term-missing
 
       - name: Envoi de la couverture à Codecov
         uses: codecov/codecov-action@v7

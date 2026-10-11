@@ -103,6 +103,7 @@ nav:
     - AbstractSDMXClient: api/core/AbstractSDMXClient.md
     - download_updates: api/core/download_updates.md
     - SDMXDownloader: api/core/SDMXDownloader.md
+    - ClientFactory: api/core/ClientFactory.md
     - build_client: api/core/build_client.md
     - build_queries: api/core/build_queries.md
     - filter_codes: api/core/filter_codes.md

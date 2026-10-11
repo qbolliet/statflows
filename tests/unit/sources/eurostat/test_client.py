@@ -119,6 +119,16 @@ def test_close_closes_both_http_clients(client) -> None:
     comext.close.assert_called_once()
 
 
+def test_fetch_structure_delegates_to_get_dataflow_structure(client) -> None:
+    expected = mock.Mock()
+    with mock.patch.object(
+        client, "get_dataflow_structure", return_value=expected
+    ) as get_structure:
+        result = client._fetch_structure("ESTAT", "une_rt_m", "1.0")
+    assert result is expected
+    get_structure.assert_called_once_with("une_rt_m", "1.0")
+
+
 def test_to_utc_handles_naive_and_aware_values() -> None:
     naive = datetime(2026, 1, 1, 12)
     assert _to_utc(naive) == datetime(2026, 1, 1, 12, tzinfo=UTC)

@@ -173,6 +173,14 @@ def test_load_rate_limiter_missing_file_or_section_gives_none() -> None:
     assert _Missing().rate_limiter is None
 
 
+def test_load_rate_limiter_file_without_rate_limit_section_gives_none() -> None:
+    # unsd.json existe mais ne déclare aucune section RATE_LIMIT
+    class _Unsd(_Client):
+        PROVIDER_CONFIG_NAME = "unsd"
+
+    assert _Unsd().rate_limiter is None
+
+
 def test_load_rate_limiter_swallows_invalid_configuration() -> None:
     class _Broken(_Client):
         PROVIDER_CONFIG_NAME = "eurostat"
@@ -385,6 +393,17 @@ def test_check_duplicates_resolves_positions_through_the_structure() -> None:
             AbstractSDMXClient._check_duplicates(df, {0: ["FR"]}, _structure(), "warn")
             == 2
         )
+
+
+def test_check_duplicates_ignores_unresolvable_filter_keys() -> None:
+    df = pd.DataFrame({"geo": ["FR", "FR"], "OBS_VALUE": [1, 2]})
+    # Position hors structure et nom absent du jeu : aucune colonne de contrôle,
+    # repli sur toutes les colonnes hors valeur observée
+    with pytest.warns(UserWarning, match=r"columns \['geo'\]"):
+        count = AbstractSDMXClient._check_duplicates(
+            df, {7: ["x"], "absent": ["y"]}, _structure(), "warn"
+        )
+    assert count == 2
 
 
 def test_check_duplicates_falls_back_to_all_columns_but_the_value() -> None:

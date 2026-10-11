@@ -11,6 +11,7 @@ import gzip
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 
+import pandas as pd
 import pytest
 
 from statflows.sources.eurostat.parsing import (
@@ -67,7 +68,7 @@ def test_decompress_leaves_other_content_untouched(content) -> None:
 # ──────────────────────────────────────────────────────────────────────
 
 
-def test_tsv_is_melted_to_long_format_and_flags_dropped() -> None:
+def test_tsv_is_melted_to_long_format_and_flags_stripped() -> None:
     text = (
         "freq,geo\\TIME_PERIOD\t2020\t2021\tcomment\n"
         "A,FR\t1.5 e\t2\tfoo\n"
@@ -77,10 +78,30 @@ def test_tsv_is_melted_to_long_format_and_flags_dropped() -> None:
     assert list(df.columns) == ["DIM_0", "DIM_1", "TIME_PERIOD", "value"]
     # La colonne "comment" ne porte pas de chiffre : elle est écartée
     assert len(df) == 4
-    # Une valeur suivie d'un flag n'est pas numérique : elle devient NaN
+    # Le flag de fin de valeur est retiré, la valeur numérique est conservée
     fr = df[df["DIM_1"] == "FR"].set_index("TIME_PERIOD")["value"]
-    assert fr.isna()["2020"]
+    assert fr["2020"] == 1.5
     assert fr["2021"] == 2.0
+    de = df[df["DIM_1"] == "DE"].set_index("TIME_PERIOD")["value"]
+    assert de.isna()["2020"]
+    assert de["2021"] == 3.0
+
+
+def test_tsv_missing_flagged_and_padded_cells() -> None:
+    # Cellule vide et ":" → manquants ; valeur flaguée conservée ; espaces tolérés.
+    # La conversion en texte ne doit jamais laisser passer un "nan" littéral.
+    text = (
+        "freq,geo\\TIME_PERIOD\t2020\t2021\t2022\t2023\n"
+        "A,FR\t\t:\t12.3 p\t3 \n"
+        "A,DE\t1.5\t2\t4\t5\n"
+    )
+    df = parse_tsv_response(text)
+    assert df["value"].dtype == "float64"
+    fr = df[df["DIM_1"] == "FR"].set_index("TIME_PERIOD")["value"]
+    assert fr[["2020", "2021"]].isna().all()
+    assert fr["2022"] == 12.3
+    assert fr["2023"] == 3.0
+    assert df[df["DIM_1"] == "DE"]["value"].tolist() == [1.5, 2.0, 4.0, 5.0]
 
 
 def test_tsv_invalid_input_raises_value_error() -> None:
@@ -129,6 +150,14 @@ def test_jsonstat_missing_category_index_gives_none_codes() -> None:
     data["dimension"] = {}
     df = parse_json_response(data)
     assert df.iloc[0].tolist() == [None, None, 1.0]
+
+
+def test_jsonstat_unusable_category_index_gives_none_codes() -> None:
+    # Index présent mais ni objet ni liste : positions inconnues
+    data = _jsonstat({"0": 1.0})
+    data["dimension"]["geo"]["category"]["index"] = None
+    df = parse_json_response(data)
+    assert df.iloc[0].tolist() == [None, "2020", 1.0]
 
 
 @pytest.mark.parametrize(
@@ -192,6 +221,15 @@ def test_dataconstraint_prefers_data_update_over_other_updates() -> None:
         _annotation("UPDATE_STRUCTURE", "2024-01-01")
         + _annotation("UPDATE_DATA", "2024-02-02")
         + _annotation("OTHER", "2030-01-01"),
+    )
+    assert parse_dataconstraint_last_update(xml) == datetime(2024, 2, 2, tzinfo=UTC)
+
+
+def test_dataconstraint_keeps_data_update_when_a_later_annotation_is_not_data() -> None:
+    xml = _message(
+        NS3,
+        _annotation("UPDATE_DATA", "2024-02-02")
+        + _annotation("UPDATE_STRUCTURE", "2030-01-01"),
     )
     assert parse_dataconstraint_last_update(xml) == datetime(2024, 2, 2, tzinfo=UTC)
 
@@ -315,6 +353,16 @@ def test_dataflow_list_prefers_english_name(ns) -> None:
     ]
 
 
+def test_dataflow_list_keeps_english_name_listed_before_other_languages() -> None:
+    body = """
+    <str:Dataflow id="A" agencyID="ESTAT" version="1.0">
+      <com:Name xml:lang="en">Alpha</com:Name>
+      <com:Name xml:lang="fr">Alpha FR</com:Name>
+    </str:Dataflow>"""
+    df = parse_dataflow_list_response(_message(NS3, body))
+    assert _records(df)[0]["name"] == "Alpha"
+
+
 def test_dataflow_list_invalid_xml_raises() -> None:
     with pytest.raises(ValueError, match="Failed to parse dataflow catalogue"):
         parse_dataflow_list_response("<not xml")
@@ -353,6 +401,31 @@ def test_codelist_sdmx21_parent_reference_and_no_parent_column_by_default() -> N
     with_parent = parse_codelist_response(xml, with_parent=True)
     assert [r["parent"] for r in _records(with_parent)] == ["EU", None]
     assert list(parse_codelist_response(xml).columns) == ["code", "name"]
+
+
+def test_codelist_keeps_english_name_listed_before_other_languages() -> None:
+    body = """
+    <str:Codelist id="CL">
+      <str:Code id="FR">
+        <com:Name xml:lang="en">France</com:Name>
+        <com:Name xml:lang="fr">La France</com:Name>
+      </str:Code>
+    </str:Codelist>"""
+    df = parse_codelist_response(_message(NS3, body))
+    assert _records(df) == [{"code": "FR", "name": "France"}]
+
+
+def test_codelist_parent_is_missing_for_root_codes() -> None:
+    # Colonne texte par défaut : la racine est un manquant (NaN), pas None
+    body = """
+    <str:Codelist id="CL">
+      <str:Code id="EU"><com:Name xml:lang="en">Europe</com:Name></str:Code>
+      <str:Code id="FR"><str:Parent>EU</str:Parent></str:Code>
+    </str:Codelist>"""
+    df = parse_codelist_response(_message(NS3, body), with_parent=True)
+    assert df["parent"].dtype == "str"
+    assert pd.isna(df["parent"].iloc[0])
+    assert df["parent"].iloc[1] == "EU"
 
 
 def test_codelist_empty_keeps_columns() -> None:

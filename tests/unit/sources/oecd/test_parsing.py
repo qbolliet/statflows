@@ -160,6 +160,18 @@ def test_structure_v2_resolves_names_through_concept_schemes() -> None:
     ]
 
 
+def test_structure_v1_dimensions_without_observation_level_is_empty() -> None:
+    response = {"structure": {"dimensions": {"series": [{"id": "A"}]}}}
+    structure = create_structure_from_api_response("OECD", "DF_X", response)
+    assert structure.num_dimensions == 0
+
+
+def test_structure_v2_with_empty_data_structure_list_is_empty() -> None:
+    response = {"data": {"dataStructures": []}, "dataStructures": []}
+    structure = create_structure_from_api_response("OECD", "DF_X", response)
+    assert structure.num_dimensions == 0
+
+
 def test_structure_without_any_dimension_is_empty() -> None:
     structure = create_structure_from_api_response("OECD", "DF_X", {})
     assert structure.num_dimensions == 0

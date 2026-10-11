@@ -100,8 +100,15 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
             value_name="value",
         )
 
-        # Nettoyage des valeurs (suppression des flags et conversion numérique)
-        df_long["value"] = df_long["value"].astype(str).str.strip()
+        # Conversion numérique : suppression des flags de fin de valeur
+        # (ex. « 12.3 p », « 5 e ») ; les manquants (« : », vide) deviennent NaN
+        df_long["value"] = (
+            df_long["value"]
+            .astype(str)
+            .str.extract(
+                r"^\s*(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)(?:\s+[A-Za-z]+)?\s*$"
+            )[0]
+        )
         df_long["value"] = pd.to_numeric(df_long["value"], errors="coerce")
 
         return df_long
@@ -539,7 +546,8 @@ def parse_codelist_response(
             ...)``.
         with_parent: When ``True``, add a ``parent`` column holding the parent
             code of hierarchical codelists (``str:Parent`` — a plain ID in SDMX
-            3.0, a ``Ref`` child in SDMX 2.1), ``None`` for root codes.
+            3.0, a ``Ref`` child in SDMX 2.1), missing (``NaN``) for root
+            codes.
 
     Returns:
         DataFrame with columns: ``code``, ``name`` (and ``parent`` when

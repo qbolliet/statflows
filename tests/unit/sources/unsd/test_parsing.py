@@ -184,6 +184,14 @@ def test_normalise_codes_pads_and_strips() -> None:
     ]
 
 
+def test_normalise_codes_keeps_missing_codes_as_na() -> None:
+    # Un code manquant reste pd.NA : jamais "nan" complété en "000nan"
+    result = normalise_codes(pd.Series(["10121", float("nan")], dtype="str"))
+    assert result.dtype == "string"
+    assert result.iloc[0] == "010121"
+    assert result.iloc[1] is pd.NA
+
+
 def test_normalise_relationships() -> None:
     result = normalise_relationships(pd.Series(["1:1", "'n:n", "n to 1", " N:1 "]))
     assert result.tolist() == ["1:1", "n:n", "n:1", "n:1"]
@@ -236,6 +244,38 @@ def test_parse_correspondence_conversion_sheet_has_no_relationship(tmp_path) -> 
     df = parse_correspondence(content, ".xlsx", "HS2022", "HS2017", "conversion", "f")
     assert df["relationship"].isna().all()
     assert len(df) == 1
+
+
+def test_read_sheet_reads_cells_as_str_with_nan(tmp_path) -> None:
+    content = _workbook(
+        tmp_path, {"Conversions": [["HS2022", "HS2017"], ["010121", None]]}
+    )
+    df = read_sheet(content, ".xlsx", "Conversions")
+    # Texte brut : zéros initiaux conservés, cellule vide = NaN (ni "nan", ni pd.NA)
+    assert (df.dtypes == "str").all()
+    assert df.iloc[1, 0] == "010121"
+    missing = df.iloc[1, 1]
+    assert isinstance(missing, float) and pd.isna(missing)
+
+
+def test_parse_correspondence_column_dtypes(tmp_path) -> None:
+    content = _workbook(
+        tmp_path,
+        {
+            "Conversions": [["HS2022", "HS2017"], ["10121", "010122"]],
+            "Correlations": [["HS2022", "HS2017"], ["010121", "010122"]],
+        },
+    )
+    df = parse_correspondence(content, ".xlsx", "HS2022", "HS2017", "conversion", "f")
+    # Codes et relation en « string » (manquant pd.NA), nomenclatures en « str »
+    assert df.dtypes.to_dict() == {
+        "source_classification": "str",
+        "source_code": "string",
+        "target_classification": "str",
+        "target_code": "string",
+        "relationship": "string",
+    }
+    assert df["relationship"].iloc[0] is pd.NA
 
 
 # ──────────────────────────────────────────────────────────────────────

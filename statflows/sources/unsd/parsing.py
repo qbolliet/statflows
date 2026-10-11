@@ -182,8 +182,8 @@ def read_sheet(content: bytes, extension: str, sheet: str) -> pd.DataFrame:
         sheet: Name of the sheet to read.
 
     Returns:
-        DataFrame of the sheet's cells, positional columns, values as ``str``
-        or ``NaN``.
+        DataFrame of the sheet's cells, positional columns of pandas ``str``
+        dtype (empty cells are ``NaN``).
 
     Raises:
         ValueError: If the extension has no associated engine.
@@ -385,7 +385,9 @@ def parse_correspondence(
         DataFrame with the canonical columns ``source_classification``,
         ``source_code``, ``target_classification``, ``target_code`` and
         ``relationship``. The last is left ``pd.NA`` on a Conversion sheet,
-        which carries no relationship annotation.
+        which carries no relationship annotation. The code and relationship
+        columns are of pandas ``string`` dtype (missing values ``pd.NA``), the
+        classification columns of the default ``str`` dtype.
 
     Raises:
         ValueError: If the sheet, the header row or a code column cannot be

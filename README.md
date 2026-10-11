@@ -23,7 +23,9 @@ Full documentation: <https://qbolliet.github.io/statflows/>.
   returns a `pandas.DataFrame`.
 - **`statflows.core`** — the shared foundation: HTTP client (`APIClient`),
   *rate limiters*, a registry of *dataflow* structures, structured execution
-  reports (`DownloadReport`, `QueryReport`), the `build_client` /
+  reports (`DownloadReport`, `QueryReport`), the `ClientFactory` (picklable
+  recipe building a client from a provider alias or a dotted path, with
+  validated options and hidden credentials) / `build_client` /
   `build_queries` / `filter_codes` factories, and `codelist_frame` (codelists
   with labels, Eurostat and Comtrade).
 - **`statflows.core.download`** — the `download_updates` / `SDMXDownloader`

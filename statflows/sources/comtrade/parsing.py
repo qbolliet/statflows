@@ -136,7 +136,8 @@ def build_codelist(
 
     Returns:
         DataFrame with ``code`` (text), ``label`` and, when the metadata
-        carries one (``cmd:HS``), ``parent`` (text, ``None`` at the root).
+        carries one (``cmd:HS``), ``parent`` (text, missing — ``NaN`` — at
+        the root). Rows without a code are dropped.
 
     Raises:
         ValueError: If ``category`` is not supported.

@@ -10,7 +10,8 @@ aggregation. No network: the inherited HTTP ``get`` is replaced by a mock.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+import warnings
+from datetime import UTC, datetime, timedelta
 from unittest import mock
 
 import pandas as pd
@@ -18,6 +19,7 @@ import pytest
 import requests
 
 from statflows.core.rate_limiter import CompositeRateLimiter
+from statflows.core.structures import DataflowStructureRegistry
 from statflows.sources.comtrade import client as client_module
 from statflows.sources.comtrade.client import ComtradeAPIError, ComtradeClient
 from statflows.sources.comtrade.queries import ComtradeQueryRequest
@@ -89,6 +91,23 @@ def test_load_rate_limiter_without_section_or_with_bad_section(monkeypatch) -> N
 
 def test_declared_structures_are_preloaded(client) -> None:
     assert client.structure_registry.has("COMTRADE", "C_A_HS")
+
+
+def test_injected_structure_registry_is_used_as_is() -> None:
+    registry = DataflowStructureRegistry()
+    comtrade = ComtradeClient(structure_registry=registry, auto_load_rate_limit=False)
+    assert comtrade.structure_registry is registry
+    # Aucune structure déclarée n'a été préchargée dans le registre injecté
+    assert not registry.has("COMTRADE", "C_A_HS")
+
+
+def test_get_structure_builds_from_parameters_on_cache_miss_and_caches() -> None:
+    registry = DataflowStructureRegistry()
+    comtrade = ComtradeClient(structure_registry=registry, auto_load_rate_limit=False)
+    structure = comtrade.get_structure("C_A_HS")
+    assert structure.dataflow == "C_A_HS"
+    assert registry.get("COMTRADE", "C_A_HS") is structure
+    assert comtrade.get_structure("C_A_HS") is structure
 
 
 def test_close_closes_the_session(client) -> None:
@@ -544,6 +563,50 @@ def test_period_last_released_takes_the_latest_date_and_is_memoised(client) -> N
     assert client.get.call_count == 1
 
 
+def test_period_last_released_is_an_aware_utc_datetime_to_the_microsecond(
+    client,
+) -> None:
+    released = "2026-02-06T10:18:40.123456"
+    client.get.return_value = _json_response(
+        {"data": [{"period": 2022, "reporterCode": 251, "lastReleased": released}]}
+    )
+    client.execute_query = mock.Mock(return_value=pd.DataFrame({"a": [1]}))  # type: ignore[method-assign]
+
+    last_released = client._period_last_released(_query())
+
+    # Objet datetime natif (pas un Timestamp), conscient du fuseau, en UTC, à la µs
+    assert type(last_released) is datetime
+    assert last_released.utcoffset() == timedelta(0)
+    assert last_released == datetime(2026, 2, 6, 10, 18, 40, 123456, tzinfo=UTC)
+
+    # Comparaison avec « since » à la microseconde près (cache de disponibilité)
+    assert client.fetch_updates(_query(), last_released).empty
+    assert not client.execute_query.called
+    client.fetch_updates(_query(), last_released - timedelta(microseconds=1))
+    assert client.execute_query.called
+
+
+def test_period_last_released_truncates_nanoseconds_without_warning(client) -> None:
+    # Dates Comtrade à 7 décimales : troncature à la µs, aucun avertissement
+    client.get.return_value = _json_response(
+        {
+            "data": [
+                {
+                    "period": 2022,
+                    "reporterCode": 251,
+                    "lastReleased": "2025-08-14T08:57:07.4733333",
+                }
+            ]
+        }
+    )
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        last_released = client._period_last_released(_query())
+
+    assert last_released == datetime(2025, 8, 14, 8, 57, 7, 473333, tzinfo=UTC)
+
+
 def test_period_last_released_failure_is_not_fatal_and_cached(client) -> None:
     client.get.side_effect = _http_error(500)
     assert client._period_last_released(_query()) is None
@@ -616,6 +679,92 @@ def test_execute_query_aggregates_duplicates_on_the_primary_key(client) -> None:
 
     assert df.sort_values("reporterCode")["primaryValue"].tolist() == [3.0, 5.0]
     assert client.get_data.call_args.kwargs["format_output"] == "JSON"
+
+
+def test_execute_query_keeps_missing_key_values_as_their_own_group(client) -> None:
+    # Une clé manquante (partner2Code) forme son propre groupe : ces lignes ne
+    # sont ni perdues ni fusionnées avec celles dont la clé est renseignée
+    client.get_data = mock.Mock(  # type: ignore[method-assign]
+        return_value=(
+            pd.DataFrame(
+                {
+                    "period": [2022, 2022, 2022],
+                    "reporterCode": [251, 251, 251],
+                    "partner2Code": [None, None, "0"],
+                    "primaryValue": [1.0, 2.0, 5.0],
+                }
+            ),
+            {},
+        )
+    )
+
+    df = client.execute_query(_query())
+
+    assert len(df) == 2
+    missing = df["partner2Code"].isna()
+    assert df.loc[missing, "primaryValue"].tolist() == [3.0]
+    assert df.loc[~missing, "primaryValue"].tolist() == [5.0]
+
+
+def test_execute_query_aggregation_rule_depends_on_the_column_kind(client) -> None:
+    # Deux lignes de même clé (251) et une ligne seule (276)
+    client.get_data = mock.Mock(  # type: ignore[method-assign]
+        return_value=(
+            pd.DataFrame(
+                {
+                    "period": [2022, 2022, 2022],
+                    "reporterCode": [251, 251, 276],
+                    "refYear": [2022, 2022, 2022],
+                    "classificationSearchCode": ["HS", "HS", "HS"],
+                    "primaryValue": [1.0, 2.0, 5.0],
+                    "netWgt": [None, 4.0, 1.0],
+                    "cifvalue": [None, None, None],
+                    "isQtyEstimated": [False, True, False],
+                }
+            ),
+            {},
+        )
+    )
+
+    df = client.execute_query(_query())
+
+    # Colonnes dans l'ordre d'origine, une ligne par clé
+    assert list(df.columns) == list(client.get_data.return_value[0].columns)
+    pooled = df.set_index("reporterCode").loc[251]
+    # Mesures sommées ; une mesure entièrement manquante reste manquante
+    assert pooled["primaryValue"] == 3.0
+    assert pooled["netWgt"] == 4.0
+    assert df["cifvalue"].isna().all()
+    # Indicateurs combinés par « ou », attributs conservés tels quels
+    assert df["isQtyEstimated"].dtype == bool
+    assert df["isQtyEstimated"].tolist() == [True, False]
+    assert df["refYear"].tolist() == [2022, 2022]
+    assert df["classificationSearchCode"].tolist() == ["HS", "HS"]
+
+
+def test_execute_query_ors_flags_containing_nulls(client) -> None:
+    # Colonne d'indicateurs de dtype object (valeurs nulles) : « ou » conservé
+    client.get_data = mock.Mock(  # type: ignore[method-assign]
+        return_value=(
+            pd.DataFrame(
+                {
+                    "period": [2022, 2022, 2022, 2022],
+                    "reporterCode": [251, 251, 276, 380],
+                    "refYear": [2022, 2022, 2022, 2022],
+                    "classificationSearchCode": ["HS"] * 4,
+                    "primaryValue": [1.0, 2.0, 5.0, 1.0],
+                    "isQtyEstimated": [None, True, None, False],
+                }
+            ),
+            {},
+        )
+    )
+
+    df = client.execute_query(_query()).set_index("reporterCode")
+
+    assert df.loc[251, "isQtyEstimated"] is True or df.loc[251, "isQtyEstimated"]
+    assert pd.isna(df.loc[276, "isQtyEstimated"])
+    assert not df.loc[380, "isQtyEstimated"]
 
 
 def test_execute_query_returns_an_empty_response_as_is(client) -> None:

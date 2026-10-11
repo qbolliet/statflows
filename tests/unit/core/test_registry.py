@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -254,3 +255,41 @@ def test_migration_without_assignment_uses_default_shard(tmp_path: Path) -> None
     assert set(Loader().load(shard_path(path, DEFAULT_SHARD))["DOWNLOADS"]) == set(
         ENTRIES
     )
+
+
+def test_iter_registry_entries_connects_the_loader_with_bucket_and_options(
+    monkeypatch,
+) -> None:
+    loader_class = mock.Mock()
+    monkeypatch.setattr("statflows.core.registry.Loader", loader_class)
+    monkeypatch.setattr(
+        "statflows.core.registry.load_registry_records", lambda *a, **k: {}
+    )
+    options = {"endpoint_url": "http://localhost:9000"}
+    assert (
+        list(iter_registry_entries("reg.json", bucket="b", storage_options=options))
+        == []
+    )
+    loader_class.return_value.connect.assert_called_once_with(**options)
+
+
+def test_iter_registry_entries_does_not_connect_without_bucket(monkeypatch) -> None:
+    loader_class = mock.Mock()
+    monkeypatch.setattr("statflows.core.registry.Loader", loader_class)
+    monkeypatch.setattr(
+        "statflows.core.registry.load_registry_records", lambda *a, **k: {}
+    )
+    list(iter_registry_entries("reg.json", storage_options={"endpoint_url": "x"}))
+    loader_class.return_value.connect.assert_not_called()
+
+
+def test_single_file_registry_get_len_and_assign_shards(tmp_path: Path) -> None:
+    path = tmp_path / "reg.json"
+    _save(path, ENTRIES)
+    registry = _registry(path, sharded=False)
+    assert len(registry) == len(ENTRIES)
+    assert registry.get("ESTAT:A:FR") == ENTRIES["ESTAT:A:FR"]
+    assert registry.get("absent") is None
+    # Mode non fragmenté : l'affectation des fragments est sans effet
+    registry.assign_shards({"ESTAT:A:FR": "A"})
+    assert len(registry) == len(ENTRIES)
