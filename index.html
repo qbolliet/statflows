@@ -729,6 +729,34 @@
   
   
     <li class="md-nav__item">
+      <a href="api/core/ClientFactory/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ClientFactory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="api/core/build_client/" class="md-nav__link">
         
   
@@ -2510,7 +2538,9 @@
   returns a <code>pandas.DataFrame</code>.</li>
 <li><strong><code>statflows.core</code></strong> — the shared foundation: HTTP client (<code>APIClient</code>),
   <em>rate limiters</em>, a registry of <em>dataflow</em> structures, structured execution
-  reports (<code>DownloadReport</code>, <code>QueryReport</code>), the <code>build_client</code> /
+  reports (<code>DownloadReport</code>, <code>QueryReport</code>), the <code>ClientFactory</code> (picklable
+  recipe building a client from a provider alias or a dotted path, with
+  validated options and hidden credentials) / <code>build_client</code> /
   <code>build_queries</code> / <code>filter_codes</code> factories, and <code>codelist_frame</code> (codelists
   with labels, Eurostat and Comtrade).</li>
 <li><strong><code>statflows.core.download</code></strong> — the <code>download_updates</code> / <code>SDMXDownloader</code>
