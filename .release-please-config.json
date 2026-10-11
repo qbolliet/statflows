@@ -6,6 +6,7 @@
   "packages": {
     ".": {
       "release-type": "python",
+      "bump-minor-pre-major": true,
       "package-name": "statflows",
       "changelog-path": "CHANGELOG.md"
     }
