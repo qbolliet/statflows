@@ -112,8 +112,15 @@ def test_json_safe_primitives_unchanged(value) -> None:
 # ──────────────────────────────────────────────────────────────────────
 
 
-def _structure(*names: str) -> SimpleNamespace:
-    return SimpleNamespace(dimensions=[SimpleNamespace(name=n) for n in names])
+def _structure(
+    *names: str, attributes: dict[str, str] | None = None
+) -> SimpleNamespace:
+    attributes = attributes or {}
+    return SimpleNamespace(
+        dimensions=[
+            SimpleNamespace(name=n, attribute_of=attributes.get(n)) for n in names
+        ]
+    )
 
 
 def test_primary_keys_case_insensitive_match_keeps_df_casing() -> None:
@@ -133,6 +140,15 @@ def test_primary_keys_time_period_appended_last() -> None:
 
 def test_primary_keys_structure_none_returns_only_time_period() -> None:
     assert _primary_keys(None, ["a", "b", "time_period"]) == ["time_period"]
+
+
+def test_primary_keys_excludes_attribute_dimensions() -> None:
+    structure = _structure(
+        "cmdCode", "cmdDesc", "period", attributes={"cmdDesc": "cmdCode"}
+    )
+    columns = ["cmdCode", "cmdDesc", "period", "primaryValue"]
+
+    assert _primary_keys(structure, columns) == ["cmdCode", "period"]
 
 
 def test_primary_keys_no_match_returns_empty() -> None:

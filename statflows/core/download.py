@@ -142,6 +142,9 @@ def _primary_keys(
     # Dimensions de la structure présentes dans le DataFrame
     if structure is not None:
         for dim in structure.dimensions:
+            # Les libellés (attribute_of) restent hors de la clé : ils peuvent être nuls
+            if dim.attribute_of:
+                continue
             actual = cols_lower.get(dim.name.lower())
             if actual is not None and actual not in primary_keys:
                 primary_keys.append(actual)

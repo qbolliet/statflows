@@ -27,6 +27,11 @@ class DimensionInfo:
             dimension's allowed values (e.g., ``'CXT_FREE_ISO'``). Resolved
             from the dataflow structure (DSD), it tells which codelist to query
             to obtain the dimension's value codes.
+        attribute_of: Optional name of the dimension this one is a label or
+            attribute of (e.g., ``'cmdDesc'`` is an attribute of ``'cmdCode'``).
+            Such a column is kept in the table but is functionally dependent
+            on its parent and may be null, so it is excluded from the primary
+            key.
 
     Example:
         >>> dim = DimensionInfo(
@@ -42,12 +47,14 @@ class DimensionInfo:
         position: int,
         description: str | None = None,
         codelist: str | None = None,
+        attribute_of: str | None = None,
     ):
         # Initialisation des attributs
         self.name = name
         self.position = position
         self.description = description
         self.codelist = codelist
+        self.attribute_of = attribute_of
 
     # Méthode de conversion en dictionnaire des attributs
     def to_dict(self) -> dict[str, Any]:
@@ -67,6 +74,9 @@ class DimensionInfo:
         # Ajout de la codelist associée si spécifiée
         if self.codelist:
             result["codelist"] = self.codelist
+        # Ajout de la dimension parente si la dimension n'est qu'un attribut
+        if self.attribute_of:
+            result["attribute_of"] = self.attribute_of
         return result
 
     # Méthode de création d'une instance de la classe à partir d'un dictionnaire
@@ -85,6 +95,7 @@ class DimensionInfo:
             position=data["position"],
             description=data.get("description"),
             codelist=data.get("codelist"),
+            attribute_of=data.get("attribute_of"),
         )
 
 
