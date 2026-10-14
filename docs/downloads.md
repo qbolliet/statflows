@@ -57,9 +57,7 @@ Each entry carries two dates, with different purposes:
 | `last_modified` (+ `last_modified_snapshot`) | the download actually inserted or updated rows in DuckLake | decide whether downstream steps must run |
 
 An empty response, or an upsert of values identical to the stored ones, moves
-`last_download` only. Entries written by earlier versions have no
-`last_modified`: they read back with `last_modified == last_download`, a safe
-upper bound. `last_modified` is `None` for a query whose data was never written.
+`last_download` only. `last_modified` is `None` for a query whose data was never written.
 `DownloadReport.n_modified` (and `QueryReport.data_modified`) give the same
 information for the run just finished.
 
