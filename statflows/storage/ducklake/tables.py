@@ -2,12 +2,15 @@
 
 Gathers the create-then-upsert logic that every result-producing step of a
 consuming pipeline used to duplicate: the download orchestrator
-(:mod:`statflows.core.download`) and the downstream metric-computation steps.
+(:mod:`statflows.core.download`) and the downstream metric-computation steps,
+plus :func:`changes_since`, which reads DuckLake's change feed so that a
+downstream step recomputes only what changed since its previous run.
 
-Both helpers take an **already-open** DuckDB connection.
+Every helper takes an **already-open** DuckDB connection.
 
-Only :func:`write_dataframe` needs ``dt_ducklake_manager``, which it imports
-lazily: this module — and :func:`fact_table_exists` — stays importable without
+Only :func:`write_dataframe` / :func:`write_dataframe_with_report` need
+``dt_ducklake_manager``, which they import lazily: this module — and
+:func:`fact_table_exists` / :func:`changes_since` — stays importable without
 the optional ``ducklake`` extra.
 """
 
@@ -17,18 +20,24 @@ from __future__ import annotations
 # Modules de base
 import logging
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-# Module de manipulation de la base de données : usage purement annotatif, donc
-# importé au seul typage (annotations différées par `from __future__`)
+# Modules de manipulation de la base de données : usage purement annotatif, donc
+# importés au seul typage (annotations différées par `from __future__`)
 if TYPE_CHECKING:
     import duckdb
+    from dt_ducklake_manager.reporting import OperationReport
 
 # Initialisation du logger
 logger = logging.getLogger(__name__)
 
 # Nom de la table de faits DuckLake (convention dt_ducklake_manager)
 FACT_TABLE = "fact_table"
+# Nom de la dimension temporelle SDMX
+TIME_COLUMN = "TIME_PERIOD"
+# Types de changement DuckLake décrivant l'état écrit d'une ligne
+_WRITTEN_CHANGES = ("insert", "update_postimage")
 
 
 # Fonction de détection de l'existence de la table de faits d'un schéma
@@ -144,6 +153,90 @@ def write_dataframe(
             installed.
         ValueError: If the update operation reports failure.
     """
+    # Écriture déléguée, rapport d'opération ignoré
+    return write_dataframe_with_report(
+        conn,
+        data,
+        primary_keys,
+        catalog_alias=catalog_alias,
+        schema=schema,
+        categorical_threshold=categorical_threshold,
+        label=label,
+        update_options=update_options,
+        build_options=build_options,
+        run_id=run_id,
+        commit_message=commit_message,
+    ).created
+
+
+# Résultat d'une écriture DuckLake
+@dataclass(frozen=True)
+class WriteResult:
+    """Outcome of :func:`write_dataframe_with_report`.
+
+    Attributes:
+        created: ``True`` if the schema was created, ``False`` if it was
+            upserted.
+        report: ``OperationReport`` of ``dt_ducklake_manager`` describing what
+            the write actually did (``rows_inserted``, ``rows_updated``,
+            ``snapshot_before``, ``snapshot_after``…), or ``None`` when the
+            library did not provide one.
+    """
+
+    created: bool
+    report: OperationReport | None
+
+    # Nombre de lignes réellement insérées ou modifiées
+    @property
+    def rows_changed(self) -> int | None:
+        """Rows inserted or updated by the write, ``None`` if unknown."""
+        if self.report is None:
+            return None
+        return int(self.report.rows_inserted) + int(self.report.rows_updated)
+
+
+# Fonction d'écriture d'un jeu de données, avec le rapport de l'opération
+def write_dataframe_with_report(
+    conn: duckdb.DuckDBPyConnection,
+    data: Any,
+    primary_keys: Sequence[str],
+    *,
+    catalog_alias: str,
+    schema: str,
+    categorical_threshold: int | None = None,
+    label: str | None = None,
+    update_options: Mapping[str, Any] | None = None,
+    build_options: Mapping[str, Any] | None = None,
+    run_id: str | None = None,
+    commit_message: str | None = None,
+) -> WriteResult:
+    """Same as :func:`write_dataframe`, also returning the operation report.
+
+    An upsert only rewrites the rows whose values actually change, so the
+    report tells an effective write (``rows_inserted + rows_updated > 0``) from
+    a no-op one, even though both commit a DuckLake snapshot.
+
+    Args:
+        conn: Open DuckLake connection, owned by the caller.
+        data: Dataset to persist (see :func:`write_dataframe`).
+        primary_keys: Primary-key columns.
+        catalog_alias: Alias under which the catalog is attached.
+        schema: Target schema in the catalog.
+        categorical_threshold: See :func:`write_dataframe`.
+        label: See :func:`write_dataframe`.
+        update_options: See :func:`write_dataframe`.
+        build_options: See :func:`write_dataframe`.
+        run_id: See :func:`write_dataframe`.
+        commit_message: See :func:`write_dataframe`.
+
+    Returns:
+        A :class:`WriteResult`.
+
+    Raises:
+        ImportError: If the optional ``dt-ducklake-manager`` dependency is not
+            installed.
+        ValueError: If the update operation reports failure.
+    """
     # Dépendance optionnelle : seule l'écriture DuckLake la requiert. Importation
     # en tête de corps, avant tout effet de bord sur la connexion.
     try:
@@ -180,7 +273,7 @@ def write_dataframe(
 
         # Logging
         logger.info(f"{prefix}Upserted {len(data)} rows into '{schema}'")
-        return False
+        return WriteResult(created=False, report=getattr(updater, "last_report", None))
 
     # Première construction : métadonnées, dimensions et table de faits
     builder = DuckLakeTablesBuilder(
@@ -191,7 +284,7 @@ def write_dataframe(
         schema=schema,
         catalog_alias=catalog_alias,
     )
-    builder.build_schema(
+    build_report = builder.build_schema(
         **{**(build_options or {}), **_commit_options(run_id, commit_message)}
     )
 
@@ -200,4 +293,241 @@ def write_dataframe(
         f"{prefix}Created schema '{schema}' with {len(data)} rows "
         f"(primary keys: {list(primary_keys)})"
     )
-    return True
+    return WriteResult(created=True, report=build_report)
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Flux de changements DuckLake (conditionnement des étapes aval)
+# ──────────────────────────────────────────────────────────────────────
+
+
+# Fonction auxiliaire : littéral SQL d'une chaîne
+def _sql_string(value: str) -> str:
+    """Quote ``value`` as a SQL string literal."""
+    return "'" + value.replace("'", "''") + "'"
+
+
+# Fonction auxiliaire : identifiant SQL quoté
+def _sql_ident(name: str) -> str:
+    """Quote ``name`` as a SQL identifier."""
+    return '"' + name.replace('"', '""') + '"'
+
+
+# Changements d'une table entre deux snapshots
+@dataclass(frozen=True)
+class TableChanges:
+    """Row changes of a DuckLake table since a given snapshot.
+
+    Attributes:
+        since_snapshot: Snapshot the changes are counted from (exclusive), as
+            passed to :func:`changes_since`; ``None`` for "since the
+            beginning".
+        current_snapshot: Latest snapshot of the catalog when the changes were
+            read (inclusive). Store it as the downstream step's new watermark
+            once its recomputation succeeds.
+        rows_inserted: Rows inserted.
+        rows_updated: Rows updated (post-images).
+        rows_deleted: Rows deleted.
+        min_time_period: Smallest value of the time column among the inserted,
+            updated (before and after the update) and deleted rows — the
+            earliest period a downstream step has to recompute from. ``None``
+            when nothing changed or the table has no time column.
+    """
+
+    since_snapshot: int | None
+    current_snapshot: int | None
+    rows_inserted: int = 0
+    rows_updated: int = 0
+    rows_deleted: int = 0
+    min_time_period: Any = None
+
+    # Indicateur de modification effective
+    @property
+    def modified(self) -> bool:
+        """Whether at least one row was inserted, updated or deleted."""
+        return (self.rows_inserted + self.rows_updated + self.rows_deleted) > 0
+
+
+# Fonction de lecture des changements d'une table depuis un snapshot
+def changes_since(
+    conn: duckdb.DuckDBPyConnection,
+    catalog_alias: str,
+    schema: str,
+    since_snapshot: int | None,
+    *,
+    table: str = FACT_TABLE,
+    time_column: str = TIME_COLUMN,
+) -> TableChanges:
+    """Summarise the row changes of a DuckLake table since a snapshot.
+
+    Meant for the downstream steps of a pipeline: each step keeps its own
+    watermark (the ``current_snapshot`` returned by its previous successful
+    call), skips its computation when nothing changed, and otherwise
+    recomputes from ``min_time_period`` only. Unlike a date in the download
+    registry, the watermark belongs to the consumer: a skipped or failed run
+    loses nothing, the next call covers every snapshot since.
+
+    Changes are read from ``ducklake_table_changes``, so a snapshot that only
+    stamped metadata (an upsert whose rows were all unchanged) counts as no
+    change.
+
+    Args:
+        conn: Open DuckLake connection.
+        catalog_alias: Alias under which the catalog is attached.
+        schema: Schema of the table (one per dataflow for the downloads).
+        since_snapshot: Watermark: changes committed *after* this snapshot are
+            counted. ``None`` counts every row currently in the table as
+            inserted (first run).
+        table: Table to inspect. Defaults to the DuckLake fact table.
+        time_column: Column whose minimum is reported, matched
+            case-insensitively. Defaults to ``TIME_PERIOD``.
+
+    Returns:
+        A :class:`TableChanges`. A missing table yields no change.
+
+    Raises:
+        ValueError: If ``since_snapshot`` is ahead of the current snapshot, or
+            if the snapshots following it have been expired
+            (``ducklake_expire_snapshots``): the changes can no longer be
+            known and the caller must recompute everything (then restart from
+            ``changes_since(..., None)``).
+
+    Examples:
+        >>> changes = changes_since(conn, "db", "namq_10_gdp", watermark)  # doctest: +SKIP
+        >>> if changes.modified:  # doctest: +SKIP
+        ...     recompute(start_period=changes.min_time_period)
+        ...     save_watermark(changes.current_snapshot)
+    """
+    import duckdb
+
+    # Snapshot courant du catalogue
+    row = conn.execute(
+        f"SELECT * FROM ducklake_current_snapshot({_sql_string(catalog_alias)})"
+    ).fetchone()
+    current = int(row[0]) if row is not None and row[0] is not None else None
+
+    # Table absente : aucun changement observable
+    if current is None or not fact_table_exists(
+        conn, catalog_alias, schema, table=table
+    ):
+        return TableChanges(since_snapshot=since_snapshot, current_snapshot=current)
+
+    # Résolution insensible à la casse de la colonne temporelle
+    columns = [
+        name
+        for (name,) in conn.execute(
+            "SELECT column_name FROM duckdb_columns() "
+            "WHERE database_name = ? AND schema_name = ? AND table_name = ?",
+            [catalog_alias, schema, table],
+        ).fetchall()
+    ]
+    time_actual = next((c for c in columns if c.lower() == time_column.lower()), None)
+    min_expr = f"min({_sql_ident(time_actual)})" if time_actual else "NULL"
+
+    # Premier passage : toutes les lignes présentes comptent comme insérées
+    if since_snapshot is None:
+        qualified = ".".join(_sql_ident(p) for p in (catalog_alias, schema, table))
+        count, minimum = conn.execute(
+            f"SELECT count(*), {min_expr} FROM {qualified}"
+        ).fetchone() or (0, None)
+        return TableChanges(
+            since_snapshot=None,
+            current_snapshot=current,
+            rows_inserted=int(count),
+            min_time_period=minimum if count else None,
+        )
+
+    # Point de reprise à jour (ou en avance, signe d'une incohérence)
+    if since_snapshot > current:
+        raise ValueError(
+            f"since_snapshot {since_snapshot} is ahead of the current snapshot "
+            f"{current} of catalog '{catalog_alias}'"
+        )
+    if since_snapshot == current:
+        return TableChanges(since_snapshot=since_snapshot, current_snapshot=current)
+
+    # Lecture du flux de changements, agrégé par type de changement
+    try:
+        rows = conn.execute(
+            f"SELECT change_type, count(*), {min_expr} "
+            f"FROM ducklake_table_changes({_sql_string(catalog_alias)}, "
+            f"{_sql_string(schema)}, {_sql_string(table)}, "
+            f"{since_snapshot + 1}, {current}) "
+            "GROUP BY change_type"
+        ).fetchall()
+    except duckdb.Error as exc:
+        raise ValueError(
+            f"Changes of '{schema}.{table}' since snapshot {since_snapshot} are "
+            f"no longer available (expired snapshots?): recompute everything "
+            f"and restart from changes_since(..., None). Cause: {exc}"
+        ) from exc
+
+    # Comptages par type et minimum de la période sur toutes les lignes touchées
+    counts = {change_type: int(count) for change_type, count, _ in rows}
+    minima = [minimum for _, _, minimum in rows if minimum is not None]
+    return TableChanges(
+        since_snapshot=since_snapshot,
+        current_snapshot=current,
+        rows_inserted=counts.get("insert", 0),
+        rows_updated=counts.get("update_postimage", 0),
+        rows_deleted=counts.get("delete", 0),
+        min_time_period=min(minima) if minima else None,
+    )
+
+
+# Fonction d'attribution des lignes écrites entre deux snapshots à des lots de clés
+def _written_key_groups(
+    conn: duckdb.DuckDBPyConnection,
+    catalog_alias: str,
+    schema: str,
+    start_snapshot: int,
+    end_snapshot: int,
+    keys: Any,
+    primary_keys: Sequence[str],
+    group_column: str,
+    *,
+    table: str = FACT_TABLE,
+) -> set[Any]:
+    """Return the groups of ``keys`` whose rows were written in a snapshot range.
+
+    Joins the inserted and updated rows of ``ducklake_table_changes`` between
+    ``start_snapshot`` and ``end_snapshot`` (both inclusive) with ``keys`` on
+    the primary keys.
+
+    Args:
+        conn: Open DuckLake connection.
+        catalog_alias: Alias under which the catalog is attached.
+        schema: Schema of the table.
+        start_snapshot: First snapshot of the range (inclusive).
+        end_snapshot: Last snapshot of the range (inclusive).
+        keys: pandas DataFrame holding ``primary_keys`` and ``group_column``.
+        primary_keys: Primary-key columns.
+        group_column: Column of ``keys`` identifying each group.
+        table: Table to inspect. Defaults to the DuckLake fact table.
+
+    Returns:
+        Distinct values of ``group_column`` having at least one written row.
+
+    Raises:
+        duckdb.Error: If the change feed cannot be read or joined.
+    """
+    # Enregistrement des clés comme vue temporaire
+    view_name = "_statflows_written_keys"
+    join_condition = " AND ".join(
+        f"c.{_sql_ident(k)} = k.{_sql_ident(k)}" for k in primary_keys
+    )
+    change_types = ", ".join(_sql_string(t) for t in _WRITTEN_CHANGES)
+    conn.register(view_name, keys)
+    try:
+        rows = conn.execute(
+            f"SELECT DISTINCT k.{_sql_ident(group_column)} "
+            f"FROM ducklake_table_changes({_sql_string(catalog_alias)}, "
+            f"{_sql_string(schema)}, {_sql_string(table)}, "
+            f"{start_snapshot}, {end_snapshot}) c "
+            f"JOIN {view_name} k ON {join_condition} "
+            f"WHERE c.change_type IN ({change_types})"
+        ).fetchall()
+    finally:
+        # Suppression de la vue, succès comme échec
+        conn.unregister(view_name)
+    return {value for (value,) in rows}

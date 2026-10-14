@@ -37,12 +37,14 @@ from dt_ducklake_manager import DuckLakeConnector  # noqa: E402
 import statflows.core.download as download_module  # noqa: E402
 from statflows import iter_registry_entries  # noqa: E402
 from statflows.core.download import SDMXDownloader  # noqa: E402
+from statflows.storage.ducklake.tables import changes_since  # noqa: E402
 from statflows.storage.json import Loader, Saver  # noqa: E402
 from tests.utils.fake_sdmx import (  # noqa: E402
     DATAFLOWS,
     T0,
     FakeClient,
     FakeClock,
+    FakeQuery,
     expected_table,
     make_queries,
 )
@@ -129,17 +131,35 @@ def read_registry(bucket: str) -> dict[str, Any]:
     )
 
 
-def expected_registry(queries: list[Any]) -> dict[str, Any]:
-    """Expected registry: the query of rank ``i`` is dated ``T0 + i minutes``."""
-    return {
-        q.identity_key(): {
+class _AnySnapshot:
+    """Equal to any DuckLake snapshot identifier (an ``int``)."""
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, int) and not isinstance(other, bool)
+
+    def __repr__(self) -> str:
+        return "<any snapshot>"
+
+
+def expected_registry(queries: list[Any], seeded: str | None = None) -> dict[str, Any]:
+    """Expected registry: the query of rank ``i`` is dated ``T0 + i minutes``.
+
+    Non-empty queries are modified at their own date, in some snapshot; empty
+    ones carry over the date of a legacy seeded entry (``seeded``), or none.
+    """
+    expected: dict[str, Any] = {}
+    for position, q in enumerate(queries):
+        last_download = (T0 + timedelta(minutes=position)).isoformat()
+        modified = q.index % DATA_EVERY == 0
+        expected[q.identity_key()] = {
             "agency": q.agency,
             "dataflow": q.dataflow,
             "params": q.to_dict(),
-            "last_download": (T0 + timedelta(minutes=position)).isoformat(),
+            "last_download": last_download,
+            "last_modified": last_download if modified else seeded,
+            "last_modified_snapshot": _AnySnapshot() if modified else None,
         }
-        for position, q in enumerate(queries)
-    }
+    return expected
 
 
 def assert_final_content(
@@ -294,7 +314,7 @@ def test_failed_batch_does_not_advance_its_entries(
     queries = make_queries(N_QUERIES)
     old = seed_registry(s3_bucket, queries, OLD_DATE)
     failed_reporters: list[str] = []
-    real_write = download_module.write_dataframe
+    real_write = download_module.write_dataframe_with_report
     calls = {"n": 0}
 
     def flaky_write(conn, data, *args, **kwargs):
@@ -304,7 +324,7 @@ def test_failed_batch_does_not_advance_its_entries(
             raise RuntimeError("simulated DuckLake failure")
         return real_write(conn, data, *args, **kwargs)
 
-    monkeypatch.setattr(download_module, "write_dataframe", flaky_write)
+    monkeypatch.setattr(download_module, "write_dataframe_with_report", flaky_write)
     client = FakeClient(clock, data_every=DATA_EVERY)
     downloader = make_downloader(
         client, lake, s3_bucket, registry_flush_every=500, write_batch_queries=10
@@ -323,7 +343,7 @@ def test_failed_batch_does_not_advance_its_entries(
     for key in failed_keys:
         assert registry[key] == old[key]
     # Toutes les autres entrées ont avancé ; le run est allé jusqu'au bout
-    expected = expected_registry(queries)
+    expected = expected_registry(queries, seeded=OLD_DATE)
     for key in set(expected) - failed_keys:
         assert registry[key] == expected[key]
     assert report.processed == N_QUERIES
@@ -485,6 +505,9 @@ def test_sharded_registry_migration_and_targeted_rewrites(
     for key, entry in migrated.items():
         if key in run_keys:
             assert entry.last_download > single[key].last_download
+            # Données identiques : la date de modification ne bouge pas
+            assert entry.last_modified == single[key].last_modified
+            assert entry.last_modified_snapshot == single[key].last_modified_snapshot
         else:
             assert entry == single[key]
     # Le fichier historique est laissé intact (périmé, sans effet à la lecture)
@@ -497,3 +520,108 @@ def test_sharded_registry_migration_and_targeted_rewrites(
     saved = spy_saves(rerun)
     rerun.run(alpha[:10])
     assert registry_saves(saved) == [f"{stem}/DF_ALPHA.json"]
+
+
+# ──────────────────────────────────────────────────────────────────────
+# g) Date de dernière modification : attribution par requête d'un lot
+# ──────────────────────────────────────────────────────────────────────
+
+
+class _RevisingClient(FakeClient):
+    """Fake client revising the values of some queries (``revised`` indexes)."""
+
+    revised: frozenset[int] = frozenset()
+
+    def fetch_updates(
+        self, query: FakeQuery, since: Any, n_observations: int
+    ) -> pd.DataFrame:
+        df = super().fetch_updates(query, since, n_observations)
+        if query.index in self.revised and not df.empty:
+            df = df.assign(OBS_VALUE=df["OBS_VALUE"] + 0.5)
+        return df
+
+
+def test_batch_attributes_modifications_per_query(s3_bucket: str, lake, clock) -> None:
+    # 20 requêtes non vides d'un même dataflow, écrites en un seul lot
+    queries = [FakeQuery(i, "DF_ALPHA") for i in range(20)]
+    batched = {"registry_flush_every": 500, "write_batch_queries": 500}
+    make_downloader(FakeClient(clock), lake, s3_bucket, **batched).run(queries)
+    first = read_registry(s3_bucket)
+    conn = make_connector(lake).connect()
+    try:
+        watermark = conn.execute(
+            "SELECT * FROM ducklake_current_snapshot('db')"
+        ).fetchone()[0]
+    finally:
+        conn.close()
+
+    # Second run : seule la requête d'indice 7 voit ses valeurs révisées
+    client = _RevisingClient(clock)
+    client.revised = frozenset({7})
+    report = make_downloader(client, lake, s3_bucket, **batched).run(queries)
+    second = read_registry(s3_bucket)
+
+    assert report.n_write_batches == 1
+    assert report.n_modified == 1
+    assert [r.identity_key for r in report.queries if r.data_modified] == [
+        queries[7].identity_key()
+    ]
+    for q in queries:
+        key = q.identity_key()
+        assert second[key]["last_download"] > first[key]["last_download"]
+        if q.index == 7:
+            assert second[key]["last_modified"] == second[key]["last_download"]
+            assert (
+                second[key]["last_modified_snapshot"]
+                > first[key]["last_modified_snapshot"]
+            )
+        else:
+            assert second[key]["last_modified"] == first[key]["last_modified"]
+            assert (
+                second[key]["last_modified_snapshot"]
+                == first[key]["last_modified_snapshot"]
+            )
+
+    # Étape aval : flux de changements depuis son point de reprise
+    conn = make_connector(lake).connect()
+    try:
+        changes = changes_since(conn, "db", "DF_ALPHA", watermark)
+        unchanged = changes_since(conn, "db", "DF_ALPHA", changes.current_snapshot)
+    finally:
+        conn.close()
+    assert changes.modified
+    assert (changes.rows_inserted, changes.rows_updated) == (0, 4)
+    assert changes.min_time_period == "2020"
+    assert not unchanged.modified
+
+
+def test_unchanged_rerun_leaves_downstream_nothing_to_do(
+    s3_bucket: str, lake, clock
+) -> None:
+    queries = [FakeQuery(i, "DF_ALPHA") for i in range(5)]
+    make_downloader(FakeClient(clock), lake, s3_bucket).run(queries)
+    first = read_registry(s3_bucket)
+    conn = make_connector(lake).connect()
+    try:
+        watermark = conn.execute(
+            "SELECT * FROM ducklake_current_snapshot('db')"
+        ).fetchone()[0]
+    finally:
+        conn.close()
+
+    # Re-run sans tamponnage : un upsert (et un snapshot) par requête, rien ne change
+    report = make_downloader(FakeClient(clock), lake, s3_bucket).run(queries)
+    second = read_registry(s3_bucket)
+    conn = make_connector(lake).connect()
+    try:
+        changes = changes_since(conn, "db", "DF_ALPHA", watermark)
+    finally:
+        conn.close()
+
+    assert report.n_modified == 0
+    assert changes.current_snapshot > watermark
+    assert not changes.modified
+    for key, entry in second.items():
+        assert entry["last_download"] > first[key]["last_download"]
+        assert entry["last_modified"] == first[key]["last_modified"]
+        assert entry["last_modified_snapshot"] == first[key]["last_modified_snapshot"]

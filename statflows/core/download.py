@@ -6,7 +6,8 @@ Production entry point that, for a list of provider queries:
 2. Performs a first **full** download of missing series and an **incremental**
    download of series already present (only newly published observations),
 3. Persists a JSON registry of the last-download date per query (single file
-   or fragments, see :mod:`statflows.core.registry`),
+   or fragments, see :mod:`statflows.core.registry`), together with the date
+   and DuckLake snapshot of the last download that actually changed its data,
 4. Exports the provider structure registry when a new structure was fetched,
 5. Stops gracefully after a configurable runtime (e.g. 23 h) or on ``SIGTERM``,
 6. Closes the catalog connection cleanly.
@@ -44,8 +45,12 @@ import pandas as pd
 # Importation du connecteur à la base de données
 from dt_ducklake_manager import DuckLakeConnector
 
-# Helper DuckLake partagé (création puis upsert de la table de faits)
-from ..storage.ducklake.tables import write_dataframe
+# Helpers DuckLake partagés (création puis upsert, attribution des changements)
+from ..storage.ducklake.tables import (
+    WriteResult,
+    _written_key_groups,
+    write_dataframe_with_report,
+)
 
 # Importation des modules de connexion
 from ..storage.json import Loader, Saver
@@ -59,6 +64,7 @@ from .registry import (
     _parse_iso,
     iter_registry_entries,  # noqa: F401
     sanitize_shard,
+    with_modification,
 )
 from .reports import DownloadReport, HttpStats, QueryReport, RateLimitStats
 from .structures import DataflowStructure, DataflowStructureRegistry
@@ -72,6 +78,8 @@ _TIME_COLUMN = "TIME_PERIOD"
 _REGISTRY_ROOT = REGISTRY_ROOT
 # Nom de l'option DuckLake d'ATTACH contrôlant l'inlining des petites écritures
 _INLINING_OPTION = "data_inlining_row_limit"
+# Colonne technique identifiant la requête d'origine d'une clé dans un lot
+_ITEM_COLUMN = "__statflows_item"
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -373,6 +381,18 @@ class SDMXDownloader:
     :meth:`AbstractSDMXClient.fetch_updates`), writes the result into the
     provider's DuckLake catalog (one schema per dataflow), and maintains the
     JSON registry of last-download dates.
+
+    **Modification dates.** Besides ``last_download`` (which moves at every
+    successful download and drives the prioritisation), each registry entry
+    carries ``last_modified`` and ``last_modified_snapshot``: the
+    ``last_download`` and DuckLake snapshot of the last download that actually
+    inserted or updated rows of the query. An empty response, or an upsert of
+    unchanged values, leaves them untouched, so downstream steps gating on
+    them are not re-run for nothing. Within a write batch, changes are
+    attributed to each query from DuckLake's change feed; when that is not
+    possible every query of a batch that changed something is considered
+    modified (a downstream step may then run for nothing, never miss a
+    change).
 
     The orchestrator owns the DuckLake connection (opened from the supplied
     connector and closed in a ``finally`` block) but **not** the SDMX client,
@@ -793,7 +813,8 @@ class SDMXDownloader:
         updated, so the registry never references data absent from the
         database. The last-download date is updated whether or not new data
         was returned — immediately when the query returned nothing, after its
-        batch is written otherwise.
+        batch is written otherwise. The modification date only moves when the
+        write actually changed rows.
 
         Args:
             conn: Open DuckLake connection.
@@ -863,6 +884,9 @@ class SDMXDownloader:
             # Incrément des requêtes vides
             report.empty += 1
             query_report.empty = True
+            # Aucune modification : report de la date de dernière modification
+            query_report.data_modified = False
+            new_entry = with_modification(new_entry, entry, modified=False)
             # Logging
             logger.info(f"{query.dataflow}: no new data")
             self._commit_entries(report, [(key, new_entry, shard)])
@@ -940,7 +964,7 @@ class SDMXDownloader:
                 rows_per_item = [len(data)]
             else:
                 data, rows_per_item = self._concat_batch(buffer)
-            created = self._write_dataframe(
+            result = self._write_dataframe(
                 conn, data, buffer.structure, schema, buffer.dataflow
             )
         except Exception as e:
@@ -958,22 +982,115 @@ class SDMXDownloader:
 
         # Lot écrit : retrait du tampon, diagnostics, validation des entrées
         self._buffers.pop(schema, None)
+        created = result.created
         report.n_write_batches += 1
         report.n_tables_created += int(created)
+        # Requêtes du lot dont les données ont réellement changé
+        modified = self._modified_items(conn, schema, buffer, result)
+        # Snapshot de l'écriture, conservé seulement s'il est connu
+        snapshot = getattr(result.report, "snapshot_after", None)
+        if not isinstance(snapshot, int):
+            snapshot = None
         # Lignes réellement écrites : celles supplantées par une requête
         # ultérieure du lot ne sont imputées à aucune requête
-        for position, (item, rows) in enumerate(
-            zip(buffer.items, rows_per_item, strict=True)
+        entries: list[tuple[str, dict[str, Any], str | None]] = []
+        for position, (item, rows, changed) in enumerate(
+            zip(buffer.items, rows_per_item, modified, strict=True)
         ):
             item.query_report.rows_written = rows
             item.query_report.table_created = created and position == 0
+            item.query_report.data_modified = changed
             report.rows_written += rows
+            report.n_modified += int(changed)
+            # Date de modification : propre si modifiée, reportée sinon
+            entry = with_modification(
+                item.entry,
+                self._registry.get(item.key),
+                modified=changed,
+                snapshot=snapshot,
+            )
+            entries.append((item.key, entry, item.shard))
         # ORDRE CRITIQUE : la base est écrite avant la mise à jour du registre
-        self._commit_entries(
-            report, [(item.key, item.entry, item.shard) for item in buffer.items]
-        )
+        self._commit_entries(report, entries)
         for item in buffer.items:
             self._publish(report, item.query_report)
+
+    # Méthode d'identification des requêtes d'un lot aux données modifiées
+    def _modified_items(
+        self,
+        conn: duckdb.DuckDBPyConnection,
+        schema: str,
+        buffer: _SchemaBuffer,
+        result: WriteResult,
+    ) -> list[bool]:
+        """Tell, for each query of a written batch, whether its data changed.
+
+        A creation changes every query; a write that changed no row changes
+        none; a single-query batch changes its query if any row changed. In a
+        batch of several queries, the inserted and updated rows of DuckLake's
+        change feed are matched back to each query by primary key. Whenever
+        the answer cannot be established (no report, no snapshots, change feed
+        unreadable or unmatched), every query is considered modified.
+
+        Args:
+            conn: Open DuckLake connection.
+            schema: DuckLake schema written.
+            buffer: Batch just written.
+            result: Outcome of the write.
+
+        Returns:
+            One flag per query of the batch, in order.
+        """
+        n_items = len(buffer.items)
+        # Création du schéma ou écriture sans rapport : tout est modifié
+        changed = result.rows_changed
+        if result.created or changed is None:
+            return [True] * n_items
+        # Aucune ligne insérée ni modifiée
+        if changed == 0:
+            return [False] * n_items
+        # Lot d'une seule requête
+        if n_items == 1:
+            return [True]
+
+        # Snapshots de l'écriture, indispensables à la lecture du flux
+        op_report = result.report
+        before = op_report.snapshot_before if op_report else None
+        after = op_report.snapshot_after if op_report else None
+        if before is None or after is None:
+            return [True] * n_items
+
+        # Clés de chaque requête, la dernière gagnant (comme à l'écriture)
+        primary_keys = _primary_keys(buffer.structure, list(buffer.items[0].df.columns))
+        keys = pd.concat(
+            [
+                item.df[primary_keys].assign(**{_ITEM_COLUMN: index})
+                for index, item in enumerate(buffer.items)
+            ],
+            ignore_index=True,
+        ).drop_duplicates(subset=primary_keys, keep="last")
+        try:
+            groups = _written_key_groups(
+                conn,
+                self._catalog_alias,
+                schema,
+                before + 1,
+                after,
+                keys,
+                primary_keys,
+                _ITEM_COLUMN,
+            )
+        except Exception as e:
+            # Logging
+            logger.warning(
+                f"{buffer.dataflow}: changes could not be attributed per query "
+                f"({e}); every query of the batch is considered modified"
+            )
+            return [True] * n_items
+        # Flux incohérent avec les comptages : repli conservateur
+        if not groups:
+            return [True] * n_items
+        return [index in groups for index in range(n_items)]
 
     # Méthode de concaténation d'un lot de plusieurs requêtes
     @staticmethod
@@ -1023,12 +1140,12 @@ class SDMXDownloader:
         structure: DataflowStructure | None,
         schema: str,
         dataflow: str,
-    ) -> bool:
+    ) -> WriteResult:
         """Create or update the dataflow's DuckLake table with a DataFrame.
 
         Resolves the primary keys from the dataflow structure, then delegates the
         create-then-upsert logic to the shared
-        :func:`statflows.storage.ducklake.tables.write_dataframe`.
+        :func:`statflows.storage.ducklake.tables.write_dataframe_with_report`.
 
         Args:
             conn: Open DuckLake connection.
@@ -1038,8 +1155,9 @@ class SDMXDownloader:
             dataflow: Dataflow identifier (for logging).
 
         Returns:
-            ``True`` if the schema was created, ``False`` if it was upserted —
-            an outcome that used to be readable only in the logs.
+            The :class:`~statflows.storage.ducklake.tables.WriteResult`: whether
+            the schema was created, and the operation report (rows actually
+            inserted or updated, snapshots).
 
         Raises:
             ValueError: If no primary-key column can be resolved, or if the
@@ -1054,7 +1172,7 @@ class SDMXDownloader:
             )
 
         # Création du schéma à la première rencontre, upsert par clé primaire ensuite
-        return write_dataframe(
+        return write_dataframe_with_report(
             conn,
             df,
             primary_keys,

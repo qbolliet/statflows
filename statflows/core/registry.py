@@ -1,8 +1,12 @@
 """Registry of last-download dates, in its single-file or sharded layout.
 
 The download orchestrator (:mod:`statflows.core.download`) records, for every
-query, the instant of its last successful download. Downstream steps read the
-same registry to decide what to recompute. Two physical layouts coexist:
+query, the instant of its last successful download (``last_download``, used to
+prioritise the next run) and the instant of the last download that actually
+changed its data in DuckLake (``last_modified``, with the matching
+``last_modified_snapshot``). Downstream steps should gate on the latter: it
+does not move when a download brought nothing new. Two physical layouts
+coexist:
 
 - **single file** (historical): ``<last_download_path>`` holds
   ``{"DOWNLOADS": {identity_key: entry, ...}}``;
@@ -155,6 +159,63 @@ def _not_older(candidate: Mapping[str, Any], current: Mapping[str, Any]) -> bool
     return new >= old
 
 
+# Fonction de calcul des champs de modification d'une nouvelle entrée
+def with_modification(
+    entry: dict[str, Any],
+    previous: Mapping[str, Any] | None,
+    *,
+    modified: bool,
+    snapshot: int | None = None,
+) -> dict[str, Any]:
+    """Return ``entry`` completed with its ``last_modified*`` fields.
+
+    A download that changed data stamps its own ``last_download`` and the
+    snapshot it committed; otherwise both fields are carried over from the
+    previous entry. A previous entry predating the fields contributes its
+    ``last_download`` (the data may have changed at the latest then) and an
+    unknown snapshot.
+
+    Args:
+        entry: New raw entry, holding at least ``last_download``.
+        previous: Raw entry it replaces, or ``None``.
+        modified: Whether the download inserted or updated rows.
+        snapshot: DuckLake snapshot committed by the write, if known.
+
+    Returns:
+        A new raw entry.
+
+    Examples:
+        >>> new = {"last_download": "2026-02-01T00:00:00+00:00"}
+        >>> old = {"last_download": "2026-01-01T00:00:00+00:00"}
+        >>> with_modification(new, old, modified=False)["last_modified"]
+        '2026-01-01T00:00:00+00:00'
+        >>> with_modification(new, old, modified=True, snapshot=7)[
+        ...     "last_modified_snapshot"
+        ... ]
+        7
+    """
+    # Téléchargement modifiant les données : horodatage propre
+    if modified:
+        return {
+            **entry,
+            "last_modified": entry["last_download"],
+            "last_modified_snapshot": snapshot,
+        }
+    # Aucune modification : report des valeurs précédentes (ou repli hérité)
+    if previous is None:
+        last_modified, last_snapshot = None, None
+    elif "last_modified" in previous:
+        last_modified = previous.get("last_modified")
+        last_snapshot = previous.get("last_modified_snapshot")
+    else:
+        last_modified, last_snapshot = previous.get("last_download"), None
+    return {
+        **entry,
+        "last_modified": last_modified,
+        "last_modified_snapshot": last_snapshot,
+    }
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Lecture
 # ──────────────────────────────────────────────────────────────────────
@@ -172,7 +233,15 @@ class RegistryEntry:
         params: JSON-safe parameters of the query (``query.to_dict()``).
             Excluded from hashing (a mapping is unhashable).
         last_download: UTC instant of the last successful download — the
-            instant captured just *before* the request was sent.
+            instant captured just *before* the request was sent. Moves at
+            every successful download, even when nothing changed.
+        last_modified: ``last_download`` of the last download that actually
+            inserted or updated rows of this query in DuckLake; ``None`` when
+            no data was ever written. Entries written before this field
+            existed fall back to ``last_download`` (a safe upper bound).
+        last_modified_snapshot: DuckLake snapshot committed by that write, or
+            ``None`` when unknown (entry predating the field, or catalog not
+            exposing snapshots).
     """
 
     identity_key: str
@@ -180,6 +249,8 @@ class RegistryEntry:
     dataflow: str
     params: dict[str, Any] = field(hash=False)
     last_download: datetime
+    last_modified: datetime | None = None
+    last_modified_snapshot: int | None = None
 
     # Construction depuis une entrée JSON brute
     @classmethod
@@ -190,7 +261,9 @@ class RegistryEntry:
 
         Args:
             identity_key: Key of the entry in the registry.
-            raw: ``{"agency", "dataflow", "params", "last_download"}`` mapping.
+            raw: ``{"agency", "dataflow", "params", "last_download",
+                "last_modified", "last_modified_snapshot"}`` mapping (the last
+                two are optional).
 
         Returns:
             The entry, or ``None`` when ``last_download`` is missing or
@@ -199,12 +272,21 @@ class RegistryEntry:
         last_download = _parse_iso(raw.get("last_download"))
         if last_download is None:
             return None
+        # Entrée antérieure au champ : repli sur la date de téléchargement
+        last_modified = (
+            _parse_iso(raw.get("last_modified"))
+            if "last_modified" in raw
+            else last_download
+        )
+        snapshot = raw.get("last_modified_snapshot")
         return cls(
             identity_key=identity_key,
             agency=raw.get("agency", ""),
             dataflow=raw.get("dataflow", ""),
             params=dict(raw.get("params") or {}),
             last_download=last_download,
+            last_modified=last_modified,
+            last_modified_snapshot=int(snapshot) if snapshot is not None else None,
         )
 
     # Conversion en entrée JSON brute
@@ -215,6 +297,10 @@ class RegistryEntry:
             "dataflow": self.dataflow,
             "params": dict(self.params),
             "last_download": self.last_download.isoformat(),
+            "last_modified": (
+                self.last_modified.isoformat() if self.last_modified else None
+            ),
+            "last_modified_snapshot": self.last_modified_snapshot,
         }
 
 
@@ -495,5 +581,6 @@ __all__ = [
     "fragment_dir",
     "shard_path",
     "sanitize_shard",
+    "with_modification",
     "DownloadRegistry",
 ]

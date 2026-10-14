@@ -2,7 +2,8 @@
 
 Frozen behaviour: identical reading of a single-file registry and of a sharded
 one, "most recent date" merge of both formats, migration to shards, rewriting of
-the modified shards only. The module depends on no extra (importable without
+the modified shards only, modification dates (fallback of legacy entries on their
+download date, carried over by unchanged downloads). The module depends on no extra (importable without
 duckdb).
 """
 
@@ -22,6 +23,7 @@ from statflows.core.registry import (
     fragment_dir,
     sanitize_shard,
     shard_path,
+    with_modification,
 )
 from statflows.storage.json import Loader, Saver
 
@@ -43,6 +45,15 @@ ENTRIES = {
     "ESTAT:A:DE": _raw("A", 2, "DE"),
     "ESTAT:B:FR": _raw("B", 3, "FR"),
 }
+
+
+def _upgraded(raw: dict[str, Any]) -> dict[str, Any]:
+    """Raw entry predating the modification fields, as re-exported by ``to_raw``."""
+    return {
+        **raw,
+        "last_modified": raw["last_download"],
+        "last_modified_snapshot": None,
+    }
 
 
 def _save(path: Path, entries: dict[str, Any]) -> None:
@@ -96,13 +107,92 @@ def test_registry_entry_roundtrip_and_hash() -> None:
     entry = RegistryEntry.from_raw("ESTAT:A:FR", ENTRIES["ESTAT:A:FR"])
 
     assert entry.last_download == datetime(2026, 1, 1, tzinfo=UTC)
-    assert entry.to_raw() == ENTRIES["ESTAT:A:FR"]
+    # Entrée héritée : date de modification repliée sur la date de téléchargement
+    assert entry.last_modified == entry.last_download
+    assert entry.last_modified_snapshot is None
+    assert entry.to_raw() == _upgraded(ENTRIES["ESTAT:A:FR"])
     # Hachable malgré ``params`` (exclu du hachage) ; gelée
     assert hash(entry) == hash(
         RegistryEntry.from_raw("ESTAT:A:FR", ENTRIES["ESTAT:A:FR"])
     )
     with pytest.raises(AttributeError):
         entry.agency = "X"  # type: ignore[misc]
+
+
+def test_registry_entry_modification_fields_roundtrip() -> None:
+    raw = {
+        **ENTRIES["ESTAT:A:FR"],
+        "last_download": datetime(2026, 3, 1, tzinfo=UTC).isoformat(),
+        "last_modified": datetime(2026, 2, 1, tzinfo=UTC).isoformat(),
+        "last_modified_snapshot": 42,
+    }
+    entry = RegistryEntry.from_raw("ESTAT:A:FR", raw)
+
+    assert entry is not None
+    assert entry.last_modified == datetime(2026, 2, 1, tzinfo=UTC)
+    assert entry.last_modified_snapshot == 42
+    assert entry.to_raw() == raw
+
+
+def test_registry_entry_never_modified_keeps_none() -> None:
+    # Champ présent mais nul : aucune donnée jamais écrite (pas de repli)
+    raw = {**ENTRIES["ESTAT:A:FR"], "last_modified": None}
+    entry = RegistryEntry.from_raw("ESTAT:A:FR", raw)
+
+    assert entry is not None
+    assert entry.last_modified is None
+    assert entry.to_raw()["last_modified"] is None
+
+
+def test_with_modification_stamps_modified_downloads() -> None:
+    new = {"last_download": "2026-02-01T00:00:00+00:00"}
+    previous = {
+        "last_download": "2026-01-01T00:00:00+00:00",
+        "last_modified": "2025-12-01T00:00:00+00:00",
+        "last_modified_snapshot": 3,
+    }
+
+    entry = with_modification(new, previous, modified=True, snapshot=9)
+
+    assert entry == {
+        "last_download": "2026-02-01T00:00:00+00:00",
+        "last_modified": "2026-02-01T00:00:00+00:00",
+        "last_modified_snapshot": 9,
+    }
+    # Entrée d'origine non modifiée
+    assert new == {"last_download": "2026-02-01T00:00:00+00:00"}
+
+
+@pytest.mark.parametrize(
+    ("previous", "expected"),
+    [
+        # Modification connue : reportée telle quelle
+        (
+            {
+                "last_download": "2026-01-01T00:00:00+00:00",
+                "last_modified": "2025-12-01T00:00:00+00:00",
+                "last_modified_snapshot": 3,
+            },
+            ("2025-12-01T00:00:00+00:00", 3),
+        ),
+        # Entrée héritée : repli sur sa date de téléchargement
+        (
+            {"last_download": "2026-01-01T00:00:00+00:00"},
+            ("2026-01-01T00:00:00+00:00", None),
+        ),
+        # Jamais téléchargée : aucune modification
+        (None, (None, None)),
+    ],
+)
+def test_with_modification_carries_over_unmodified_downloads(
+    previous: dict[str, Any] | None, expected: tuple[str | None, int | None]
+) -> None:
+    new = {"last_download": "2026-02-01T00:00:00+00:00"}
+
+    entry = with_modification(new, previous, modified=False, snapshot=9)
+
+    assert entry["last_download"] == "2026-02-01T00:00:00+00:00"
+    assert (entry["last_modified"], entry["last_modified_snapshot"]) == expected
 
 
 def test_registry_entry_without_valid_date_is_none() -> None:
@@ -239,7 +329,9 @@ def test_migration_from_single_file_to_fragments(tmp_path: Path) -> None:
     }
     # Fichier historique intact ; lecture inchangée
     assert Loader().load(path) == {"DOWNLOADS": ENTRIES}
-    assert {e.identity_key: e.to_raw() for e in iter_registry_entries(path)} == ENTRIES
+    assert {e.identity_key: e.to_raw() for e in iter_registry_entries(path)} == {
+        key: _upgraded(raw) for key, raw in ENTRIES.items()
+    }
 
     # Rechargement : les entrées sont désormais rangées, plus rien à migrer
     reloaded = _registry(path, sharded=True)

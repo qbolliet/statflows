@@ -157,4 +157,7 @@ nav:
     - Loader: api/storage/Loader.md
     - Saver: api/storage/Saver.md
     - write_dataframe: api/storage/write_dataframe.md
+    - write_dataframe_with_report: api/storage/write_dataframe_with_report.md
     - fact_table_exists: api/storage/fact_table_exists.md
+    - changes_since: api/storage/changes_since.md
+    - TableChanges: api/storage/TableChanges.md

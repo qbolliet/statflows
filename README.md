@@ -263,6 +263,24 @@ for entry in iter_registry_entries(
     )  # frozen RegistryEntry
 ```
 
+### Conditioning downstream steps
+
+`last_download` moves at every successful download, even when nothing changed:
+it drives the prioritisation. To decide whether downstream steps must run, use
+`entry.last_modified` (and `entry.last_modified_snapshot`), which only move when
+the download actually inserted or updated rows in DuckLake. To know what to
+recompute, read DuckLake's change feed from a watermark kept by the downstream
+step:
+
+```python
+from statflows.storage.ducklake.tables import changes_since
+
+changes = changes_since(conn, "db", "namq_10_gdp", since_snapshot=watermark)
+if changes.modified:
+    recompute(start_period=changes.min_time_period)
+    watermark = changes.current_snapshot  # persisted once the step succeeded
+```
+
 ### Compaction and inlining
 
 `write_dataframe` does not force `compact_after_update`: the post-write
