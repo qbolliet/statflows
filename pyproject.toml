@@ -1,6 +1,6 @@
 [project]
 name = "statflows"
-version = "0.2.1"
+version = "0.2.2"
 description = "Downloaders and storage backends for international trade and economic statistics"
 readme = "README.md"
 license = "MIT"
