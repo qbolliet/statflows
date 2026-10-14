@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2](https://github.com/qbolliet/statflows/compare/v0.2.1...v0.2.2) (2026-10-14)
+
+
+### Bug Fixes
+
+* track data modifications to condition downstream steps ([8d65a17](https://github.com/qbolliet/statflows/commit/8d65a17b57bf16eacf65ac1a99ac0e4a7fcc0c70))
+* track data modifications to condition downstream steps ([129f69b](https://github.com/qbolliet/statflows/commit/129f69bc438bada890f3659585ccd093cf59b0e8))
+
+
+### Documentation
+
+* download documentation ([f980bcb](https://github.com/qbolliet/statflows/commit/f980bcb23ccd736c94f28a6cb263f11ea36fc342))
+
 ## [0.2.1](https://github.com/qbolliet/statflows/compare/v0.2.0...v0.2.1) (2026-10-12)
 
 
