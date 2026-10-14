@@ -461,6 +461,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#conditioning-downstream-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditioning downstream steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#compaction-and-inlining" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2461,6 +2472,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/storage/write_dataframe_with_report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    write_dataframe_with_report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/storage/fact_table_exists/" class="md-nav__link">
         
   
@@ -2469,6 +2508,62 @@
     
   
     fact_table_exists
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/storage/changes_since/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    changes_since
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/storage/TableChanges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TableChanges
   
 
     
@@ -2550,6 +2645,17 @@
     <span class="md-ellipsis">
       
         Sharded registry
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conditioning-downstream-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditioning downstream steps
       
     </span>
   </a>
@@ -2753,6 +2859,20 @@ touches all the shards.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="n">entry</span><span class="o">.</span><span class="n">identity_key</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">dataflow</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">last_download</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="p">)</span>  <span class="c1"># frozen RegistryEntry</span>
 </span></code></pre></div>
+<h3 id="conditioning-downstream-steps">Conditioning downstream steps</h3>
+<p><code>last_download</code> moves at every successful download, even when nothing changed:
+it drives the prioritisation. To decide whether downstream steps must run, use
+<code>entry.last_modified</code> (and <code>entry.last_modified_snapshot</code>), which only move when
+the download actually inserted or updated rows in DuckLake. To know what to
+recompute, read DuckLake's change feed from a watermark kept by the downstream
+step:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">statflows.storage.ducklake.tables</span><span class="w"> </span><span class="kn">import</span> <span class="n">changes_since</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">changes</span> <span class="o">=</span> <span class="n">changes_since</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">"db"</span><span class="p">,</span> <span class="s2">"namq_10_gdp"</span><span class="p">,</span> <span class="n">since_snapshot</span><span class="o">=</span><span class="n">watermark</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">if</span> <span class="n">changes</span><span class="o">.</span><span class="n">modified</span><span class="p">:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">recompute</span><span class="p">(</span><span class="n">start_period</span><span class="o">=</span><span class="n">changes</span><span class="o">.</span><span class="n">min_time_period</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">watermark</span> <span class="o">=</span> <span class="n">changes</span><span class="o">.</span><span class="n">current_snapshot</span>  <span class="c1"># persisted once the step succeeded</span>
+</span></code></pre></div>
 <h3 id="compaction-and-inlining">Compaction and inlining</h3>
 <p><code>write_dataframe</code> does not force <code>compact_after_update</code>: the post-write
 compaction follows the default of <code>update_database</code> in <code>dt-ducklake-manager</code>.
@@ -2773,27 +2893,27 @@ kept in the catalog rather than in Parquet files; they stay there until an
 explicit flush (<code>ducklake_flush_inlined_data</code>), which the post-write compaction
 does not perform.</p>
 <h3 id="recommended-configuration-for-100-000-and-more-queries">Recommended configuration for 100 000 and more queries</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timedelta</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">report</span> <span class="o">=</span> <span class="n">download_updates</span><span class="p">(</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">client</span><span class="o">=</span><span class="n">EurostatClient</span><span class="p">(),</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">queries</span><span class="o">=</span><span class="n">queries</span><span class="p">,</span>  <span class="c1"># ~100,000 queries, reporter in the outer loop</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">,</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">structures_path</span><span class="o">=</span><span class="s2">"registries/comext_structures.json"</span><span class="p">,</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">last_download_path</span><span class="o">=</span><span class="s2">"registries/comext_last_download.json"</span><span class="p">,</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">max_runtime</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">23</span><span class="p">),</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="c1"># Registry: at most one write per 1,000 entries or per 5 minutes,</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="c1"># sharded by dataflow and reporter</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">registry_flush_every</span><span class="o">=</span><span class="mi">1_000</span><span class="p">,</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="n">registry_flush_seconds</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">registry_shard_key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">q</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">q</span><span class="o">.</span><span class="n">dataflow</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">q</span><span class="o">.</span><span class="n">dimensions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'reporter'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="c1"># DuckLake: one transaction per batch of 500 queries or 500,000 rows</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="n">write_batch_queries</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
-</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">write_batch_rows</span><span class="o">=</span><span class="mi">500_000</span><span class="p">,</span>
-</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">run_id</span><span class="o">=</span><span class="s2">"comext-2026-10-01"</span><span class="p">,</span>
-</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="p">)</span>
-</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="k">assert</span> <span class="n">report</span><span class="o">.</span><span class="n">rows_pending_at_stop</span> <span class="o">==</span> <span class="mi">0</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timedelta</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">report</span> <span class="o">=</span> <span class="n">download_updates</span><span class="p">(</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">client</span><span class="o">=</span><span class="n">EurostatClient</span><span class="p">(),</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">queries</span><span class="o">=</span><span class="n">queries</span><span class="p">,</span>  <span class="c1"># ~100,000 queries, reporter in the outer loop</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">,</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">structures_path</span><span class="o">=</span><span class="s2">"registries/comext_structures.json"</span><span class="p">,</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">last_download_path</span><span class="o">=</span><span class="s2">"registries/comext_last_download.json"</span><span class="p">,</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">max_runtime</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">23</span><span class="p">),</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="c1"># Registry: at most one write per 1,000 entries or per 5 minutes,</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="c1"># sharded by dataflow and reporter</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">registry_flush_every</span><span class="o">=</span><span class="mi">1_000</span><span class="p">,</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">registry_flush_seconds</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">registry_shard_key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">q</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">q</span><span class="o">.</span><span class="n">dataflow</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">q</span><span class="o">.</span><span class="n">dimensions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'reporter'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="c1"># DuckLake: one transaction per batch of 500 queries or 500,000 rows</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">write_batch_queries</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">write_batch_rows</span><span class="o">=</span><span class="mi">500_000</span><span class="p">,</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="n">run_id</span><span class="o">=</span><span class="s2">"comext-2026-10-01"</span><span class="p">,</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="p">)</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="k">assert</span> <span class="n">report</span><span class="o">.</span><span class="n">rows_pending_at_stop</span> <span class="o">==</span> <span class="mi">0</span>
 </span></code></pre></div>
 <p>On 10⁵ queries, the registry goes from 10⁵ full rewrites to about a hundred
 persistences limited to the touched shards, and the catalog goes from one
@@ -2805,13 +2925,13 @@ returns a DataFrame with <code>code</code>, <code>label</code> (and <code>parent
 classifications) for <code>EurostatClient</code> and <code>ComtradeClient</code>. Codelists are cached
 per client: those already downloaded to build the queries cost no second network
 call.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">statflows.core.factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">codelist_frame</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">structure</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_dataflow_structure</span><span class="p">(</span><span class="s2">"DS-045409"</span><span class="p">)</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">products</span> <span class="o">=</span> <span class="n">codelist_frame</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="s2">"product"</span><span class="p">,</span> <span class="n">structure</span><span class="p">)</span>  <span class="c1"># Eurostat Comext</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">countries</span> <span class="o">=</span> <span class="n">codelist_frame</span><span class="p">(</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">comtrade_client</span><span class="p">,</span> <span class="s2">"reporter"</span><span class="p">,</span> <span class="n">keep_metadata</span><span class="o">=</span><span class="kc">True</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">)</span>  <span class="c1"># ISO, isGroup…</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">statflows.core.factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">codelist_frame</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">structure</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_dataflow_structure</span><span class="p">(</span><span class="s2">"DS-045409"</span><span class="p">)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">products</span> <span class="o">=</span> <span class="n">codelist_frame</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="s2">"product"</span><span class="p">,</span> <span class="n">structure</span><span class="p">)</span>  <span class="c1"># Eurostat Comext</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">countries</span> <span class="o">=</span> <span class="n">codelist_frame</span><span class="p">(</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">comtrade_client</span><span class="p">,</span> <span class="s2">"reporter"</span><span class="p">,</span> <span class="n">keep_metadata</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="p">)</span>  <span class="c1"># ISO, isGroup…</span>
 </span></code></pre></div>
 
 

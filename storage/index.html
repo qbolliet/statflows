@@ -2417,6 +2417,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/storage/write_dataframe_with_report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    write_dataframe_with_report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/storage/fact_table_exists/" class="md-nav__link">
         
   
@@ -2425,6 +2453,62 @@
     
   
     fact_table_exists
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/storage/changes_since/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    changes_since
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/storage/TableChanges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TableChanges
   
 
     
@@ -2551,7 +2635,14 @@ see <a class="autorefs autorefs-internal" title="S3Connection" href="../api/stor
 the schema on the first call (returns <code>True</code>) and upserts by primary key on the
 following ones (returns <code>False</code>), leaving rows that are not supplied untouched.
 <a class="autorefs autorefs-internal" title="fact_table_exists" href="../api/storage/fact_table_exists/#statflows.storage.ducklake.tables.fact_table_exists"><code>fact_table_exists</code></a> tells
-whether a schema's fact table already exists.</p>
+whether a schema's fact table already exists.
+<a class="autorefs autorefs-internal" title="write_dataframe_with_report" href="../api/storage/write_dataframe_with_report/#statflows.storage.ducklake.tables.write_dataframe_with_report"><code>write_dataframe_with_report</code></a>
+does the same write and also returns the <code>dt-ducklake-manager</code> operation report,
+whose <code>rows_changed</code> tells an effective write from an upsert of unchanged values.</p>
+<p><a class="autorefs autorefs-internal" title="changes_since" href="../api/storage/changes_since/#statflows.storage.ducklake.tables.changes_since"><code>changes_since</code></a> summarises the
+rows inserted, updated and deleted in a table since a snapshot, with the
+smallest <code>TIME_PERIOD</code> touched: see
+<a href="../downloads/#conditioning-downstream-steps">Conditioning downstream steps</a>.</p>
 <p>The schema layout (fact table, <code>metadata</code>, <code>dataset_metadata</code>) is the one of
 <a href="https://qbolliet.github.io/dt-ducklake-manager/">dt-ducklake-manager</a>.</p>
 

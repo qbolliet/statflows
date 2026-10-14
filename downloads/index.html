@@ -433,6 +433,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#conditioning-downstream-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditioning downstream steps
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2428,6 +2439,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/storage/write_dataframe_with_report/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    write_dataframe_with_report
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/storage/fact_table_exists/" class="md-nav__link">
         
   
@@ -2436,6 +2475,62 @@
     
   
     fact_table_exists
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/storage/changes_since/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    changes_since
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/storage/TableChanges/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TableChanges
   
 
     
@@ -2523,6 +2618,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#conditioning-downstream-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conditioning downstream steps
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2563,7 +2669,8 @@ list of queries it:</p>
 <li><strong>writes</strong> each result into a DuckLake catalog, one schema per <em>dataflow</em>
    (creation on the first write, upsert by primary key afterwards);</li>
 <li>records the date of the last download of every query in a <strong>JSON registry</strong>,
-   stored locally or on S3.</li>
+   stored locally or on S3, together with the date and DuckLake snapshot of the
+   last download that actually <strong>changed</strong> its data.</li>
 </ol>
 <pre class="mermaid"><code>flowchart LR
     Q[Queries] --&gt; P[Prioritisation]
@@ -2607,6 +2714,56 @@ yields frozen <a class="autorefs autorefs-internal" title="RegistryEntry
   
       dataclass
   " href="../api/core/RegistryEntry/#statflows.core.registry.RegistryEntry"><code>RegistryEntry</code></a> objects.</p>
+<p>Each entry carries two dates, with different purposes:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Moves when</th>
+<th>Use it to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>last_download</code></td>
+<td>every successful download, even if nothing changed</td>
+<td>prioritise the next download run</td>
+</tr>
+<tr>
+<td><code>last_modified</code> (+ <code>last_modified_snapshot</code>)</td>
+<td>the download actually inserted or updated rows in DuckLake</td>
+<td>decide whether downstream steps must run</td>
+</tr>
+</tbody>
+</table>
+<p>An empty response, or an upsert of values identical to the stored ones, moves
+<code>last_download</code> only. <code>last_modified</code> is <code>None</code> for a query whose data was never written.
+<code>DownloadReport.n_modified</code> (and <code>QueryReport.data_modified</code>) give the same
+information for the run just finished.</p>
+<h2 id="conditioning-downstream-steps">Conditioning downstream steps</h2>
+<p>The registry tells <em>whether</em> a query changed. To know <em>what</em> to recompute,
+read DuckLake's change feed with
+<a class="autorefs autorefs-internal" title="changes_since" href="../api/storage/changes_since/#statflows.storage.ducklake.tables.changes_since"><code>changes_since</code></a>, from a
+<strong>watermark owned by the downstream step</strong> — the snapshot it last processed:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">statflows.storage.ducklake.tables</span><span class="w"> </span><span class="kn">import</span> <span class="n">changes_since</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">watermark</span> <span class="o">=</span> <span class="n">load_my_watermark</span><span class="p">()</span>  <span class="c1"># None on the first run</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">changes</span> <span class="o">=</span> <span class="n">changes_since</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="s2">"db"</span><span class="p">,</span> <span class="s2">"namq_10_gdp"</span><span class="p">,</span> <span class="n">watermark</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">if</span> <span class="n">changes</span><span class="o">.</span><span class="n">modified</span><span class="p">:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">recompute</span><span class="p">(</span><span class="n">start_period</span><span class="o">=</span><span class="n">changes</span><span class="o">.</span><span class="n">min_time_period</span><span class="p">)</span>  <span class="c1"># earliest period touched</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">save_my_watermark</span><span class="p">(</span><span class="n">changes</span><span class="o">.</span><span class="n">current_snapshot</span><span class="p">)</span>  <span class="c1"># only once the step succeeded</span>
+</span></code></pre></div>
+<p>Because the watermark belongs to the consumer, a skipped or failed downstream
+run loses nothing: the next call covers every snapshot since. A snapshot that
+only stamped metadata (an unchanged upsert) counts as no change.</p>
+<div class="admonition warning">
+<p class="admonition-title">Snapshot expiration</p>
+<p><code>changes_since</code> raises <code>ValueError</code> when the snapshots following the
+watermark were expired (<code>ducklake_expire_snapshots</code>): the changes can no
+longer be known, so recompute everything and restart from
+<code>changes_since(..., None)</code>. Keep the snapshot retention longer than the
+interval between two downstream runs.</p>
+</div>
 <p>For large catch-ups, see <a href="../performance/">Performance and volume</a>.</p>
 
 
