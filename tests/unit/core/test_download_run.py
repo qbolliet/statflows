@@ -9,12 +9,13 @@ callback, per-query HTTP / rate-limit cost aggregated over a client and its
 composed HTTP clients, sharded registry, failed registry flush retried at the
 next one, time-based registry flush, write batches (row / query thresholds,
 primary-key deduplication, empty batches), arguments forwarded to
-``write_dataframe``, structure registry export, ``connect`` of the S3
+``write_dataframe``, modification dates (unchanged writes leave them, legacy
+entries fall back to their download date), structure registry export, ``connect`` of the S3
 ``Loader`` / ``Saver``, forwarding by ``download_updates``.
 
 No catalog, no network, no S3: ``SDMXDownloader._connect`` returns a
-``MagicMock`` and ``statflows.core.download.write_dataframe`` is replaced by a
-recording spy; the JSON registries live in ``tmp_path``. ``SIGTERM`` is simulated
+``MagicMock`` and ``statflows.core.download.write_dataframe_with_report`` is
+replaced by a recording spy; the JSON registries live in ``tmp_path``. ``SIGTERM`` is simulated
 by calling ``_handle_sigterm`` directly (no real signal is ever sent). Requires
 the "ducklake" extra (import of the orchestrator).
 """
@@ -55,6 +56,7 @@ from statflows.core.reports import (  # noqa: E402
     RateLimitStats,
 )
 from statflows.core.structures import DataflowStructureRegistry  # noqa: E402
+from statflows.storage.ducklake.tables import WriteResult  # noqa: E402
 from statflows.storage.json import Loader, Saver  # noqa: E402
 from tests.utils.fake_sdmx import (  # noqa: E402
     T0,
@@ -81,19 +83,22 @@ PRIMARY_KEYS = ["REF_AREA", "PRODUCT", "TIME_PERIOD"]
 
 
 class _WriteSpy:
-    """Stand-in for ``write_dataframe``: records every call.
+    """Stand-in for ``write_dataframe_with_report``: records every call.
 
-    Returns ``True`` on the first write of a schema and ``False`` afterwards
-    (creation, then upsert), or raises ``fail`` when set.
+    Reports a creation on the first write of a schema and an upsert afterwards,
+    or raises ``fail`` when set. ``rows_changed`` set to an integer attaches an
+    operation report with that many inserted rows (``None``: no report, every
+    query of the batch is then considered modified).
     """
 
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
         self.fail: Exception | None = None
+        self.rows_changed: int | None = None
 
     def __call__(
         self, conn: Any, data: pd.DataFrame, primary_keys: list[str], **kwargs: Any
-    ) -> bool:
+    ) -> WriteResult:
         if self.fail is not None:
             raise self.fail
         created = all(c["kwargs"]["schema"] != kwargs["schema"] for c in self.calls)
@@ -105,7 +110,15 @@ class _WriteSpy:
                 "kwargs": kwargs,
             }
         )
-        return created
+        report = None
+        if self.rows_changed is not None:
+            report = SimpleNamespace(
+                rows_inserted=self.rows_changed,
+                rows_updated=0,
+                snapshot_before=len(self.calls),
+                snapshot_after=len(self.calls) + 1,
+            )
+        return WriteResult(created=created, report=report)  # type: ignore[arg-type]
 
     def reporters(self) -> list[set[str]]:
         """Reporters written by each call, in call order."""
@@ -130,9 +143,9 @@ def conn(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 
 @pytest.fixture
 def writes(monkeypatch: pytest.MonkeyPatch) -> _WriteSpy:
-    """Spy substituted for ``statflows.core.download.write_dataframe``."""
+    """Spy substituted for ``statflows.core.download.write_dataframe_with_report``."""
     spy = _WriteSpy()
-    monkeypatch.setattr(download_module, "write_dataframe", spy)
+    monkeypatch.setattr(download_module, "write_dataframe_with_report", spy)
     return spy
 
 
@@ -231,6 +244,8 @@ def test_never_downloaded_first_then_oldest(
             "dataflow": query.dataflow,
             "params": query.to_dict(),
             "last_download": _at(rank),
+            "last_modified": _at(rank),
+            "last_modified_snapshot": None,
         }
 
 
@@ -637,6 +652,67 @@ def test_registry_flush_seconds_threshold(
     # 6 s par requête : seuil de 10 s franchi à la 2e puis à la 4e validation
     assert saved == [2, 4]
     assert report.n_registry_flushes == 2
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Registre des dates : date de dernière modification
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_unchanged_write_advances_download_but_not_modification(
+    tmp_path: Path, clock, conn, writes
+) -> None:
+    query = FakeQuery(0, "DF_ALPHA")
+    key = query.identity_key()
+    # Premier run : création du schéma, données modifiées
+    writes.rows_changed = 4
+    first = _downloader(tmp_path, FakeClient(clock)).run(query)
+    entry = _read_registry(tmp_path)[key]
+
+    assert first.n_modified == 1
+    assert first.queries[0].data_modified is True
+    assert entry["last_modified"] == entry["last_download"] == _at(0)
+    assert entry["last_modified_snapshot"] == 2
+
+    # Second run : upsert de valeurs inchangées (aucune ligne écrite)
+    writes.rows_changed = 0
+    second = _downloader(tmp_path, FakeClient(clock)).run(query)
+    entry = _read_registry(tmp_path)[key]
+
+    assert second.n_modified == 0
+    assert second.queries[0].data_modified is False
+    assert entry["last_download"] == _at(1)
+    assert entry["last_modified"] == _at(0)
+    assert entry["last_modified_snapshot"] == 2
+
+    # Troisième run : valeurs modifiées, nouvelle date et nouveau snapshot
+    writes.rows_changed = 1
+    third = _downloader(tmp_path, FakeClient(clock)).run(query)
+    entry = _read_registry(tmp_path)[key]
+
+    assert third.n_modified == 1
+    assert entry["last_modified"] == entry["last_download"] == _at(2)
+    assert entry["last_modified_snapshot"] == 4
+
+
+def test_empty_query_carries_over_legacy_download_date(
+    tmp_path: Path, clock, conn, writes
+) -> None:
+    empty, fresh = FakeQuery(1, "DF_ALPHA"), FakeQuery(3, "DF_ALPHA")
+    # Entrée héritée, sans champs de modification
+    _seed_registry(tmp_path, {empty.identity_key(): OLD_DATE})
+
+    # data_every=2 : requêtes d'indice impair vides
+    report = _downloader(tmp_path, FakeClient(clock, data_every=2)).run([empty, fresh])
+    registry = _read_registry(tmp_path)
+
+    assert report.n_modified == 0
+    assert [r.data_modified for r in report.queries] == [False, False]
+    # Héritée : repli sur l'ancienne date de téléchargement
+    assert registry[empty.identity_key()]["last_modified"] == OLD_DATE
+    # Jamais écrite : aucune modification
+    assert registry[fresh.identity_key()]["last_modified"] is None
+    assert registry[fresh.identity_key()]["last_modified_snapshot"] is None
 
 
 # ──────────────────────────────────────────────────────────────────────

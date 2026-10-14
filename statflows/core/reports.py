@@ -272,6 +272,9 @@ class QueryReport:
             primary key) are not counted.
         table_created: Whether the schema was created (vs. upserted).
         empty: Whether the query returned no new data.
+        data_modified: Whether the write actually inserted or updated rows of
+            the query (an upsert of unchanged values is not a modification);
+            ``None`` until the query is written or recorded.
         duration_seconds: Wall-clock duration of the whole query processing.
         error_type: Exception class name when the query failed, ``None``
             otherwise.
@@ -289,6 +292,7 @@ class QueryReport:
     rows_written: int = 0
     table_created: bool = False
     empty: bool = False
+    data_modified: bool | None = None
     duration_seconds: float = 0.0
     error_type: str | None = None
     error_message: str | None = None
@@ -343,6 +347,9 @@ class DownloadReport:
             ended. Always ``0`` unless the final flush itself was interrupted;
             any other value means data was fetched but neither written nor
             recorded (those queries will simply be downloaded again).
+        n_modified: Number of queries whose write actually inserted or
+            updated rows — ``0`` means downstream steps have nothing to
+            recompute.
         queries: Per-query diagnostics, in completion order (a buffered query
             completes when its write batch is committed or fails).
     """
@@ -362,6 +369,8 @@ class DownloadReport:
     n_registry_flushes: int = 0
     n_write_batches: int = 0
     rows_pending_at_stop: int = 0
+    # Requêtes dont les données ont réellement changé (conditionnement de l'aval)
+    n_modified: int = 0
     # Détail par requête (principe « les diagnostics sont des données »)
     queries: list[QueryReport] = field(default_factory=list)
 

@@ -25,6 +25,14 @@ the schema on the first call (returns `True`) and upserts by primary key on the
 following ones (returns `False`), leaving rows that are not supplied untouched.
 [`fact_table_exists`][statflows.storage.ducklake.tables.fact_table_exists] tells
 whether a schema's fact table already exists.
+[`write_dataframe_with_report`][statflows.storage.ducklake.tables.write_dataframe_with_report]
+does the same write and also returns the `dt-ducklake-manager` operation report,
+whose `rows_changed` tells an effective write from an upsert of unchanged values.
+
+[`changes_since`][statflows.storage.ducklake.tables.changes_since] summarises the
+rows inserted, updated and deleted in a table since a snapshot, with the
+smallest `TIME_PERIOD` touched: see
+[Conditioning downstream steps](downloads.md#conditioning-downstream-steps).
 
 The schema layout (fact table, `metadata`, `dataset_metadata`) is the one of
 [dt-ducklake-manager](https://qbolliet.github.io/dt-ducklake-manager/).

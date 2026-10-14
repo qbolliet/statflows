@@ -11,7 +11,8 @@ list of queries it:
 3. **writes** each result into a DuckLake catalog, one schema per *dataflow*
    (creation on the first write, upsert by primary key afterwards);
 4. records the date of the last download of every query in a **JSON registry**,
-   stored locally or on S3.
+   stored locally or on S3, together with the date and DuckLake snapshot of the
+   last download that actually **changed** its data.
 
 ```mermaid
 flowchart LR
@@ -47,5 +48,45 @@ Downstream steps read the registry with
 [`iter_registry_entries`][statflows.core.registry.iter_registry_entries], which
 works whether the registry is a single file or sharded, local or on S3, and
 yields frozen [`RegistryEntry`][statflows.core.registry.RegistryEntry] objects.
+
+Each entry carries two dates, with different purposes:
+
+| Field | Moves when | Use it to |
+| --- | --- | --- |
+| `last_download` | every successful download, even if nothing changed | prioritise the next download run |
+| `last_modified` (+ `last_modified_snapshot`) | the download actually inserted or updated rows in DuckLake | decide whether downstream steps must run |
+
+An empty response, or an upsert of values identical to the stored ones, moves
+`last_download` only. `last_modified` is `None` for a query whose data was never written.
+`DownloadReport.n_modified` (and `QueryReport.data_modified`) give the same
+information for the run just finished.
+
+## Conditioning downstream steps
+
+The registry tells *whether* a query changed. To know *what* to recompute,
+read DuckLake's change feed with
+[`changes_since`][statflows.storage.ducklake.tables.changes_since], from a
+**watermark owned by the downstream step** — the snapshot it last processed:
+
+```python
+from statflows.storage.ducklake.tables import changes_since
+
+watermark = load_my_watermark()  # None on the first run
+changes = changes_since(conn, "db", "namq_10_gdp", watermark)
+if changes.modified:
+    recompute(start_period=changes.min_time_period)  # earliest period touched
+    save_my_watermark(changes.current_snapshot)  # only once the step succeeded
+```
+
+Because the watermark belongs to the consumer, a skipped or failed downstream
+run loses nothing: the next call covers every snapshot since. A snapshot that
+only stamped metadata (an unchanged upsert) counts as no change.
+
+!!! warning "Snapshot expiration"
+    `changes_since` raises `ValueError` when the snapshots following the
+    watermark were expired (`ducklake_expire_snapshots`): the changes can no
+    longer be known, so recompute everything and restart from
+    `changes_since(..., None)`. Keep the snapshot retention longer than the
+    interval between two downstream runs.
 
 For large catch-ups, see [Performance and volume](performance.md).
