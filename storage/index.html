@@ -2501,6 +2501,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/storage/current_snapshot/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    current_snapshot
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../api/storage/TableChanges/" class="md-nav__link">
         
   
@@ -2641,7 +2669,9 @@ does the same write and also returns the <code>dt-ducklake-manager</code> operat
 whose <code>rows_changed</code> tells an effective write from an upsert of unchanged values.</p>
 <p><a class="autorefs autorefs-internal" title="changes_since" href="../api/storage/changes_since/#statflows.storage.ducklake.tables.changes_since"><code>changes_since</code></a> summarises the
 rows inserted, updated and deleted in a table since a snapshot, with the
-smallest <code>TIME_PERIOD</code> touched: see
+smallest <code>TIME_PERIOD</code> touched and, on request (<code>key_columns</code>), the distinct
+slices touched, optionally up to a pinned snapshot
+(<a class="autorefs autorefs-internal" title="current_snapshot" href="../api/storage/current_snapshot/#statflows.storage.ducklake.tables.current_snapshot"><code>current_snapshot</code></a>): see
 <a href="../downloads/#conditioning-downstream-steps">Conditioning downstream steps</a>.</p>
 <p>The schema layout (fact table, <code>metadata</code>, <code>dataset_metadata</code>) is the one of
 <a href="https://qbolliet.github.io/dt-ducklake-manager/">dt-ducklake-manager</a>.</p>
