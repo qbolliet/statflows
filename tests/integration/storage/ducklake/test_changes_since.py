@@ -17,6 +17,7 @@ import pytest
 from statflows.storage.ducklake.tables import (
     FACT_TABLE,
     changes_since,
+    current_snapshot,
     write_dataframe_with_report,
 )
 
@@ -123,3 +124,71 @@ def test_changes_since_rejects_unknown_watermarks(ducklake_conn) -> None:
     )
     with pytest.raises(ValueError, match="no longer available"):
         changes_since(conn, alias, "s1", old)
+
+
+def test_changes_since_reports_touched_keys(ducklake_conn) -> None:
+    conn, alias = ducklake_conn
+    _write(conn, alias, BASE)
+    watermark = _current(conn, alias)
+
+    # Sans clés demandées : aucune clé collectée
+    assert changes_since(conn, alias, "s1", watermark).changed_keys is None
+    # Aucune modification : ensemble vide (et non None) quand des clés sont demandées
+    _write(conn, alias, BASE)
+    assert changes_since(conn, alias, "s1", watermark, key_columns=["geo"]).changed_keys == frozenset()
+
+    # Révision de FR 2021, suppression de DE 2022 (pré-images et suppressions comprises)
+    _write(conn, alias, {**BASE, ("FR", "2021"): 2.5})
+    conn.execute(f"DELETE FROM {alias}.s1.{FACT_TABLE} WHERE geo = 'DE'")
+    changes = changes_since(
+        conn, alias, "s1", watermark, key_columns=["GEO", "time_period"]
+    )
+
+    # Orthographe de la table conservée, clés de toutes les lignes touchées
+    assert changes.key_columns == ("geo", "TIME_PERIOD")
+    assert changes.changed_keys == frozenset({("FR", "2021"), ("DE", "2022")})
+
+
+def test_changes_since_first_run_returns_every_key(ducklake_conn) -> None:
+    conn, alias = ducklake_conn
+
+    # Table absente : ensemble vide
+    assert changes_since(conn, alias, "s1", None, key_columns=["geo"]).changed_keys == frozenset()
+
+    _write(conn, alias, BASE)
+    changes = changes_since(conn, alias, "s1", None, key_columns=["geo"])
+
+    assert changes.changed_keys == frozenset({("FR",), ("DE",)})
+
+
+def test_changes_since_until_snapshot_pins_the_upper_bound(ducklake_conn) -> None:
+    conn, alias = ducklake_conn
+    _write(conn, alias, BASE)
+    watermark = _current(conn, alias)
+    _write(conn, alias, {**BASE, ("FR", "2020"): 9.0})
+    pinned = current_snapshot(conn, alias)
+
+    # Écriture concurrente postérieure à l'épinglage : ignorée jusqu'au run suivant
+    _write(conn, alias, {**BASE, ("FR", "2020"): 9.0, ("DE", "2022"): 7.0})
+    changes = changes_since(conn, alias, "s1", watermark, key_columns=["geo"], until_snapshot=pinned)
+    following = changes_since(conn, alias, "s1", changes.current_snapshot, key_columns=["geo"])
+
+    assert changes.current_snapshot == pinned
+    assert changes.changed_keys == frozenset({("FR",)})
+    assert following.changed_keys == frozenset({("DE",)})
+    # Premier passage épinglé : état de la table au snapshot borne
+    first = changes_since(conn, alias, "s1", None, until_snapshot=watermark)
+    assert (first.rows_inserted, first.current_snapshot) == (3, watermark)
+
+
+def test_changes_since_rejects_bad_bounds_and_columns(ducklake_conn) -> None:
+    conn, alias = ducklake_conn
+    _write(conn, alias, BASE)
+    current = _current(conn, alias)
+
+    with pytest.raises(ValueError, match="until_snapshot"):
+        changes_since(conn, alias, "s1", None, until_snapshot=current + 1)
+    with pytest.raises(ValueError, match="ahead"):
+        changes_since(conn, alias, "s1", current, until_snapshot=current - 1)
+    with pytest.raises(ValueError, match="not found"):
+        changes_since(conn, alias, "s1", current - 1, key_columns=["missing"])

@@ -31,7 +31,9 @@ whose `rows_changed` tells an effective write from an upsert of unchanged values
 
 [`changes_since`][statflows.storage.ducklake.tables.changes_since] summarises the
 rows inserted, updated and deleted in a table since a snapshot, with the
-smallest `TIME_PERIOD` touched: see
+smallest `TIME_PERIOD` touched and, on request (`key_columns`), the distinct
+slices touched, optionally up to a pinned snapshot
+([`current_snapshot`][statflows.storage.ducklake.tables.current_snapshot]): see
 [Conditioning downstream steps](downloads.md#conditioning-downstream-steps).
 
 The schema layout (fact table, `metadata`, `dataset_metadata`) is the one of
