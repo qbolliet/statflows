@@ -82,6 +82,37 @@ Because the watermark belongs to the consumer, a skipped or failed downstream
 run loses nothing: the next call covers every snapshot since. A snapshot that
 only stamped metadata (an unchanged upsert) counts as no change.
 
+### Touched slices and pinned reads
+
+`min_time_period` is a single value for the whole table. When a step works by
+slices (a vintage, a vintage x period context, a reporter…), ask for the
+distinct values of the columns defining them with `key_columns`, and pin the
+upper bound of the changes to the snapshot the step reads at:
+
+```python
+from statflows.storage.ducklake.tables import changes_since, current_snapshot
+
+pinned = current_snapshot(conn, "db")  # read every input AT (VERSION => pinned)
+changes = changes_since(
+    conn,
+    "db",
+    "indicators",
+    watermark,
+    key_columns=["classification", "TIME_PERIOD"],
+    until_snapshot=pinned,
+)
+for classification, period in changes.changed_keys:  # inserted, updated, deleted rows
+    recompute(classification, period)
+save_my_watermark(changes.current_snapshot)  # == pinned
+```
+
+`changed_keys` covers the inserted rows, both images of the updated rows and
+the deleted rows. It is `None` when no key column is requested, and an empty
+set when nothing changed. On a first run (`watermark=None`) it holds every
+distinct tuple of the table: choose coarse columns, not the primary key of a
+large table. With `until_snapshot`, a write committed by another process during
+the step is left to the next run instead of being half-read.
+
 !!! warning "Snapshot expiration"
     `changes_since` raises `ValueError` when the snapshots following the
     watermark were expired (`ducklake_expire_snapshots`): the changes can no

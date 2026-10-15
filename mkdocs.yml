@@ -160,4 +160,5 @@ nav:
     - write_dataframe_with_report: api/storage/write_dataframe_with_report.md
     - fact_table_exists: api/storage/fact_table_exists.md
     - changes_since: api/storage/changes_since.md
+    - current_snapshot: api/storage/current_snapshot.md
     - TableChanges: api/storage/TableChanges.md
