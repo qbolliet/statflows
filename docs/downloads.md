@@ -94,7 +94,10 @@ from statflows.storage.ducklake.tables import changes_since, current_snapshot
 
 pinned = current_snapshot(conn, "db")  # read every input AT (VERSION => pinned)
 changes = changes_since(
-    conn, "db", "indicators", watermark,
+    conn,
+    "db",
+    "indicators",
+    watermark,
     key_columns=["classification", "TIME_PERIOD"],
     until_snapshot=pinned,
 )

@@ -135,7 +135,10 @@ def test_changes_since_reports_touched_keys(ducklake_conn) -> None:
     assert changes_since(conn, alias, "s1", watermark).changed_keys is None
     # Aucune modification : ensemble vide (et non None) quand des clés sont demandées
     _write(conn, alias, BASE)
-    assert changes_since(conn, alias, "s1", watermark, key_columns=["geo"]).changed_keys == frozenset()
+    assert (
+        changes_since(conn, alias, "s1", watermark, key_columns=["geo"]).changed_keys
+        == frozenset()
+    )
 
     # Révision de FR 2021, suppression de DE 2022 (pré-images et suppressions comprises)
     _write(conn, alias, {**BASE, ("FR", "2021"): 2.5})
@@ -153,7 +156,10 @@ def test_changes_since_first_run_returns_every_key(ducklake_conn) -> None:
     conn, alias = ducklake_conn
 
     # Table absente : ensemble vide
-    assert changes_since(conn, alias, "s1", None, key_columns=["geo"]).changed_keys == frozenset()
+    assert (
+        changes_since(conn, alias, "s1", None, key_columns=["geo"]).changed_keys
+        == frozenset()
+    )
 
     _write(conn, alias, BASE)
     changes = changes_since(conn, alias, "s1", None, key_columns=["geo"])
@@ -170,8 +176,12 @@ def test_changes_since_until_snapshot_pins_the_upper_bound(ducklake_conn) -> Non
 
     # Écriture concurrente postérieure à l'épinglage : ignorée jusqu'au run suivant
     _write(conn, alias, {**BASE, ("FR", "2020"): 9.0, ("DE", "2022"): 7.0})
-    changes = changes_since(conn, alias, "s1", watermark, key_columns=["geo"], until_snapshot=pinned)
-    following = changes_since(conn, alias, "s1", changes.current_snapshot, key_columns=["geo"])
+    changes = changes_since(
+        conn, alias, "s1", watermark, key_columns=["geo"], until_snapshot=pinned
+    )
+    following = changes_since(
+        conn, alias, "s1", changes.current_snapshot, key_columns=["geo"]
+    )
 
     assert changes.current_snapshot == pinned
     assert changes.changed_keys == frozenset({("FR",)})

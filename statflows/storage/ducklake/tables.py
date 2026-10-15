@@ -579,7 +579,9 @@ def changes_since(
             f"SELECT change_type, count(*), {min_expr} FROM {feed} GROUP BY change_type"
         ).fetchall()
         changed_keys = (
-            frozenset(conn.execute(f"SELECT DISTINCT {keys_sql} FROM {feed}").fetchall())
+            frozenset(
+                conn.execute(f"SELECT DISTINCT {keys_sql} FROM {feed}").fetchall()
+            )
             if keys
             else no_keys
         )
