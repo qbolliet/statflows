@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/qbolliet/statflows/compare/v0.2.2...v0.3.0) (2026-10-15)
+
+
+### Features
+
+* **ducklake:** touched keys and pinned upper bound in changes_since. ([eb7dbed](https://github.com/qbolliet/statflows/commit/eb7dbed3751c603f44ce1398b9cdf7897bd3b573))
+* **ducklake:** touched keys and pinned upper bound in changes_since. ([cd5a432](https://github.com/qbolliet/statflows/commit/cd5a4328f4a6cf2f4136c671332e1699a055c02f))
+
+
+### Documentation
+
+* fix mkdocs build ([88af233](https://github.com/qbolliet/statflows/commit/88af2339b3e4aec959e86408a43c5605faaa55f0))
+
 ## [0.2.2](https://github.com/qbolliet/statflows/compare/v0.2.1...v0.2.2) (2026-10-14)
 
 
