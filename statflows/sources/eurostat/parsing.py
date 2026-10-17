@@ -17,6 +17,7 @@ from typing import Any, cast
 
 import pandas as pd
 
+from ...core.parsing import check_no_null_keys, read_codes_csv
 from ...core.structures import DataflowStructure, DimensionInfo
 from .formats import AGENCY_ID
 
@@ -66,7 +67,9 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
     """Parse Eurostat TSV format (wide format with flags).
 
     The first column contains dimensions separated by commas, followed
-    by tab-separated period columns.
+    by tab-separated period columns. Dimension codes are kept verbatim as
+    text (``"NA"`` for Namibia is not a missing value); missing observations
+    (``":"``, empty cell) become ``NaN``.
 
     Args:
         text: TSV response text.
@@ -75,11 +78,11 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
         Parsed DataFrame in long (tidy) format.
 
     Raises:
-        ValueError: If TSV parsing fails.
+        ValueError: If TSV parsing fails, or if a dimension code is empty.
     """
     try:
-        # Lecture du TSV avec séparateur tabulation
-        df = pd.read_csv(StringIO(text), sep="\t")
+        # Lecture du TSV sans conversion des codes de dimension
+        df = read_codes_csv(text, sep="\t")
         index_col = df.columns[0]
 
         # Sélection des colonnes de périodes (contiennent des chiffres)
@@ -91,6 +94,8 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
         dimensions_split = df[index_col].str.split(",", expand=True)
         dim_names = [f"DIM_{i}" for i in range(len(dimensions_split.columns))]
         dimensions_split.columns = dim_names
+        # Garde-fou : chaque ligne doit porter un code par dimension
+        check_no_null_keys(dimensions_split, dim_names)
 
         # Reconstruction du DataFrame en format large puis conversion en format long
         df_wide = pd.concat([dimensions_split, df[period_cols].copy()], axis=1)
@@ -115,7 +120,7 @@ def parse_tsv_response(text: str) -> pd.DataFrame:
     # Gestion des erreurs de parsing
     except Exception as e:
         logger.error(f"TSV parsing failed: {e}")
-        raise ValueError(f"Failed to parse TSV response: {e}")
+        raise ValueError(f"Failed to parse TSV response: {e}") from e
 
 
 # Fonction de parsing de réponse JSON-stat 2.0

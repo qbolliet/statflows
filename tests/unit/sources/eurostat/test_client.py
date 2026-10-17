@@ -219,6 +219,24 @@ def test_get_data_v30_builds_key_params_and_parses_csv(structured) -> None:
     assert call.kwargs["params"]["format"] == "csvdata"
 
 
+def test_get_data_raises_on_a_null_dimension_code(structured) -> None:
+    structured.api_client.get.return_value = _response(
+        "freq,geo,TIME_PERIOD,OBS_VALUE\nA,FR,2020,1\nA,,2020,2\n"
+    )
+    with pytest.raises(ValueError, match="nama: Key column 'geo' has 1 null"):
+        structured.get_data("nama", on_duplicate="ignore")
+
+
+def test_get_data_without_structure_filters_numeric_looking_codes(client) -> None:
+    client.auto_fetch_structure = False
+    client.api_client.get.return_value = _response(
+        "flow,TIME_PERIOD,OBS_VALUE\n1,2020,1\n2,2020,2\n3,2020,3\n"
+    )
+    # Codes d'apparence numérique lus en texte : comparables aux valeurs demandées
+    df = client.get_data("nama", dimensions={"flow": ["1", "2"]}, on_duplicate="ignore")
+    assert df["flow"].tolist() == ["1", "2"]
+
+
 def test_get_data_without_structure_filters_client_side(client) -> None:
     client.auto_fetch_structure = False
     df = client.get_data("nama", dimensions={"geo": "FR"}, on_duplicate="ignore")

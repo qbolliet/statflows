@@ -104,6 +104,34 @@ def test_tsv_missing_flagged_and_padded_cells() -> None:
     assert df[df["DIM_1"] == "DE"]["value"].tolist() == [1.5, 2.0, 4.0, 5.0]
 
 
+def test_tsv_keeps_namibia_and_leading_zeros() -> None:
+    text = (
+        "freq,partner,product\\TIME_PERIOD\t2020\t2021\n"
+        "A,NA,01012100\t1\t:\n"
+        "A,NO,01012100\t2\t3\n"
+        "A,NL,01012100\t\t4 p\n"
+    )
+    df = parse_tsv_response(text)
+    # Le code NA (Namibie) reste une chaîne, jamais un manquant
+    assert set(df["DIM_1"]) == {"NA", "NO", "NL"}
+    assert not df["DIM_1"].isna().any()
+    assert set(df["DIM_2"]) == {"01012100"}
+    # Observations manquantes et valeurs flaguées : non-régression
+    namibia = df[df["DIM_1"] == "NA"].set_index("TIME_PERIOD")["value"]
+    assert namibia["2020"] == 1.0
+    assert namibia.isna()["2021"]
+    netherlands = df[df["DIM_1"] == "NL"].set_index("TIME_PERIOD")["value"]
+    assert netherlands.isna()["2020"]
+    assert netherlands["2021"] == 4.0
+
+
+def test_tsv_empty_dimension_code_raises_naming_the_column() -> None:
+    # Une seule dimension sur la ligne : la seconde est réellement absente
+    text = "freq,geo\\TIME_PERIOD\t2020\nA,FR\t1\nA\t2\n"
+    with pytest.raises(ValueError, match="Key column 'DIM_1' has 1 null value"):
+        parse_tsv_response(text)
+
+
 def test_tsv_invalid_input_raises_value_error() -> None:
     with pytest.raises(ValueError, match="Failed to parse TSV response"):
         parse_tsv_response("")

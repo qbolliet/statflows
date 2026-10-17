@@ -55,7 +55,13 @@ from statflows.core.reports import (  # noqa: E402
     HttpStats,
     RateLimitStats,
 )
-from statflows.core.structures import DataflowStructureRegistry  # noqa: E402
+from statflows.core.structures import (  # noqa: E402
+    DataflowStructure,
+    DataflowStructureRegistry,
+    DimensionInfo,
+)
+from statflows.sources.eurostat.client import EurostatClient  # noqa: E402
+from statflows.sources.eurostat.queries import EurostatQueryRequestV30  # noqa: E402
 from statflows.storage.ducklake.tables import WriteResult  # noqa: E402
 from statflows.storage.json import Loader, Saver  # noqa: E402
 from tests.utils.fake_sdmx import (  # noqa: E402
@@ -1063,3 +1069,47 @@ def test_download_updates_forwards_every_argument_then_runs(
     assert downloader.kwargs.keys() == options.keys()
     assert all(downloader.kwargs[name] is value for name, value in options.items())
     assert downloader.runs == [queries]
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Codes de dimension ambigus (Namibie, code « NA »)
+# ──────────────────────────────────────────────────────────────────────
+
+
+def test_namibia_never_reaches_the_write_with_a_null_key(
+    tmp_path: Path, conn, writes
+) -> None:
+    dimensions = ["freq", "reporter", "partner", "product", "flow", "indicators"]
+    csv = (
+        "DATAFLOW,LAST UPDATE,freq,reporter,partner,product,flow,indicators,"
+        "TIME_PERIOD,OBS_VALUE,OBS_FLAG\n"
+        "ESTAT:DS-045409(1.0),01/10/26,A,BE,NA,85423990,1,VALUE_IN_EUROS,2020,7,\n"
+        "ESTAT:DS-045409(1.0),01/10/26,A,BE,NO,85423990,1,VALUE_IN_EUROS,2020,:,\n"
+        "ESTAT:DS-045409(1.0),01/10/26,A,BE,NL,85423990,2,VALUE_IN_EUROS,2020,9,\n"
+    )
+    client = EurostatClient(auto_load_rate_limit=False)
+    client._comext_client = MagicMock()
+    client._comext_client.get.return_value = SimpleNamespace(content=csv.encode())
+    downloader = _downloader(tmp_path, client)
+    # Structure enregistrée dans le registre adopté par l'orchestrateur
+    client.register_structure(
+        DataflowStructure(
+            "ESTAT",
+            "DS-045409",
+            len(dimensions),
+            [DimensionInfo(name, i) for i, name in enumerate(dimensions)],
+        )
+    )
+    query = EurostatQueryRequestV30(
+        "DS-045409", dimensions={"reporter": "BE"}, on_duplicate="ignore"
+    )
+
+    report = downloader.run([query])
+
+    assert report.errors == 0
+    [call] = writes.calls
+    assert call["primary_keys"] == [*dimensions, "TIME_PERIOD"]
+    data = call["data"]
+    # Aucune clé nulle n'atteint l'écriture, la Namibie est bien présente
+    assert not data[call["primary_keys"]].isna().any().any()
+    assert sorted(data["partner"]) == ["NA", "NL", "NO"]

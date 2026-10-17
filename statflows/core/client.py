@@ -17,7 +17,6 @@ import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import reduce
-from io import StringIO
 from pathlib import Path
 
 # Imports internes — éviter les imports circulaires en utilisant TYPE_CHECKING
@@ -29,6 +28,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .parsing import check_no_null_keys, read_codes_csv, resolve_key_columns
 from .rate_limiter import CompositeRateLimiter, RateLimiter, build_rate_limiter
 
 # Import runtime du rate limiter (rate_limiter.py n'a pas de dépendance interne
@@ -593,6 +593,14 @@ class AbstractSDMXClient(ABC):
             request_combinations, report=report, **execute_kwargs
         )
 
+        # Garde-fou : un code de dimension nul rendrait l'observation inidentifiable
+        # et ferait rejeter tout le lot d'écriture plus loin, sans diagnostic
+        check_no_null_keys(
+            df,
+            resolve_key_columns(structure, list(df.columns)),
+            label=params.get("dataflow"),
+        )
+
         # Vérification des doublons sauf si explicitement désactivée
         on_duplicate = params.get("on_duplicate", "warn")
         default_dimensions = params.get("default_dimensions", [])
@@ -1043,6 +1051,10 @@ class AbstractSDMXClient(ABC):
     def _parse_csv_response(text: str) -> pd.DataFrame:
         """Parse a CSV-formatted API response into a DataFrame.
 
+        Dimension codes are kept verbatim as text (``"NA"`` for Namibia is
+        not a missing value, ``"01012100"`` keeps its leading zero); only an
+        empty field or ``":"`` is missing, and ``OBS_VALUE`` is numeric.
+
         Args:
             text: Raw CSV text from the API response.
 
@@ -1053,8 +1065,8 @@ class AbstractSDMXClient(ABC):
             ValueError: If the CSV cannot be parsed.
         """
         try:
-            # Lecture du CSV
-            df = pd.read_csv(StringIO(text))
+            # Lecture du CSV sans conversion des codes de dimension
+            df = read_codes_csv(text)
             # Logging
             logger.info(f"Parsed {len(df)} rows from CSV")
             return df

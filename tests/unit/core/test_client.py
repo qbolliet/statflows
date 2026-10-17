@@ -430,7 +430,8 @@ def test_check_duplicates_empty_frame_has_no_duplicates() -> None:
 
 
 def test_parse_csv_response() -> None:
-    df = AbstractSDMXClient._parse_csv_response("a,b\n1,2\n")
-    assert df.to_dict("records") == [{"a": 1, "b": 2}]
+    # Colonnes hors mesure lues comme texte, mesure convertie en nombre
+    df = AbstractSDMXClient._parse_csv_response("a,OBS_VALUE\n1,2\n")
+    assert df.to_dict("records") == [{"a": "1", "OBS_VALUE": 2}]
     with pytest.raises(ValueError, match="Failed to parse CSV response"):
         AbstractSDMXClient._parse_csv_response("")

@@ -55,6 +55,7 @@ from ..storage.ducklake.tables import (
 # Importation des modules de connexion
 from ..storage.json import Loader, Saver
 from .client import AbstractSDMXClient
+from .parsing import resolve_key_columns
 
 # Registre des dates de dernier téléchargement (lecture publique réexportée ici)
 from .registry import (
@@ -72,8 +73,6 @@ from .structures import DataflowStructure, DataflowStructureRegistry
 # Initialisation du logger
 logger = logging.getLogger(__name__)
 
-# Nom de la dimension temporelle SDMX (incluse dans la clé primaire)
-_TIME_COLUMN = "TIME_PERIOD"
 # Clé racine du registre JSON des dates de dernier téléchargement
 _REGISTRY_ROOT = REGISTRY_ROOT
 # Nom de l'option DuckLake d'ATTACH contrôlant l'inlining des petites écritures
@@ -143,26 +142,8 @@ def _primary_keys(
         Ordered list of primary-key column names (using the DataFrame's
         original casing).
     """
-    # Index insensible à la casse : nom en minuscules → nom réel de la colonne
-    cols_lower = {c.lower(): c for c in df_columns}
-    primary_keys: list[str] = []
-
-    # Dimensions de la structure présentes dans le DataFrame
-    if structure is not None:
-        for dim in structure.dimensions:
-            # Les libellés (attribute_of) restent hors de la clé : ils peuvent être nuls
-            if dim.attribute_of:
-                continue
-            actual = cols_lower.get(dim.name.lower())
-            if actual is not None and actual not in primary_keys:
-                primary_keys.append(actual)
-
-    # Ajout systématique de la dimension temporelle si présente
-    time_actual = cols_lower.get(_TIME_COLUMN.lower())
-    if time_actual is not None and time_actual not in primary_keys:
-        primary_keys.append(time_actual)
-
-    return primary_keys
+    # Résolution partagée avec le garde-fou appliqué après la récupération
+    return resolve_key_columns(structure, df_columns)
 
 
 # Fonction de conversion d'une valeur en représentation JSON-sérialisable
