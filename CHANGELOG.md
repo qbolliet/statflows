@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1](https://github.com/qbolliet/statflows/compare/v0.3.0...v0.3.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **parsing:** keep dimension codes verbatim (NA = Namibia) ([515c558](https://github.com/qbolliet/statflows/commit/515c558cb46e98e5c9e1a500d5513c5a5d14b48b))
+
 ## [0.3.0](https://github.com/qbolliet/statflows/compare/v0.2.2...v0.3.0) (2026-10-15)
 
 
