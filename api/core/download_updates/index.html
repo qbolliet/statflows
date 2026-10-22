@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://qbolliet.github.io/statflows/api/core/download_updates/">
       
       
-        <link rel="prev" href="../AbstractSDMXClient/">
+        <link rel="prev" href="../FreshnessCheckMixin/">
       
       
         <link rel="next" href="../SDMXDownloader/">
@@ -607,6 +607,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../FreshnessCheckMixin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FreshnessCheckMixin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -1104,6 +1132,34 @@
     
   
     RateLimitStats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FreshnessStats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FreshnessStats
   
 
     
@@ -2705,119 +2761,119 @@ argument defaults to the historical, unbuffered behaviour.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>statflows/core/download.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1452">1452</a></span>
-<span class="normal"><a href="#__codelineno-0-1453">1453</a></span>
-<span class="normal"><a href="#__codelineno-0-1454">1454</a></span>
-<span class="normal"><a href="#__codelineno-0-1455">1455</a></span>
-<span class="normal"><a href="#__codelineno-0-1456">1456</a></span>
-<span class="normal"><a href="#__codelineno-0-1457">1457</a></span>
-<span class="normal"><a href="#__codelineno-0-1458">1458</a></span>
-<span class="normal"><a href="#__codelineno-0-1459">1459</a></span>
-<span class="normal"><a href="#__codelineno-0-1460">1460</a></span>
-<span class="normal"><a href="#__codelineno-0-1461">1461</a></span>
-<span class="normal"><a href="#__codelineno-0-1462">1462</a></span>
-<span class="normal"><a href="#__codelineno-0-1463">1463</a></span>
-<span class="normal"><a href="#__codelineno-0-1464">1464</a></span>
-<span class="normal"><a href="#__codelineno-0-1465">1465</a></span>
-<span class="normal"><a href="#__codelineno-0-1466">1466</a></span>
-<span class="normal"><a href="#__codelineno-0-1467">1467</a></span>
-<span class="normal"><a href="#__codelineno-0-1468">1468</a></span>
-<span class="normal"><a href="#__codelineno-0-1469">1469</a></span>
-<span class="normal"><a href="#__codelineno-0-1470">1470</a></span>
-<span class="normal"><a href="#__codelineno-0-1471">1471</a></span>
-<span class="normal"><a href="#__codelineno-0-1472">1472</a></span>
-<span class="normal"><a href="#__codelineno-0-1473">1473</a></span>
-<span class="normal"><a href="#__codelineno-0-1474">1474</a></span>
-<span class="normal"><a href="#__codelineno-0-1475">1475</a></span>
-<span class="normal"><a href="#__codelineno-0-1476">1476</a></span>
-<span class="normal"><a href="#__codelineno-0-1477">1477</a></span>
-<span class="normal"><a href="#__codelineno-0-1478">1478</a></span>
-<span class="normal"><a href="#__codelineno-0-1479">1479</a></span>
-<span class="normal"><a href="#__codelineno-0-1480">1480</a></span>
-<span class="normal"><a href="#__codelineno-0-1481">1481</a></span>
-<span class="normal"><a href="#__codelineno-0-1482">1482</a></span>
-<span class="normal"><a href="#__codelineno-0-1483">1483</a></span>
-<span class="normal"><a href="#__codelineno-0-1484">1484</a></span>
-<span class="normal"><a href="#__codelineno-0-1485">1485</a></span>
-<span class="normal"><a href="#__codelineno-0-1486">1486</a></span>
-<span class="normal"><a href="#__codelineno-0-1487">1487</a></span>
-<span class="normal"><a href="#__codelineno-0-1488">1488</a></span>
-<span class="normal"><a href="#__codelineno-0-1489">1489</a></span>
-<span class="normal"><a href="#__codelineno-0-1490">1490</a></span>
-<span class="normal"><a href="#__codelineno-0-1491">1491</a></span>
-<span class="normal"><a href="#__codelineno-0-1492">1492</a></span>
-<span class="normal"><a href="#__codelineno-0-1493">1493</a></span>
-<span class="normal"><a href="#__codelineno-0-1494">1494</a></span>
-<span class="normal"><a href="#__codelineno-0-1495">1495</a></span>
-<span class="normal"><a href="#__codelineno-0-1496">1496</a></span>
-<span class="normal"><a href="#__codelineno-0-1497">1497</a></span>
-<span class="normal"><a href="#__codelineno-0-1498">1498</a></span>
-<span class="normal"><a href="#__codelineno-0-1499">1499</a></span>
-<span class="normal"><a href="#__codelineno-0-1500">1500</a></span>
-<span class="normal"><a href="#__codelineno-0-1501">1501</a></span>
-<span class="normal"><a href="#__codelineno-0-1502">1502</a></span>
-<span class="normal"><a href="#__codelineno-0-1503">1503</a></span>
-<span class="normal"><a href="#__codelineno-0-1504">1504</a></span>
-<span class="normal"><a href="#__codelineno-0-1505">1505</a></span>
-<span class="normal"><a href="#__codelineno-0-1506">1506</a></span>
-<span class="normal"><a href="#__codelineno-0-1507">1507</a></span>
-<span class="normal"><a href="#__codelineno-0-1508">1508</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1452"><a id="__codelineno-0-1452" name="__codelineno-0-1452"></a><span class="k">def</span><span class="w"> </span><span class="nf">download_updates</span><span class="p">(</span>
-</span><span id="__span-0-1453"><a id="__codelineno-0-1453" name="__codelineno-0-1453"></a>    <span class="n">client</span><span class="p">:</span> <span class="n">AbstractSDMXClient</span><span class="p">,</span>
-</span><span id="__span-0-1454"><a id="__codelineno-0-1454" name="__codelineno-0-1454"></a>    <span class="n">queries</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
-</span><span id="__span-0-1455"><a id="__codelineno-0-1455" name="__codelineno-0-1455"></a>    <span class="n">connector</span><span class="p">:</span> <span class="n">DuckLakeConnector</span><span class="p">,</span>
-</span><span id="__span-0-1456"><a id="__codelineno-0-1456" name="__codelineno-0-1456"></a>    <span class="n">structures_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
-</span><span id="__span-0-1457"><a id="__codelineno-0-1457" name="__codelineno-0-1457"></a>    <span class="n">last_download_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
-</span><span id="__span-0-1458"><a id="__codelineno-0-1458" name="__codelineno-0-1458"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-1459"><a id="__codelineno-0-1459" name="__codelineno-0-1459"></a>    <span class="n">n_observations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-</span><span id="__span-0-1460"><a id="__codelineno-0-1460" name="__codelineno-0-1460"></a>    <span class="n">fresh_registry</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-1461"><a id="__codelineno-0-1461" name="__codelineno-0-1461"></a>    <span class="n">max_runtime</span><span class="p">:</span> <span class="n">timedelta</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">23</span><span class="p">),</span>
-</span><span id="__span-0-1462"><a id="__codelineno-0-1462" name="__codelineno-0-1462"></a>    <span class="n">categorical_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1463"><a id="__codelineno-0-1463" name="__codelineno-0-1463"></a>    <span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1464"><a id="__codelineno-0-1464" name="__codelineno-0-1464"></a>    <span class="n">storage_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1465"><a id="__codelineno-0-1465" name="__codelineno-0-1465"></a>    <span class="n">on_query_complete</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">QueryReport</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1466"><a id="__codelineno-0-1466" name="__codelineno-0-1466"></a>    <span class="n">registry_flush_every</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-0-1467"><a id="__codelineno-0-1467" name="__codelineno-0-1467"></a>    <span class="n">registry_flush_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1468"><a id="__codelineno-0-1468" name="__codelineno-0-1468"></a>    <span class="n">registry_shard_key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1469"><a id="__codelineno-0-1469" name="__codelineno-0-1469"></a>    <span class="n">write_batch_rows</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1470"><a id="__codelineno-0-1470" name="__codelineno-0-1470"></a>    <span class="n">write_batch_queries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1471"><a id="__codelineno-0-1471" name="__codelineno-0-1471"></a>    <span class="n">update_options</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1472"><a id="__codelineno-0-1472" name="__codelineno-0-1472"></a>    <span class="n">build_options</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1473"><a id="__codelineno-0-1473" name="__codelineno-0-1473"></a>    <span class="n">ducklake_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1474"><a id="__codelineno-0-1474" name="__codelineno-0-1474"></a>    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-1475"><a id="__codelineno-0-1475" name="__codelineno-0-1475"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DownloadReport</span><span class="p">:</span>
-</span><span id="__span-0-1476"><a id="__codelineno-0-1476" name="__codelineno-0-1476"></a><span class="w">    </span><span class="sd">"""Run an incremental SDMX → DuckLake download.</span>
-</span><span id="__span-0-1477"><a id="__codelineno-0-1477" name="__codelineno-0-1477"></a>
-</span><span id="__span-0-1478"><a id="__codelineno-0-1478" name="__codelineno-0-1478"></a><span class="sd">    Thin wrapper around :class:`SDMXDownloader` for one-call usage (e.g. from a</span>
-</span><span id="__span-0-1479"><a id="__codelineno-0-1479" name="__codelineno-0-1479"></a><span class="sd">    Kedro node). See :class:`SDMXDownloader` for the argument semantics; every</span>
-</span><span id="__span-0-1480"><a id="__codelineno-0-1480" name="__codelineno-0-1480"></a><span class="sd">    argument defaults to the historical, unbuffered behaviour.</span>
-</span><span id="__span-0-1481"><a id="__codelineno-0-1481" name="__codelineno-0-1481"></a>
-</span><span id="__span-0-1482"><a id="__codelineno-0-1482" name="__codelineno-0-1482"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-1483"><a id="__codelineno-0-1483" name="__codelineno-0-1483"></a><span class="sd">        A :class:`DownloadReport` summarising the run.</span>
-</span><span id="__span-0-1484"><a id="__codelineno-0-1484" name="__codelineno-0-1484"></a><span class="sd">    """</span>
-</span><span id="__span-0-1485"><a id="__codelineno-0-1485" name="__codelineno-0-1485"></a>    <span class="c1"># Construction de l'orchestrateur et exécution</span>
-</span><span id="__span-0-1486"><a id="__codelineno-0-1486" name="__codelineno-0-1486"></a>    <span class="n">downloader</span> <span class="o">=</span> <span class="n">SDMXDownloader</span><span class="p">(</span>
-</span><span id="__span-0-1487"><a id="__codelineno-0-1487" name="__codelineno-0-1487"></a>        <span class="n">client</span><span class="p">,</span>
-</span><span id="__span-0-1488"><a id="__codelineno-0-1488" name="__codelineno-0-1488"></a>        <span class="n">connector</span><span class="p">,</span>
-</span><span id="__span-0-1489"><a id="__codelineno-0-1489" name="__codelineno-0-1489"></a>        <span class="n">structures_path</span><span class="p">,</span>
-</span><span id="__span-0-1490"><a id="__codelineno-0-1490" name="__codelineno-0-1490"></a>        <span class="n">last_download_path</span><span class="p">,</span>
-</span><span id="__span-0-1491"><a id="__codelineno-0-1491" name="__codelineno-0-1491"></a>        <span class="n">n_observations</span><span class="o">=</span><span class="n">n_observations</span><span class="p">,</span>
-</span><span id="__span-0-1492"><a id="__codelineno-0-1492" name="__codelineno-0-1492"></a>        <span class="n">fresh_registry</span><span class="o">=</span><span class="n">fresh_registry</span><span class="p">,</span>
-</span><span id="__span-0-1493"><a id="__codelineno-0-1493" name="__codelineno-0-1493"></a>        <span class="n">max_runtime</span><span class="o">=</span><span class="n">max_runtime</span><span class="p">,</span>
-</span><span id="__span-0-1494"><a id="__codelineno-0-1494" name="__codelineno-0-1494"></a>        <span class="n">categorical_threshold</span><span class="o">=</span><span class="n">categorical_threshold</span><span class="p">,</span>
-</span><span id="__span-0-1495"><a id="__codelineno-0-1495" name="__codelineno-0-1495"></a>        <span class="n">bucket</span><span class="o">=</span><span class="n">bucket</span><span class="p">,</span>
-</span><span id="__span-0-1496"><a id="__codelineno-0-1496" name="__codelineno-0-1496"></a>        <span class="n">storage_options</span><span class="o">=</span><span class="n">storage_options</span><span class="p">,</span>
-</span><span id="__span-0-1497"><a id="__codelineno-0-1497" name="__codelineno-0-1497"></a>        <span class="n">on_query_complete</span><span class="o">=</span><span class="n">on_query_complete</span><span class="p">,</span>
-</span><span id="__span-0-1498"><a id="__codelineno-0-1498" name="__codelineno-0-1498"></a>        <span class="n">registry_flush_every</span><span class="o">=</span><span class="n">registry_flush_every</span><span class="p">,</span>
-</span><span id="__span-0-1499"><a id="__codelineno-0-1499" name="__codelineno-0-1499"></a>        <span class="n">registry_flush_seconds</span><span class="o">=</span><span class="n">registry_flush_seconds</span><span class="p">,</span>
-</span><span id="__span-0-1500"><a id="__codelineno-0-1500" name="__codelineno-0-1500"></a>        <span class="n">registry_shard_key</span><span class="o">=</span><span class="n">registry_shard_key</span><span class="p">,</span>
-</span><span id="__span-0-1501"><a id="__codelineno-0-1501" name="__codelineno-0-1501"></a>        <span class="n">write_batch_rows</span><span class="o">=</span><span class="n">write_batch_rows</span><span class="p">,</span>
-</span><span id="__span-0-1502"><a id="__codelineno-0-1502" name="__codelineno-0-1502"></a>        <span class="n">write_batch_queries</span><span class="o">=</span><span class="n">write_batch_queries</span><span class="p">,</span>
-</span><span id="__span-0-1503"><a id="__codelineno-0-1503" name="__codelineno-0-1503"></a>        <span class="n">update_options</span><span class="o">=</span><span class="n">update_options</span><span class="p">,</span>
-</span><span id="__span-0-1504"><a id="__codelineno-0-1504" name="__codelineno-0-1504"></a>        <span class="n">build_options</span><span class="o">=</span><span class="n">build_options</span><span class="p">,</span>
-</span><span id="__span-0-1505"><a id="__codelineno-0-1505" name="__codelineno-0-1505"></a>        <span class="n">ducklake_options</span><span class="o">=</span><span class="n">ducklake_options</span><span class="p">,</span>
-</span><span id="__span-0-1506"><a id="__codelineno-0-1506" name="__codelineno-0-1506"></a>        <span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
-</span><span id="__span-0-1507"><a id="__codelineno-0-1507" name="__codelineno-0-1507"></a>    <span class="p">)</span>
-</span><span id="__span-0-1508"><a id="__codelineno-0-1508" name="__codelineno-0-1508"></a>    <span class="k">return</span> <span class="n">downloader</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">queries</span><span class="p">)</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1510">1510</a></span>
+<span class="normal"><a href="#__codelineno-0-1511">1511</a></span>
+<span class="normal"><a href="#__codelineno-0-1512">1512</a></span>
+<span class="normal"><a href="#__codelineno-0-1513">1513</a></span>
+<span class="normal"><a href="#__codelineno-0-1514">1514</a></span>
+<span class="normal"><a href="#__codelineno-0-1515">1515</a></span>
+<span class="normal"><a href="#__codelineno-0-1516">1516</a></span>
+<span class="normal"><a href="#__codelineno-0-1517">1517</a></span>
+<span class="normal"><a href="#__codelineno-0-1518">1518</a></span>
+<span class="normal"><a href="#__codelineno-0-1519">1519</a></span>
+<span class="normal"><a href="#__codelineno-0-1520">1520</a></span>
+<span class="normal"><a href="#__codelineno-0-1521">1521</a></span>
+<span class="normal"><a href="#__codelineno-0-1522">1522</a></span>
+<span class="normal"><a href="#__codelineno-0-1523">1523</a></span>
+<span class="normal"><a href="#__codelineno-0-1524">1524</a></span>
+<span class="normal"><a href="#__codelineno-0-1525">1525</a></span>
+<span class="normal"><a href="#__codelineno-0-1526">1526</a></span>
+<span class="normal"><a href="#__codelineno-0-1527">1527</a></span>
+<span class="normal"><a href="#__codelineno-0-1528">1528</a></span>
+<span class="normal"><a href="#__codelineno-0-1529">1529</a></span>
+<span class="normal"><a href="#__codelineno-0-1530">1530</a></span>
+<span class="normal"><a href="#__codelineno-0-1531">1531</a></span>
+<span class="normal"><a href="#__codelineno-0-1532">1532</a></span>
+<span class="normal"><a href="#__codelineno-0-1533">1533</a></span>
+<span class="normal"><a href="#__codelineno-0-1534">1534</a></span>
+<span class="normal"><a href="#__codelineno-0-1535">1535</a></span>
+<span class="normal"><a href="#__codelineno-0-1536">1536</a></span>
+<span class="normal"><a href="#__codelineno-0-1537">1537</a></span>
+<span class="normal"><a href="#__codelineno-0-1538">1538</a></span>
+<span class="normal"><a href="#__codelineno-0-1539">1539</a></span>
+<span class="normal"><a href="#__codelineno-0-1540">1540</a></span>
+<span class="normal"><a href="#__codelineno-0-1541">1541</a></span>
+<span class="normal"><a href="#__codelineno-0-1542">1542</a></span>
+<span class="normal"><a href="#__codelineno-0-1543">1543</a></span>
+<span class="normal"><a href="#__codelineno-0-1544">1544</a></span>
+<span class="normal"><a href="#__codelineno-0-1545">1545</a></span>
+<span class="normal"><a href="#__codelineno-0-1546">1546</a></span>
+<span class="normal"><a href="#__codelineno-0-1547">1547</a></span>
+<span class="normal"><a href="#__codelineno-0-1548">1548</a></span>
+<span class="normal"><a href="#__codelineno-0-1549">1549</a></span>
+<span class="normal"><a href="#__codelineno-0-1550">1550</a></span>
+<span class="normal"><a href="#__codelineno-0-1551">1551</a></span>
+<span class="normal"><a href="#__codelineno-0-1552">1552</a></span>
+<span class="normal"><a href="#__codelineno-0-1553">1553</a></span>
+<span class="normal"><a href="#__codelineno-0-1554">1554</a></span>
+<span class="normal"><a href="#__codelineno-0-1555">1555</a></span>
+<span class="normal"><a href="#__codelineno-0-1556">1556</a></span>
+<span class="normal"><a href="#__codelineno-0-1557">1557</a></span>
+<span class="normal"><a href="#__codelineno-0-1558">1558</a></span>
+<span class="normal"><a href="#__codelineno-0-1559">1559</a></span>
+<span class="normal"><a href="#__codelineno-0-1560">1560</a></span>
+<span class="normal"><a href="#__codelineno-0-1561">1561</a></span>
+<span class="normal"><a href="#__codelineno-0-1562">1562</a></span>
+<span class="normal"><a href="#__codelineno-0-1563">1563</a></span>
+<span class="normal"><a href="#__codelineno-0-1564">1564</a></span>
+<span class="normal"><a href="#__codelineno-0-1565">1565</a></span>
+<span class="normal"><a href="#__codelineno-0-1566">1566</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1510"><a id="__codelineno-0-1510" name="__codelineno-0-1510"></a><span class="k">def</span><span class="w"> </span><span class="nf">download_updates</span><span class="p">(</span>
+</span><span id="__span-0-1511"><a id="__codelineno-0-1511" name="__codelineno-0-1511"></a>    <span class="n">client</span><span class="p">:</span> <span class="n">AbstractSDMXClient</span><span class="p">,</span>
+</span><span id="__span-0-1512"><a id="__codelineno-0-1512" name="__codelineno-0-1512"></a>    <span class="n">queries</span><span class="p">:</span> <span class="n">Any</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+</span><span id="__span-0-1513"><a id="__codelineno-0-1513" name="__codelineno-0-1513"></a>    <span class="n">connector</span><span class="p">:</span> <span class="n">DuckLakeConnector</span><span class="p">,</span>
+</span><span id="__span-0-1514"><a id="__codelineno-0-1514" name="__codelineno-0-1514"></a>    <span class="n">structures_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+</span><span id="__span-0-1515"><a id="__codelineno-0-1515" name="__codelineno-0-1515"></a>    <span class="n">last_download_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+</span><span id="__span-0-1516"><a id="__codelineno-0-1516" name="__codelineno-0-1516"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-1517"><a id="__codelineno-0-1517" name="__codelineno-0-1517"></a>    <span class="n">n_observations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-0-1518"><a id="__codelineno-0-1518" name="__codelineno-0-1518"></a>    <span class="n">fresh_registry</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-1519"><a id="__codelineno-0-1519" name="__codelineno-0-1519"></a>    <span class="n">max_runtime</span><span class="p">:</span> <span class="n">timedelta</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">23</span><span class="p">),</span>
+</span><span id="__span-0-1520"><a id="__codelineno-0-1520" name="__codelineno-0-1520"></a>    <span class="n">categorical_threshold</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1521"><a id="__codelineno-0-1521" name="__codelineno-0-1521"></a>    <span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1522"><a id="__codelineno-0-1522" name="__codelineno-0-1522"></a>    <span class="n">storage_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1523"><a id="__codelineno-0-1523" name="__codelineno-0-1523"></a>    <span class="n">on_query_complete</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">QueryReport</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1524"><a id="__codelineno-0-1524" name="__codelineno-0-1524"></a>    <span class="n">registry_flush_every</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-0-1525"><a id="__codelineno-0-1525" name="__codelineno-0-1525"></a>    <span class="n">registry_flush_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1526"><a id="__codelineno-0-1526" name="__codelineno-0-1526"></a>    <span class="n">registry_shard_key</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1527"><a id="__codelineno-0-1527" name="__codelineno-0-1527"></a>    <span class="n">write_batch_rows</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1528"><a id="__codelineno-0-1528" name="__codelineno-0-1528"></a>    <span class="n">write_batch_queries</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1529"><a id="__codelineno-0-1529" name="__codelineno-0-1529"></a>    <span class="n">update_options</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1530"><a id="__codelineno-0-1530" name="__codelineno-0-1530"></a>    <span class="n">build_options</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1531"><a id="__codelineno-0-1531" name="__codelineno-0-1531"></a>    <span class="n">ducklake_options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1532"><a id="__codelineno-0-1532" name="__codelineno-0-1532"></a>    <span class="n">run_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-1533"><a id="__codelineno-0-1533" name="__codelineno-0-1533"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DownloadReport</span><span class="p">:</span>
+</span><span id="__span-0-1534"><a id="__codelineno-0-1534" name="__codelineno-0-1534"></a><span class="w">    </span><span class="sd">"""Run an incremental SDMX → DuckLake download.</span>
+</span><span id="__span-0-1535"><a id="__codelineno-0-1535" name="__codelineno-0-1535"></a>
+</span><span id="__span-0-1536"><a id="__codelineno-0-1536" name="__codelineno-0-1536"></a><span class="sd">    Thin wrapper around :class:`SDMXDownloader` for one-call usage (e.g. from a</span>
+</span><span id="__span-0-1537"><a id="__codelineno-0-1537" name="__codelineno-0-1537"></a><span class="sd">    Kedro node). See :class:`SDMXDownloader` for the argument semantics; every</span>
+</span><span id="__span-0-1538"><a id="__codelineno-0-1538" name="__codelineno-0-1538"></a><span class="sd">    argument defaults to the historical, unbuffered behaviour.</span>
+</span><span id="__span-0-1539"><a id="__codelineno-0-1539" name="__codelineno-0-1539"></a>
+</span><span id="__span-0-1540"><a id="__codelineno-0-1540" name="__codelineno-0-1540"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-1541"><a id="__codelineno-0-1541" name="__codelineno-0-1541"></a><span class="sd">        A :class:`DownloadReport` summarising the run.</span>
+</span><span id="__span-0-1542"><a id="__codelineno-0-1542" name="__codelineno-0-1542"></a><span class="sd">    """</span>
+</span><span id="__span-0-1543"><a id="__codelineno-0-1543" name="__codelineno-0-1543"></a>    <span class="c1"># Construction de l'orchestrateur et exécution</span>
+</span><span id="__span-0-1544"><a id="__codelineno-0-1544" name="__codelineno-0-1544"></a>    <span class="n">downloader</span> <span class="o">=</span> <span class="n">SDMXDownloader</span><span class="p">(</span>
+</span><span id="__span-0-1545"><a id="__codelineno-0-1545" name="__codelineno-0-1545"></a>        <span class="n">client</span><span class="p">,</span>
+</span><span id="__span-0-1546"><a id="__codelineno-0-1546" name="__codelineno-0-1546"></a>        <span class="n">connector</span><span class="p">,</span>
+</span><span id="__span-0-1547"><a id="__codelineno-0-1547" name="__codelineno-0-1547"></a>        <span class="n">structures_path</span><span class="p">,</span>
+</span><span id="__span-0-1548"><a id="__codelineno-0-1548" name="__codelineno-0-1548"></a>        <span class="n">last_download_path</span><span class="p">,</span>
+</span><span id="__span-0-1549"><a id="__codelineno-0-1549" name="__codelineno-0-1549"></a>        <span class="n">n_observations</span><span class="o">=</span><span class="n">n_observations</span><span class="p">,</span>
+</span><span id="__span-0-1550"><a id="__codelineno-0-1550" name="__codelineno-0-1550"></a>        <span class="n">fresh_registry</span><span class="o">=</span><span class="n">fresh_registry</span><span class="p">,</span>
+</span><span id="__span-0-1551"><a id="__codelineno-0-1551" name="__codelineno-0-1551"></a>        <span class="n">max_runtime</span><span class="o">=</span><span class="n">max_runtime</span><span class="p">,</span>
+</span><span id="__span-0-1552"><a id="__codelineno-0-1552" name="__codelineno-0-1552"></a>        <span class="n">categorical_threshold</span><span class="o">=</span><span class="n">categorical_threshold</span><span class="p">,</span>
+</span><span id="__span-0-1553"><a id="__codelineno-0-1553" name="__codelineno-0-1553"></a>        <span class="n">bucket</span><span class="o">=</span><span class="n">bucket</span><span class="p">,</span>
+</span><span id="__span-0-1554"><a id="__codelineno-0-1554" name="__codelineno-0-1554"></a>        <span class="n">storage_options</span><span class="o">=</span><span class="n">storage_options</span><span class="p">,</span>
+</span><span id="__span-0-1555"><a id="__codelineno-0-1555" name="__codelineno-0-1555"></a>        <span class="n">on_query_complete</span><span class="o">=</span><span class="n">on_query_complete</span><span class="p">,</span>
+</span><span id="__span-0-1556"><a id="__codelineno-0-1556" name="__codelineno-0-1556"></a>        <span class="n">registry_flush_every</span><span class="o">=</span><span class="n">registry_flush_every</span><span class="p">,</span>
+</span><span id="__span-0-1557"><a id="__codelineno-0-1557" name="__codelineno-0-1557"></a>        <span class="n">registry_flush_seconds</span><span class="o">=</span><span class="n">registry_flush_seconds</span><span class="p">,</span>
+</span><span id="__span-0-1558"><a id="__codelineno-0-1558" name="__codelineno-0-1558"></a>        <span class="n">registry_shard_key</span><span class="o">=</span><span class="n">registry_shard_key</span><span class="p">,</span>
+</span><span id="__span-0-1559"><a id="__codelineno-0-1559" name="__codelineno-0-1559"></a>        <span class="n">write_batch_rows</span><span class="o">=</span><span class="n">write_batch_rows</span><span class="p">,</span>
+</span><span id="__span-0-1560"><a id="__codelineno-0-1560" name="__codelineno-0-1560"></a>        <span class="n">write_batch_queries</span><span class="o">=</span><span class="n">write_batch_queries</span><span class="p">,</span>
+</span><span id="__span-0-1561"><a id="__codelineno-0-1561" name="__codelineno-0-1561"></a>        <span class="n">update_options</span><span class="o">=</span><span class="n">update_options</span><span class="p">,</span>
+</span><span id="__span-0-1562"><a id="__codelineno-0-1562" name="__codelineno-0-1562"></a>        <span class="n">build_options</span><span class="o">=</span><span class="n">build_options</span><span class="p">,</span>
+</span><span id="__span-0-1563"><a id="__codelineno-0-1563" name="__codelineno-0-1563"></a>        <span class="n">ducklake_options</span><span class="o">=</span><span class="n">ducklake_options</span><span class="p">,</span>
+</span><span id="__span-0-1564"><a id="__codelineno-0-1564" name="__codelineno-0-1564"></a>        <span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span>
+</span><span id="__span-0-1565"><a id="__codelineno-0-1565" name="__codelineno-0-1565"></a>    <span class="p">)</span>
+</span><span id="__span-0-1566"><a id="__codelineno-0-1566" name="__codelineno-0-1566"></a>    <span class="k">return</span> <span class="n">downloader</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">queries</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

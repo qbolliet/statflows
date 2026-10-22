@@ -450,6 +450,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#replay-with-no-new-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replay with no new data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sharded-registry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -710,6 +721,34 @@
     
   
     AbstractSDMXClient
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/core/FreshnessCheckMixin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FreshnessCheckMixin
   
 
     
@@ -1214,6 +1253,34 @@
     
   
     RateLimitStats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/core/FreshnessStats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FreshnessStats
   
 
     
@@ -2669,6 +2736,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#replay-with-no-new-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Replay with no new data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#sharded-registry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2867,6 +2945,18 @@ query is published (and <code>on_query_complete</code> called) when its batch is
 or has failed.</p>
 <p><strong>Memory.</strong> The DataFrames of a batch stay in memory until it is written: the
 footprint is bounded by <code>write_batch_rows</code> × the number of active <em>dataflows</em>.</p>
+<h3 id="replay-with-no-new-data">Replay with no new data</h3>
+<p>On a replay where nothing changed, each query only asks the provider whether its
+data was updated. That answer is cached per run (one call per Eurostat dataflow
+and version, one per Comtrade period), and Eurostat reads it from the dataflow
+artefact (a few kilobytes) rather than from the data constraint (about 1 MB for
+the Comext dataflow <code>DS-045409</code>, whose parsing alone took ~20 ms per query).
+Measured on 2,000 offline queries (registry sharded on 27 fragments, persisted
+every 500 queries), the orchestrator itself then costs ~0.7 ms per query.
+Whatever remains in a long replay is spent outside <code>statflows</code>:
+<code>DownloadReport.callback_seconds</code> measures the time spent in the
+<code>on_query_complete</code> callback (e.g. one synchronous call to an experiment
+tracker per query).</p>
 <h3 id="sharded-registry">Sharded registry</h3>
 <p>With <code>registry_shard_key</code>, the registry <code>registries/x_last_download.json</code>
 becomes a directory <code>registries/x_last_download/&lt;shard&gt;.json</code>. An existing

@@ -412,6 +412,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#last-update-check-and-per-run-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Last-update check and per-run cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#time-limit-and-graceful-shutdown" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -694,6 +705,34 @@
     
   
     AbstractSDMXClient
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/core/FreshnessCheckMixin/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FreshnessCheckMixin
   
 
     
@@ -1198,6 +1237,34 @@
     
   
     RateLimitStats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/core/FreshnessStats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FreshnessStats
   
 
     
@@ -2642,6 +2709,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#last-update-check-and-per-run-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Last-update check and per-run cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#time-limit-and-graceful-shutdown" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2761,6 +2839,71 @@ downloaded again on the next run.</p>
   " href="../api/core/QueryReport/#statflows.core.reports.QueryReport"><code>QueryReport</code></a>
 per query. <code>report.to_metrics()</code> flattens it for an experiment tracker; the
 <code>on_query_complete</code> callback streams each <code>QueryReport</code> as soon as it is ready.</p>
+<h2 id="last-update-check-and-per-run-cache">Last-update check and per-run cache</h2>
+<p>OECD filters incremental downloads on the server (<code>updated_after</code>). Eurostat
+and UN Comtrade cannot: before pulling a query, their client asks <em>when the
+data was last updated</em> and skips the query when nothing changed since the
+recorded date. That question is shared by many queries — every product batch
+of a Eurostat dataflow, every product batch of a Comtrade period — so the
+answer is cached for the run by
+<a class="autorefs autorefs-internal" title="FreshnessCheckMixin" href="../api/core/FreshnessCheckMixin/#statflows.core.client.FreshnessCheckMixin"><code>FreshnessCheckMixin</code></a>, which
+provides the whole <code>fetch_updates</code> logic:</p>
+<pre class="mermaid"><code>flowchart LR
+    F["fetch_updates(query, since)"] --&gt;|since is None| X[execute_query]
+    F --&gt; K["_freshness_key(query)"]
+    K --&gt;|cache miss| L["_fetch_last_update(query)&lt;br/&gt;one call per key and per run"]
+    K --&gt;|cache hit| C[(Per-run cache)]
+    L --&gt; C
+    C --&gt;|"last update ≤ since"| E[empty, query skipped]
+    C --&gt;|"later, or unknown"| I["_fetch_incremental(query)"]</code></pre>
+<table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Freshness key</th>
+<th>Last-update source</th>
+<th>Incremental fetch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Eurostat</td>
+<td><code>(dataflow, version)</code></td>
+<td><code>UPDATE_DATA</code> annotation of the dataflow artefact</td>
+<td>last <code>n_observations</code> observations</td>
+</tr>
+<tr>
+<td>UN Comtrade</td>
+<td>period, frequency, type, classification, reporters</td>
+<td><code>lastReleased</code> of the tariffline availability</td>
+<td>full re-pull of the slice</td>
+</tr>
+</tbody>
+</table>
+<p>A Eurostat dataflow queried by 17,752 queries therefore costs <strong>one</strong> request of
+a few kilobytes per run, instead of 17,752 requests.</p>
+<p><strong>Rules.</strong></p>
+<ul>
+<li>The cache lives in the client instance, is never persisted, and is emptied at
+  the start of every <code>SDMXDownloader.run()</code>.</li>
+<li>A last-update date strictly later than <code>since</code> always triggers the fetch; an
+  unknown date (failed lookup, or none published) refreshes as a precaution.</li>
+<li>A failed lookup is remembered for <code>FRESHNESS_FAILURE_TTL</code> seconds (5 minutes by
+  default) before one new attempt: a provider down does not cost one doomed
+  lookup per query, and a short outage does not force refreshing the whole run.
+  Comtrade remembers the failure for the whole run (daily quota).</li>
+<li><strong>Update published during the run.</strong> A query skipped on a cached answer has
+  its registry date set to the instant that answer was requested, not to the
+  start of the query: an update published in between is detected at the next
+  run.</li>
+<li>The orchestrator calls the client from a single thread; a client must not be
+  shared across threads.</li>
+</ul>
+<p><strong>Observability.</strong> Each <code>QueryReport.freshness</code> counts the lookups sent
+(<code>n_checks</code>), the answers served by the cache (<code>n_cache_hits</code>) and the
+unresolved lookups (<code>n_unresolved</code>); <code>DownloadReport.to_metrics()</code> sums them as
+<code>n_freshness_checks</code>, <code>n_freshness_cache_hits</code> and <code>n_freshness_unresolved</code>,
+next to <code>n_http_requests</code>.</p>
 <h2 id="time-limit-and-graceful-shutdown">Time limit and graceful shutdown</h2>
 <p><code>max_runtime</code> (23 hours by default) stops the loop between two queries once the
 deadline has elapsed. On <code>SIGTERM</code> — e.g. a Kubernetes pod being stopped — the
