@@ -67,7 +67,13 @@ from .registry import (
     sanitize_shard,
     with_modification,
 )
-from .reports import DownloadReport, HttpStats, QueryReport, RateLimitStats
+from .reports import (
+    DownloadReport,
+    FreshnessStats,
+    HttpStats,
+    QueryReport,
+    RateLimitStats,
+)
 from .structures import DataflowStructure, DataflowStructureRegistry
 
 # Initialisation du logger
@@ -271,22 +277,53 @@ def _rate_limit_delta(before: RateLimitStats, after: RateLimitStats) -> RateLimi
     )
 
 
+# Fonction auxiliaire : consommation de vérifications de fraîcheur d'une requête
+def _freshness_delta(before: FreshnessStats, after: FreshnessStats) -> FreshnessStats:
+    """Difference two last-update check snapshots to isolate one query's share.
+
+    Args:
+        before: Snapshot taken before the query.
+        after: Snapshot taken after it.
+
+    Returns:
+        A :class:`FreshnessStats` holding what the query alone incurred.
+
+    Examples:
+        >>> _freshness_delta(FreshnessStats(1, 4, 0), FreshnessStats(1, 5, 0))
+        FreshnessStats(n_checks=0, n_cache_hits=1, n_unresolved=0)
+    """
+    # Différence champ à champ
+    return FreshnessStats(
+        n_checks=after.n_checks - before.n_checks,
+        n_cache_hits=after.n_cache_hits - before.n_cache_hits,
+        n_unresolved=after.n_unresolved - before.n_unresolved,
+    )
+
+
 # Fonction auxiliaire : instantané des compteurs d'un client
-def _client_snapshot(client: Any) -> tuple[HttpStats, RateLimitStats]:
-    """Snapshot the HTTP and rate-limit counters of a client.
+def _client_snapshot(
+    client: Any,
+) -> tuple[HttpStats, RateLimitStats, FreshnessStats]:
+    """Snapshot the HTTP, rate-limit and last-update check counters of a client.
 
     Args:
         client: Provider client.
 
     Returns:
-        Tuple ``(http, rate_limit)`` of detached counter objects.
+        Tuple ``(http, rate_limit, freshness)`` of detached counter objects;
+        ``freshness`` is all zeros for providers without a last-update check.
     """
     # Compteurs HTTP totalisés sur toutes les sessions du client
     http = _total_http_stats(_http_stats_sources(client))
     # Compteurs du limiteur de débit, absent chez certains providers
     limiter = getattr(client, "rate_limiter", None)
     rate_limit = limiter.get_stats() if limiter is not None else RateLimitStats()
-    return http, rate_limit
+    # Compteurs de vérification de fraîcheur, absents sans vérification préalable
+    stats = getattr(client, "freshness_stats_", None)
+    freshness = (
+        stats.snapshot() if isinstance(stats, FreshnessStats) else FreshnessStats()
+    )
+    return http, rate_limit, freshness
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -377,7 +414,9 @@ class SDMXDownloader:
 
     The orchestrator owns the DuckLake connection (opened from the supplied
     connector and closed in a ``finally`` block) but **not** the SDMX client,
-    whose lifetime is managed by the caller.
+    whose lifetime is managed by the caller. A client caching its last-update
+    answers (:class:`~statflows.core.client.FreshnessCheckMixin`) has that
+    cache emptied at the start of each :meth:`run`.
 
     **Buffering.** By default every query is written to DuckLake on its own and
     the whole registry is rewritten after each query — safe, but quadratic on
@@ -630,6 +669,11 @@ class SDMXDownloader:
         # l'export du registre en fin de run
         initial_structure_keys = set(self._structure_registry.list_structures())
 
+        # Cache de fraîcheur du client vidé : une réponse ne survit pas à son run
+        clear_freshness_cache = getattr(self._client, "clear_freshness_cache", None)
+        if callable(clear_freshness_cache):
+            clear_freshness_cache()
+
         # Réinitialisation de l'état de tamponnage et d'arrêt
         self._buffers = {}
         self._commits_since_flush = 0
@@ -795,7 +839,9 @@ class SDMXDownloader:
         database. The last-download date is updated whether or not new data
         was returned — immediately when the query returned nothing, after its
         batch is written otherwise. The modification date only moves when the
-        write actually changed rows.
+        write actually changed rows. When the client skipped the query on a
+        cached "unchanged" answer, the recorded date is the instant that answer
+        was requested (``client.last_fetch_as_of_``), never later.
 
         Args:
             conn: Open DuckLake connection.
@@ -824,7 +870,7 @@ class SDMXDownloader:
         # (évite de manquer des observations publiées pendant le fetch)
         req_started = _now()
         # Compteurs du client avant la requête : la différence isole son coût
-        http_before, rate_before = _client_snapshot(self._client)
+        http_before, rate_before, freshness_before = _client_snapshot(self._client)
 
         try:
             # Seule fenêtre interruptible par SIGTERM : l'attente du fournisseur
@@ -836,9 +882,10 @@ class SDMXDownloader:
         finally:
             self._interruptible = False
             # Coût de la requête, imputé même si la récupération a échoué
-            http_after, rate_after = _client_snapshot(self._client)
+            http_after, rate_after, freshness_after = _client_snapshot(self._client)
             query_report.http = _http_delta(http_before, http_after)
             query_report.rate_limit = _rate_limit_delta(rate_before, rate_after)
+            query_report.freshness = _freshness_delta(freshness_before, freshness_after)
             # Diagnostics de récupération tenus par le client
             fetch_report = getattr(self._client, "last_fetch_report_", None)
             if fetch_report is not None:
@@ -851,12 +898,20 @@ class SDMXDownloader:
         schema = _schema_name(query.dataflow)
         query_report.schema = schema
 
+        # Date enregistrée : début de la requête, ramenée à l'instant de la
+        # vérification de fraîcheur quand une réponse en cache a fait sauter la
+        # requête (une publication intervenue entre-temps reste détectée)
+        recorded = req_started
+        as_of = getattr(self._client, "last_fetch_as_of_", None)
+        if isinstance(as_of, datetime) and as_of < recorded:
+            recorded = as_of
+
         # Nouvelle entrée du registre, validée une fois les données écrites
         new_entry = {
             "agency": query.agency,
             "dataflow": query.dataflow,
             "params": _json_safe(query.to_dict()),
-            "last_download": req_started.isoformat(),
+            "last_download": recorded.isoformat(),
         }
         shard = self._shard_for(query)
 
@@ -1194,7 +1249,10 @@ class SDMXDownloader:
             query_report: Diagnostics of the completed (or failed) query.
         """
         report.queries.append(query_report)
+        # Durée du rappel : le suivi d'expérience peut peser sur un long run
+        started = time.monotonic()
         self._notify(query_report)
+        report.callback_seconds += time.monotonic() - started
 
     # Méthode de publication du diagnostic d'une requête
     def _notify(self, query_report: QueryReport) -> None:

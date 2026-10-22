@@ -45,6 +45,33 @@ request per period and, when a response hits the per-call record limit,
 recursively subdivides it over the flow-defining dimensions until every chunk
 fits. It returns a tuple `(DataFrame, request_metadata)`.
 
+## Incremental downloads of a new provider
+
+A provider whose API offers a server-side "updated after" filter implements
+`fetch_updates` directly (as OECD does). Otherwise, mix
+[`FreshnessCheckMixin`][statflows.core.client.FreshnessCheckMixin] in first and
+implement two methods — the template, the per-run cache and its counters come
+with it:
+
+```python
+from statflows.core.client import AbstractSDMXClient, FreshnessCheckMixin
+
+
+class MyClient(FreshnessCheckMixin, AbstractSDMXClient):
+    def _freshness_key(self, query):
+        # Same answer for every query of a dataflow, whatever its filters
+        return (query.dataflow, query.version)
+
+    def _fetch_last_update(self, query):
+        # One provider call per key and per run; may raise
+        return self.get_last_update_from_the_api(query.dataflow)
+```
+
+`_fetch_incremental(query, n_observations)` (full `execute_query` by default)
+and `_log_no_update` can be overridden as well. See
+[Incremental downloads](downloads.md#last-update-check-and-per-run-cache) for
+the cache rules.
+
 ## UNSD correspondences
 
 `UNSDClient.get_correspondence(source, target, kind="conversion")` fetches one

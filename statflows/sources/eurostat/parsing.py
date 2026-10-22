@@ -250,24 +250,27 @@ def _parse_iso_datetime(text: str | None) -> datetime | None:
     return parsed.astimezone(UTC)
 
 
-# Fonction de parsing de la date de dernière mise à jour d'un dataconstraint
+# Fonction de parsing de la date de dernière mise à jour d'un message de structure
 def parse_dataconstraint_last_update(xml_content: str) -> datetime | None:
-    """Extract the data last-update instant from a dataconstraint response.
+    """Extract the data last-update instant from an annotated structure message.
 
     Eurostat exposes the date a dataset's *data* was last updated through an
-    annotation on the data constraint (commonly typed ``UPDATE_DATA``),
-    carrying the date in its ``AnnotationTitle`` or ``AnnotationText``. This
-    function scans every annotation, preferring those whose type mentions an
-    update of the *data*, and parses the embedded date. When no suitable
-    annotation is found it falls back to the message ``Prepared`` header so
-    callers always get a usable (if conservative) timestamp.
+    annotation typed ``UPDATE_DATA`` on the *dataflow* artefact, carrying the
+    date in its ``AnnotationTitle`` or ``AnnotationText``. This function scans
+    every annotation of the message (dataflow or data constraint alike),
+    preferring those whose type mentions an update of the *data*, and parses
+    the embedded date. When no suitable annotation is found it falls back to
+    the message ``Prepared`` header.
 
-    The conservative fallback is deliberate: returning the response
-    preparation time makes the download orchestrator re-pull the last *N*
-    observations rather than risk missing a genuine update.
+    The fallback is only conservative when the provider prepares the message
+    on request: a response served from a cache carries the time it was
+    prepared, which may predate the last update. Eurostat's data constraints
+    carry no update annotation (and the Comext one is served from a cache), so
+    the dataflow artefact is the message to parse.
 
     Args:
-        xml_content: Decompressed SDMX-ML dataconstraint response.
+        xml_content: Decompressed SDMX-ML structure response (dataflow or
+            data constraint).
 
     Returns:
         UTC-aware ``datetime`` of the last data update, or ``None`` if the XML
@@ -277,7 +280,7 @@ def parse_dataconstraint_last_update(xml_content: str) -> datetime | None:
         # Parsing du document XML
         root = ET.parse(StringIO(xml_content)).getroot()
     except ET.ParseError as e:
-        logger.warning(f"Could not parse dataconstraint XML: {e}")
+        logger.warning(f"Could not parse structure XML: {e}")
         return None
 
     # Recherche des annotations dans les deux jeux de namespaces (3.0 puis 2.1)
@@ -318,7 +321,7 @@ def parse_dataconstraint_last_update(xml_content: str) -> datetime | None:
     if best_update is not None:
         return best_update
 
-    # Repli conservateur : en-tête mes:Prepared du message
+    # Repli : en-tête mes:Prepared du message (instant de préparation de la réponse)
     for namespaces in (_SDMX3_NS, _SDMX21_NS):
         prepared = root.find(".//mes:Prepared", namespaces)
         if prepared is not None:

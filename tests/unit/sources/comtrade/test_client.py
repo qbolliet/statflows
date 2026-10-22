@@ -785,3 +785,99 @@ def test_get_structure_rejects_an_undeclared_dataflow(client) -> None:
     with pytest.raises(ValueError, match=r"C_A_HS.*C_M_HS.*comtrade\.json"):
         client.get_structure("S_A_HS")
     assert not client.structure_registry.has("COMTRADE", "S_A_HS")
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Non-régression : passage par la vérification de fraîcheur commune
+# ──────────────────────────────────────────────────────────────────────
+
+
+def _legacy_period_last_released(client, cache: dict, query) -> datetime | None:
+    """Release-date resolution as implemented before the shared mechanism."""
+    cache_key = (
+        str(query.periods),
+        query.frequency,
+        query.type_code,
+        query.classification,
+        None if query.reporters is None else ",".join(map(str, query.reporters)),
+    )
+    if cache_key in cache:
+        return cache[cache_key]
+    try:
+        availability = client.get_tariffline_data_availability(
+            reporters=query.reporters,
+            periods=query.periods,
+            frequency=query.frequency,
+            type_code=query.type_code,
+            classification=query.classification,
+        )
+        released = client_module.parsing.parse_availability_last_released(availability)
+        dates = [value for value in released.values() if value is not None]
+        last_released = (
+            pd.to_datetime(max(dates), utc=True).floor("us").to_pydatetime()
+            if dates
+            else None
+        )
+    except Exception:
+        last_released = None
+    cache[cache_key] = last_released
+    return last_released
+
+
+def _legacy_fetch_updates(client, cache: dict, query, since) -> pd.DataFrame:
+    """Incremental decision as implemented before the shared mechanism."""
+    if since is None:
+        return client.execute_query(query)
+    last_released = _legacy_period_last_released(client, cache, query)
+    if last_released is not None and since >= last_released:
+        return pd.DataFrame()
+    return client.execute_query(query)
+
+
+def _availability_by_period(endpoint, params=None, **_):
+    """Availability answers: 2022 published, 2023 without date, 2021 failing."""
+    period = params["period"]
+    if period == "2021":
+        raise _http_error(503)
+    if period == "2023":
+        return _json_response({"data": []})
+    return _json_response(AVAILABILITY)
+
+
+def test_fetch_updates_matches_the_previous_logic_across_product_batches() -> None:
+    # Requêtes partageant une période mais pas un lot de produits, des dates de
+    # part et d'autre de lastReleased, une période sans date et un échec d'appel
+    released = datetime(2026, 2, 6, 10, 18, 40, 230000, tzinfo=UTC)
+    cases = [
+        (_query(periods=period, products=products), since)
+        for period in ("2022", "2023", "2021")
+        for products in (["01"], ["02", "03"], ["04"])
+        for since in (
+            None,
+            released,
+            released - timedelta(microseconds=1),
+            released + timedelta(days=30),
+        )
+    ]
+
+    def build() -> ComtradeClient:
+        comtrade = ComtradeClient(subscription_key=None, auto_load_rate_limit=False)
+        comtrade.get = mock.Mock(side_effect=_availability_by_period)  # type: ignore[method-assign]
+        comtrade.execute_query = mock.Mock(  # type: ignore[method-assign]
+            side_effect=lambda q: pd.DataFrame({"products": [",".join(q.products)]})
+        )
+        return comtrade
+
+    current, legacy = build(), build()
+    legacy_cache: dict = {}
+    for query, since in cases:
+        expected = _legacy_fetch_updates(legacy, legacy_cache, query, since)
+        result = current.fetch_updates(query, since)
+        pd.testing.assert_frame_equal(result, expected)
+
+    # Mêmes appels réseau, mêmes requêtes rejouées, même contenu de cache
+    assert current.get.call_count == legacy.get.call_count == 3
+    assert current.execute_query.call_args_list == legacy.execute_query.call_args_list
+    assert current._availability_cache == legacy_cache
+    assert current.freshness_stats_.n_checks == 3
+    assert current.freshness_stats_.n_unresolved == 2

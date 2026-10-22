@@ -35,6 +35,59 @@ flowchart LR
 per query. `report.to_metrics()` flattens it for an experiment tracker; the
 `on_query_complete` callback streams each `QueryReport` as soon as it is ready.
 
+## Last-update check and per-run cache
+
+OECD filters incremental downloads on the server (`updated_after`). Eurostat
+and UN Comtrade cannot: before pulling a query, their client asks *when the
+data was last updated* and skips the query when nothing changed since the
+recorded date. That question is shared by many queries — every product batch
+of a Eurostat dataflow, every product batch of a Comtrade period — so the
+answer is cached for the run by
+[`FreshnessCheckMixin`][statflows.core.client.FreshnessCheckMixin], which
+provides the whole `fetch_updates` logic:
+
+```mermaid
+flowchart LR
+    F["fetch_updates(query, since)"] -->|since is None| X[execute_query]
+    F --> K["_freshness_key(query)"]
+    K -->|cache miss| L["_fetch_last_update(query)<br/>one call per key and per run"]
+    K -->|cache hit| C[(Per-run cache)]
+    L --> C
+    C -->|"last update ≤ since"| E[empty, query skipped]
+    C -->|"later, or unknown"| I["_fetch_incremental(query)"]
+```
+
+| Provider | Freshness key | Last-update source | Incremental fetch |
+|----------|---------------|--------------------|-------------------|
+| Eurostat | `(dataflow, version)` | `UPDATE_DATA` annotation of the dataflow artefact | last `n_observations` observations |
+| UN Comtrade | period, frequency, type, classification, reporters | `lastReleased` of the tariffline availability | full re-pull of the slice |
+
+A Eurostat dataflow queried by 17,752 queries therefore costs **one** request of
+a few kilobytes per run, instead of 17,752 requests.
+
+**Rules.**
+
+- The cache lives in the client instance, is never persisted, and is emptied at
+  the start of every `SDMXDownloader.run()`.
+- A last-update date strictly later than `since` always triggers the fetch; an
+  unknown date (failed lookup, or none published) refreshes as a precaution.
+- A failed lookup is remembered for `FRESHNESS_FAILURE_TTL` seconds (5 minutes by
+  default) before one new attempt: a provider down does not cost one doomed
+  lookup per query, and a short outage does not force refreshing the whole run.
+  Comtrade remembers the failure for the whole run (daily quota).
+- **Update published during the run.** A query skipped on a cached answer has
+  its registry date set to the instant that answer was requested, not to the
+  start of the query: an update published in between is detected at the next
+  run.
+- The orchestrator calls the client from a single thread; a client must not be
+  shared across threads.
+
+**Observability.** Each `QueryReport.freshness` counts the lookups sent
+(`n_checks`), the answers served by the cache (`n_cache_hits`) and the
+unresolved lookups (`n_unresolved`); `DownloadReport.to_metrics()` sums them as
+`n_freshness_checks`, `n_freshness_cache_hits` and `n_freshness_unresolved`,
+next to `n_http_requests`.
+
 ## Time limit and graceful shutdown
 
 `max_runtime` (23 hours by default) stops the loop between two queries once the

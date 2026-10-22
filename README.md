@@ -238,6 +238,20 @@ or has failed.
 **Memory.** The DataFrames of a batch stay in memory until it is written: the
 footprint is bounded by `write_batch_rows` × the number of active *dataflows*.
 
+### Replay with no new data
+
+On a replay where nothing changed, each query only asks the provider whether its
+data was updated. That answer is cached per run (one call per Eurostat dataflow
+and version, one per Comtrade period), and Eurostat reads it from the dataflow
+artefact (a few kilobytes) rather than from the data constraint (about 1 MB for
+the Comext dataflow `DS-045409`, whose parsing alone took ~20 ms per query).
+Measured on 2,000 offline queries (registry sharded on 27 fragments, persisted
+every 500 queries), the orchestrator itself then costs ~0.7 ms per query.
+Whatever remains in a long replay is spent outside `statflows`:
+`DownloadReport.callback_seconds` measures the time spent in the
+`on_query_complete` callback (e.g. one synchronous call to an experiment
+tracker per query).
+
 ### Sharded registry
 
 With `registry_shard_key`, the registry `registries/x_last_download.json`

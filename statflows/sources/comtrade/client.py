@@ -21,7 +21,7 @@ import json
 import logging
 import os
 import re
-from collections.abc import Iterable
+from collections.abc import Hashable, Iterable
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -32,7 +32,7 @@ import pandas as pd
 import requests
 
 # Modules du package
-from ...core.client import APIClient
+from ...core.client import APIClient, FreshnessCheckMixin
 from ...core.rate_limiter import CompositeRateLimiter, RateLimiter, build_rate_limiter
 from ...core.structures import DataflowStructure, DataflowStructureRegistry
 from . import parsing
@@ -94,7 +94,7 @@ class ComtradeAPIError(RuntimeError):
 
 
 # Classe de récupération des données de commerce international du UN Comtrade
-class ComtradeClient(APIClient):
+class ComtradeClient(FreshnessCheckMixin, APIClient):
     """High-level client for UN Comtrade international-trade data.
 
     Fetches, subdivides (to respect the per-call record limit) and aggregates
@@ -134,6 +134,10 @@ class ComtradeClient(APIClient):
     # Nom du fichier de configuration (parité avec PROVIDER_CONFIG_NAME des clients SDMX)
     PROVIDER_CONFIG_NAME = "comtrade"
 
+    # Échec de résolution de disponibilité mémorisé pour tout le run : le quota
+    # journalier (500 appels) ne supporte pas de nouvelles tentatives répétées
+    FRESHNESS_FAILURE_TTL = None
+
     # URL de base par défaut de l'API UN Comtrade
     DEFAULT_BASE_URL = "https://comtradeapi.un.org"
 
@@ -155,7 +159,8 @@ class ComtradeClient(APIClient):
         max_retries: int = 3,
         backoff_factor: float = 0.5,
     ) -> None:
-        # Initialisation de la couche HTTP partagée (session, retry, close)
+        # Initialisation de la couche HTTP partagée (session, retry, close) et du
+        # cache de fraîcheur (dates de publication par signature de disponibilité)
         super().__init__(
             base_url=base_url,
             timeout=timeout,
@@ -193,11 +198,6 @@ class ComtradeClient(APIClient):
         # Compteur d'appels API (à des fins de logging uniquement ; le quota est
         # garanti par le rate limiter)
         self.api_calls = 0
-
-        # Cache des dates de dernière publication par signature de disponibilité
-        # (pour fetch_updates) : évite un appel de disponibilité par lot de produits
-        # d'une même période
-        self._availability_cache: dict[tuple, datetime | None] = {}
 
         # Cache des métadonnées de référence par catégorie (None : registre des
         # catégories) : la construction des requêtes et la publication des
@@ -1113,25 +1113,22 @@ class ComtradeClient(APIClient):
             self.api_calls += 1
         return pd.json_normalize(payload["data"])
 
-    # Méthode de résolution de la date de dernière publication d'une période
-    def _period_last_released(self, query: "ComtradeQueryRequest") -> datetime | None:
-        """Return the most recent ``lastReleased`` date for a query's period.
+    # Implémentation du point d'extension : clé de fraîcheur
+    def _freshness_key(self, query: "ComtradeQueryRequest") -> tuple:
+        """Return the availability signature of a query.
 
-        Wraps :meth:`get_tariffline_data_availability` and memoises the result per
-        availability signature (period, frequency, type, classification,
-        reporters). As the signature is independent of the product batch, the
+        Period, frequency, type, classification and reporters: everything the
+        availability call depends on, and nothing of the product batch, so the
         many (period, product-batch) queries sharing a period trigger a single
         availability call.
 
         Args:
-            query: Comtrade query request whose period is inspected.
+            query: Comtrade query request.
 
         Returns:
-            The most recent publication instant across the queried reporters,
-            or ``None`` when the availability could not be resolved.
+            Availability signature (also the key of :attr:`_availability_cache`).
         """
-        # Signature de disponibilité (indépendante du lot de produits)
-        cache_key = (
+        return (
             str(query.periods),
             query.frequency,
             query.type_code,
@@ -1141,105 +1138,120 @@ class ComtradeClient(APIClient):
             else ",".join(map(str, cast(Iterable[Any], query.reporters))),
         )
 
-        # Court-circuit sur le cache
-        if cache_key in self._availability_cache:
-            return self._availability_cache[cache_key]
+    # Implémentation du point d'extension : date de dernière publication
+    def _fetch_last_update(self, query: "ComtradeQueryRequest") -> datetime | None:
+        """Return the most recent ``lastReleased`` date for a query's period.
 
-        try:
-            # Disponibilité tariffline (tous les reporters de la requête) pour la période
-            availability = self.get_tariffline_data_availability(
-                reporters=query.reporters,
-                periods=query.periods,
-                frequency=query.frequency,
-                type_code=query.type_code,
-                classification=query.classification,
-            )
-            # Dates de publication par reporter
-            released = parsing.parse_availability_last_released(availability)
-            dates = [value for value in released.values() if value is not None]
-            # Date de publication la plus récente sur l'ensemble des reporters,
-            # tronquée à la microseconde : un datetime ne porte pas les
-            # nanosecondes des dates Comtrade à 7 décimales (sans troncature,
-            # to_pydatetime émet un UserWarning)
-            last_released = (
-                pd.to_datetime(max(dates), utc=True).floor("us").to_pydatetime()
-                if dates
-                else None
-            )
-        except Exception as e:
-            # Échec non bloquant : la période sera rafraîchie par précaution
-            logger.warning("Could not fetch availability for %s: %s", query.periods, e)
-            last_released = None
+        Args:
+            query: Comtrade query request whose period is inspected.
 
-        # Mise en cache et renvoi
-        self._availability_cache[cache_key] = last_released
-        return last_released
+        Returns:
+            The most recent publication instant across the queried reporters,
+            truncated to the microsecond, or ``None`` when no reporter has a
+            release date.
 
-    # Méthode de récupération incrémentale d'une requête
-    def fetch_updates(
-        self,
-        query: "ComtradeQueryRequest",
-        since: datetime | None,
-        n_observations: int = 10,
-    ) -> pd.DataFrame:
-        """Fetch the data for a query, incrementally when possible.
+        Raises:
+            ComtradeAPIError: If the availability call fails.
+        """
+        # Disponibilité tariffline (tous les reporters de la requête) pour la période
+        availability = self.get_tariffline_data_availability(
+            reporters=query.reporters,
+            periods=query.periods,
+            frequency=query.frequency,
+            type_code=query.type_code,
+            classification=query.classification,
+        )
+        # Dates de publication par reporter
+        released = parsing.parse_availability_last_released(availability)
+        dates = [value for value in released.values() if value is not None]
+        # Date de publication la plus récente sur l'ensemble des reporters,
+        # tronquée à la microseconde : un datetime ne porte pas les
+        # nanosecondes des dates Comtrade à 7 décimales (sans troncature,
+        # to_pydatetime émet un UserWarning)
+        return (
+            pd.to_datetime(max(dates), utc=True).floor("us").to_pydatetime()
+            if dates
+            else None
+        )
 
-        Provider seam consumed by the download orchestrator
-        (:class:`~statflows.core.download.SDMXDownloader`). It
-        encodes Comtrade's incremental strategy:
+    # Cache de disponibilité : nom historique du cache de fraîcheur
+    @property
+    def _availability_cache(self) -> dict[Hashable, datetime | None]:
+        """Release dates cached per availability signature (same dict object)."""
+        return self._freshness_cache
 
-        - First download (``since`` is ``None``) → retrieve the full slice.
-        - Subsequent download (``since`` set) → compare the period's
-          ``lastReleased`` date with ``since`` and re-download only when the
-          period has been republished since; otherwise return an empty
-          DataFrame.
+    # Méthode de résolution de la date de dernière publication d'une période
+    def _period_last_released(self, query: "ComtradeQueryRequest") -> datetime | None:
+        """Return the most recent ``lastReleased`` date for a query's period.
+
+        Historical entry point of the release-date lookup, now backed by the
+        per-run cache of :class:`FreshnessCheckMixin`: one availability call per
+        signature (see :meth:`_freshness_key`), a failure being non-fatal and
+        remembered for the run.
+
+        Args:
+            query: Comtrade query request whose period is inspected.
+
+        Returns:
+            The most recent publication instant across the queried reporters,
+            or ``None`` when the availability could not be resolved.
+        """
+        return super()._query_last_update(query)
+
+    # Résolution mise en cache routée par le point d'entrée historique
+    def _query_last_update(self, query: "ComtradeQueryRequest") -> datetime | None:
+        """Resolve the release date through :meth:`_period_last_released`.
 
         Args:
             query: Comtrade query request.
-            since: Instant of the previous successful download for this query,
-                or ``None`` if it was never downloaded.
-            n_observations: Ignored for Comtrade (a republished period is
-                re-pulled in full); kept for interface conformity with the
-                SDMX clients.
 
         Returns:
-            DataFrame with the retrieved data, empty when nothing was published
-            since ``since``.
+            Same as :meth:`_period_last_released`.
         """
-        # Premier téléchargement : récupération complète
-        if since is None:
-            return self.execute_query(query)
+        # Passage par le nom historique : un remplacement de
+        # _period_last_released reste pris en compte par fetch_updates
+        return self._period_last_released(query)
 
-        # Téléchargements suivants : saut si la période n'a pas été republiée
-        last_released = self._period_last_released(query)
-        if last_released is not None and since >= last_released:
-            # Construction des périodes de la requête
-            periods = None
-            if query.periods is not None:
-                periods = query.periods
-            elif ((query.period_start is not None) & (query.period_end is not None)) | (
-                query.period_start is not None
-            ):
-                period_list = self._build_periods_from_boundaries(
-                    period_start=query.period_start,
-                    frequency=query.frequency,
-                    period_end=query.period_end,
-                )
-                periods = f"{period_list[0]}-{period_list[-1]}"
+    # Implémentation du point d'extension : journalisation d'une période sautée
+    def _log_no_update(
+        self,
+        query: "ComtradeQueryRequest",
+        since: datetime,
+        last_update: datetime,
+    ) -> None:
+        """Log that a period was not republished since the last download.
 
-            # Logging
-            logger.info(
-                "%s / %s / %s / %s : no republication since %s",
-                query.dataflow,
-                periods,
-                query.reporters,
-                query.products,
-                since.isoformat(),
+        A republished period is re-pulled in full (``n_observations`` is
+        ignored for Comtrade); an unchanged one is skipped and logged here.
+
+        Args:
+            query: Skipped Comtrade query.
+            since: Previous download instant of the query.
+            last_update: Most recent release date of the period.
+        """
+        # Construction des périodes de la requête
+        periods = None
+        if query.periods is not None:
+            periods = query.periods
+        elif ((query.period_start is not None) & (query.period_end is not None)) | (
+            query.period_start is not None
+        ):
+            period_list = self._build_periods_from_boundaries(
+                period_start=query.period_start,
+                frequency=query.frequency,
+                period_end=query.period_end,
             )
-            return pd.DataFrame()
+            periods = f"{period_list[0]}-{period_list[-1]}"
 
-        # Récupération complète de la tranche (période, lot de produits)
-        return self.execute_query(query)
+        # Logging
+        logger.info(
+            "%s / %s / %s / %s : no republication since %s",
+            query.dataflow,
+            periods,
+            query.reporters,
+            query.products,
+            since.isoformat(),
+        )
 
     # Méthode d'exécution d'un objet requête
     def execute_query(self, query: "ComtradeQueryRequest") -> pd.DataFrame:

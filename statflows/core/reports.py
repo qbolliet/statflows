@@ -207,6 +207,46 @@ class RateLimitStats:
     remaining_requests: int = 0
 
 
+# Compteurs de la vérification de fraîcheur
+@dataclass
+class FreshnessStats:
+    """Counters of the "has the data changed since?" check of a client.
+
+    Accumulated by :class:`~statflows.core.client.FreshnessCheckMixin` and
+    read by the download orchestrator next to the HTTP counters, so that the
+    number of provider calls saved by the per-run cache shows up in the reports.
+
+    Attributes:
+        n_checks: Last-update lookups actually sent to the provider (cache
+            misses, retries of an expired failure included).
+        n_cache_hits: Lookups answered from the per-run cache.
+        n_unresolved: Lookups that failed or returned no date; the data is then
+            refreshed as a precaution.
+
+    Examples:
+        >>> stats = FreshnessStats(n_checks=1, n_cache_hits=999)
+        >>> stats.snapshot() == stats, stats.snapshot() is stats
+        (True, False)
+    """
+
+    n_checks: int = 0
+    n_cache_hits: int = 0
+    n_unresolved: int = 0
+
+    # Copie figée des compteurs
+    def snapshot(self) -> FreshnessStats:
+        """Return an independent copy of the current counters.
+
+        Returns:
+            A detached :class:`FreshnessStats`, safe to store in a report.
+        """
+        return FreshnessStats(
+            n_checks=self.n_checks,
+            n_cache_hits=self.n_cache_hits,
+            n_unresolved=self.n_unresolved,
+        )
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Rapport d'une récupération (niveau client)
 # ──────────────────────────────────────────────────────────────────────
@@ -282,6 +322,8 @@ class QueryReport:
         fetch: Diagnostics of the retrieval itself.
         http: HTTP counters accumulated while processing the query.
         rate_limit: Rate-limiter counters accumulated while processing it.
+        freshness: Last-update check counters accumulated while processing it
+            (provider lookups vs. answers served by the per-run cache).
     """
 
     identity_key: str = ""
@@ -299,6 +341,7 @@ class QueryReport:
     fetch: FetchReport = field(default_factory=FetchReport)
     http: HttpStats = field(default_factory=HttpStats)
     rate_limit: RateLimitStats = field(default_factory=RateLimitStats)
+    freshness: FreshnessStats = field(default_factory=FreshnessStats)
 
     # Mise en forme des métriques d'une requête
     def to_metrics(self, prefix: str = "query") -> dict[str, float]:
@@ -350,6 +393,10 @@ class DownloadReport:
         n_modified: Number of queries whose write actually inserted or
             updated rows — ``0`` means downstream steps have nothing to
             recompute.
+        callback_seconds: Cumulated wall-clock time spent in the caller's
+            ``on_query_complete`` callback (e.g. streaming metrics to an
+            experiment tracker) — time the run spends outside the provider and
+            outside DuckLake.
         queries: Per-query diagnostics, in completion order (a buffered query
             completes when its write batch is committed or fails).
     """
@@ -371,6 +418,8 @@ class DownloadReport:
     rows_pending_at_stop: int = 0
     # Requêtes dont les données ont réellement changé (conditionnement de l'aval)
     n_modified: int = 0
+    # Temps passé dans le rappel de l'appelant (suivi d'expérience)
+    callback_seconds: float = 0.0
     # Détail par requête (principe « les diagnostics sont des données »)
     queries: list[QueryReport] = field(default_factory=list)
 
@@ -382,12 +431,16 @@ class DownloadReport:
             Mapping of aggregate names to values: sub-requests issued and
             failed, no-record answers, rows fetched before and after
             post-filtering, duplicates, HTTP requests, failures, seconds and
-            bytes, and rate-limit waits.
+            bytes, rate-limit waits, and last-update checks (provider lookups,
+            cache hits, unresolved lookups).
 
         Examples:
             >>> report = DownloadReport(queries=[QueryReport(rows_written=5)])
             >>> report.aggregates()["n_requests"]
             0.0
+            >>> hit = QueryReport(freshness=FreshnessStats(n_cache_hits=1))
+            >>> DownloadReport(queries=[hit, hit]).aggregates()["n_freshness_cache_hits"]
+            2.0
         """
         # Champs sommés, exprimés comme des chemins dans le rapport par requête
         paths = {
@@ -404,6 +457,9 @@ class DownloadReport:
             "http_bytes": ("http", "total_bytes"),
             "rate_limit_wait_seconds": ("rate_limit", "total_wait_seconds"),
             "n_rate_limit_acquisitions": ("rate_limit", "n_acquisitions"),
+            "n_freshness_checks": ("freshness", "n_checks"),
+            "n_freshness_cache_hits": ("freshness", "n_cache_hits"),
+            "n_freshness_unresolved": ("freshness", "n_unresolved"),
         }
         # Somme sur l'ensemble des requêtes traitées
         return {

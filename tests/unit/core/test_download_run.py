@@ -1113,3 +1113,125 @@ def test_namibia_never_reaches_the_write_with_a_null_key(
     # Aucune clé nulle n'atteint l'écriture, la Namibie est bien présente
     assert not data[call["primary_keys"]].isna().any().any()
     assert sorted(data["partner"]) == ["NA", "NL", "NO"]
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Vérification de fraîcheur : un appel par dataflow et par run
+# ──────────────────────────────────────────────────────────────────────
+
+# Artefact dataflow Comext : données mises à jour avant le dernier téléchargement
+_COMEXT_DATAFLOW_XML = (
+    '<mes:Structure xmlns:mes="http://www.sdmx.org/resources/sdmxml/schemas/v3_0/message"'
+    ' xmlns:com="http://www.sdmx.org/resources/sdmxml/schemas/v3_0/common">'
+    "<com:Annotation><com:AnnotationType>UPDATE_DATA</com:AnnotationType>"
+    "<com:AnnotationTitle>2025-12-01T11:00:00+0100</com:AnnotationTitle>"
+    "</com:Annotation></mes:Structure>"
+)
+
+
+class _TickingClock:
+    """Shared UTC clock advancing one second on every reading."""
+
+    def __init__(self) -> None:
+        self.readings: list[datetime] = []
+
+    def __call__(self) -> datetime:
+        self.readings.append(T0 + timedelta(seconds=len(self.readings)))
+        return self.readings[-1]
+
+
+def _comext_client(monkeypatch: pytest.MonkeyPatch) -> EurostatClient:
+    """Eurostat client whose Comext session answers every call with the artefact.
+
+    The real ``APIClient`` is kept, so the HTTP counters read by the
+    orchestrator are the genuine ones.
+    """
+    client = EurostatClient(auto_load_rate_limit=False)
+    comext = client._get_comext_client()
+    response = SimpleNamespace(
+        status_code=200,
+        content=_COMEXT_DATAFLOW_XML.encode(),
+        text=_COMEXT_DATAFLOW_XML,
+        raise_for_status=lambda: None,
+    )
+    monkeypatch.setattr(comext.session, "get", MagicMock(return_value=response))
+    return client
+
+
+def test_n_eurostat_queries_cost_one_last_update_call_per_run(
+    tmp_path: Path, conn, writes, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import statflows.core.client as client_module
+
+    clock = _TickingClock()
+    monkeypatch.setattr(download_module, "_now", clock)
+    monkeypatch.setattr(client_module, "_utc_now", clock)
+    client = _comext_client(monkeypatch)
+    queries = [
+        EurostatQueryRequestV30("DS-045409", dimensions={"product": f"{p:02d}"})
+        for p in range(50)
+    ]
+    # Toutes les requêtes déjà téléchargées après la dernière mise à jour
+    _seed_registry(
+        tmp_path, {q.identity_key(): "2025-12-15T00:00:00+00:00" for q in queries}
+    )
+    downloader = _downloader(tmp_path, client)
+
+    report = downloader.run(queries)
+
+    aggregates = report.aggregates()
+    assert report.empty == 50 and writes.calls == []
+    assert aggregates["n_http_requests"] == 1.0
+    assert aggregates["n_freshness_checks"] == 1.0
+    assert aggregates["n_freshness_cache_hits"] == 49.0
+    assert aggregates["n_freshness_unresolved"] == 0.0
+    assert [q.freshness.n_checks for q in report.queries] == [1] + [0] * 49
+    assert report.to_metrics()["download.n_freshness_cache_hits"] == 49.0
+
+    # Requêtes sautées sur la réponse en cache : date enregistrée ramenée à
+    # l'instant de la vérification, antérieur à leur propre début
+    checked_at = client._freshness_checked_at[("DS-045409", "+")]
+    registry = _read_registry(tmp_path)
+    recorded = [
+        datetime.fromisoformat(registry[q.identity_key()]["last_download"])
+        for q in queries
+    ]
+    assert recorded[0] <= checked_at
+    assert recorded[1:] == [checked_at] * 49
+
+    # Nouveau run sur le même client : le cache est vidé, une seule vérification
+    second = _downloader(tmp_path, client).run(queries)
+    assert second.aggregates()["n_freshness_checks"] == 1.0
+    assert second.aggregates()["n_http_requests"] == 1.0
+
+
+def test_horizon_is_ignored_when_later_than_the_query_start(
+    tmp_path: Path, conn, writes, clock
+) -> None:
+    # Client sans vérification préalable exposant un horizon postérieur
+    client = FakeClient(clock, data_every=2)
+    client.last_fetch_as_of_ = T0 + timedelta(days=1)  # type: ignore[attr-defined]
+    queries = make_queries(1)
+
+    _downloader(tmp_path, client).run(queries)
+
+    entry = _read_registry(tmp_path)[queries[0].identity_key()]
+    assert entry["last_download"] == _at(0)
+
+
+def test_callback_time_is_accumulated_in_the_report(
+    tmp_path: Path, conn, writes, clock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    downloader = _downloader(
+        tmp_path, FakeClient(clock), on_query_complete=lambda report: None
+    )
+    # Horloge monotone simulée : deux rappels de 2,5 s puis 1 s
+    readings = iter([0.0, 2.5, 10.0, 11.0])
+    monkeypatch.setattr(download_module.time, "monotonic", lambda: next(readings))
+
+    report = DownloadReport()
+    downloader._publish(report, download_module.QueryReport())
+    downloader._publish(report, download_module.QueryReport())
+
+    assert report.callback_seconds == pytest.approx(3.5)
+    assert len(report.queries) == 2

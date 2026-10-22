@@ -9,13 +9,19 @@ SDMX 2.1 API versions are supported.
 import json
 import logging
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
 # Utilitaires internes au package pour la requête de données au format SDMX
-from ...core.client import AbstractSDMXClient, APIClient
+# Normalisation UTC réexportée ici (point d'import historique)
+from ...core.client import (  # noqa: F401
+    AbstractSDMXClient,
+    APIClient,
+    FreshnessCheckMixin,
+    _to_utc,
+)
 from ...core.rate_limiter import RateLimiter
 from ...core.sdmx import (
     DuplicateHandling,
@@ -46,28 +52,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# Fonction auxiliaire de normalisation d'un datetime en UTC
-def _to_utc(value: datetime) -> datetime:
-    """Return a UTC-aware copy of a datetime (naive values assumed UTC).
-
-    Ensures the last-update / last-download comparison in
-    :meth:`EurostatClient.fetch_updates` never raises on mixed
-    aware/naive datetimes.
-
-    Args:
-        value: Datetime to normalise.
-
-    Returns:
-        UTC-aware ``datetime``.
-    """
-    # Datetime naïf → interprété comme UTC ; sinon conversion vers UTC
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
-
-
 # Initialisation du client haut niveau pour l'API SDMX Eurostat
-class EurostatClient(AbstractSDMXClient):
+class EurostatClient(FreshnessCheckMixin, AbstractSDMXClient):
     """High-level client for the Eurostat SDMX API.
 
     Supports SDMX 3.0 (default) and SDMX 2.1 API versions. The API version
@@ -651,10 +637,7 @@ class EurostatClient(AbstractSDMXClient):
         """
         # Remapping des wildcards "data" vers "+" (dernière version) pour la structure :
         # l'API Eurostat renvoie HTTP 500 pour "*" et "~" sur l'endpoint /structure/datastructure
-        _UNSUPPORTED_STRUCTURE_VERSIONS = {"*", "~"}
-        structure_version = (
-            "+" if version in _UNSUPPORTED_STRUCTURE_VERSIONS else version
-        )
+        structure_version = self._structure_version(version)
 
         # Requête du XML brut via get_structure (endpoint datastructure, avec descendants)
         xml_text = self.get_structure(
@@ -736,6 +719,30 @@ class EurostatClient(AbstractSDMXClient):
     # Seam de téléchargement incrémental (orchestrateur core.download)
     # ──────────────────────────────────────────────────────────────────
 
+    # Méthode statique de remapping de version pour l'endpoint /structure
+    @staticmethod
+    def _structure_version(version: str) -> str:
+        """Map a data version to a version accepted by the structure endpoint.
+
+        The data wildcards ``"*"`` and ``"~"`` cause HTTP 500 errors on
+        Eurostat's structure endpoints and are remapped to ``"+"`` (latest).
+
+        Args:
+            version: Dataflow version as used by the data endpoint.
+
+        Returns:
+            Version token for the structure endpoint.
+
+        Examples:
+            >>> EurostatClient._structure_version("*")
+            '+'
+            >>> EurostatClient._structure_version("1.0")
+            '1.0'
+        """
+        # Remapping des wildcards "data" vers "+" : l'endpoint /structure rejette
+        # "*" et "~" (cf. get_dataflow_structure)
+        return "+" if version in {"*", "~"} else version
+
     # Méthode de récupération de la date de dernière mise à jour des données
     def get_data_last_update(
         self,
@@ -745,13 +752,20 @@ class EurostatClient(AbstractSDMXClient):
         """Return when a dataflow's data was last updated.
 
         Eurostat has no per-observation ``updated_after`` filter, so the last
-        data-update instant is read from the dataflow's *data constraint*
-        structure (see :func:`parsing.parse_dataconstraint_last_update`). The
-        download orchestrator compares it with the previous download date to
-        decide whether to re-pull the most recent observations.
+        data-update instant is read from the ``UPDATE_DATA`` annotation of the
+        *dataflow* structure artefact (a few kilobytes, see
+        :func:`parsing.parse_dataconstraint_last_update`). The data constraint
+        is not used: it carries no update annotation, so only its ``Prepared``
+        header could be read — the response time on the main endpoint (every
+        query looks updated) and a stale cached time on the Comext endpoint
+        (updates are missed).
+
+        This method always asks the provider; :meth:`fetch_updates` goes
+        through the per-run cache of :class:`FreshnessCheckMixin` instead.
 
         Args:
-            dataflow: Dataflow identifier (e.g. ``"STS_INPR_M"``).
+            dataflow: Dataflow identifier (e.g. ``"STS_INPR_M"``); Comext
+                dataflows (``DS-*``) are routed to the Comext endpoint.
             version: Dataflow version. The data wildcards ``"*"`` and ``"~"``
                 are remapped to ``"+"`` (structure endpoint requirement).
 
@@ -759,18 +773,13 @@ class EurostatClient(AbstractSDMXClient):
             UTC-aware ``datetime`` of the last data update, or ``None`` when it
             cannot be determined (the caller then refreshes conservatively).
         """
-        # Remapping des wildcards "data" vers "+" : l'endpoint /structure rejette
-        # "*" et "~" (cf. get_dataflow_structure)
-        _UNSUPPORTED = {"*", "~"}
-        structure_version = "+" if version in _UNSUPPORTED else version
-
         try:
-            # Requête de la contrainte de données (dataconstraint) en XML brut
+            # Requête de l'artefact dataflow (annotations de mise à jour) en XML brut
             xml_text = self.get_structure(
-                resource_type=StructureResourceType.DATACONSTRAINT,
+                resource_type=StructureResourceType.DATAFLOW,
                 resource_id=dataflow,
                 agency=AGENCY_ID,
-                version=structure_version,
+                version=self._structure_version(version),
                 references="none",
                 compress="false",
             )
@@ -781,58 +790,52 @@ class EurostatClient(AbstractSDMXClient):
             logger.warning(f"Could not fetch data last-update for {dataflow}: {e}")
             return None
 
-    # Implémentation de la récupération incrémentale via dataconstraint
-    def fetch_updates(
-        self,
-        query: "EurostatQueryRequest",
-        since: datetime | None,
-        n_observations: int = 10,
+    # Implémentation du point d'extension : clé de fraîcheur
+    def _freshness_key(self, query: "EurostatQueryRequest") -> tuple[str, str]:
+        """Identify the last-update question of a query: dataflow and version.
+
+        Every query of a dataflow (whatever its dimension filters) shares the
+        same update date, so ``N`` queries of a dataflow cost one lookup per
+        run.
+
+        Args:
+            query: Eurostat query request.
+
+        Returns:
+            ``(dataflow, structure version)``.
+        """
+        return (query.dataflow, self._structure_version(query.version))
+
+    # Implémentation du point d'extension : date de dernière mise à jour
+    def _fetch_last_update(self, query: "EurostatQueryRequest") -> datetime | None:
+        """Read the last data-update instant of the query's dataflow.
+
+        Args:
+            query: Eurostat query request.
+
+        Returns:
+            Last data-update instant, or ``None`` when unknown.
+        """
+        # Délégation à la méthode publique (non mise en cache)
+        return self.get_data_last_update(query.dataflow, query.version)
+
+    # Implémentation du point d'extension : récupération incrémentale
+    def _fetch_incremental(
+        self, query: "EurostatQueryRequest", n_observations: int
     ) -> pd.DataFrame:
-        """Fetch Eurostat data for a query, incrementally when possible.
+        """Pull the last ``n_observations`` observations of an updated query.
 
-        Eurostat offers no ``updated_after`` filter, so incremental download
-        proceeds in two steps:
-
-        1. Read the dataflow's last data-update instant from its data
-           constraint (:meth:`get_data_last_update`).
-        2. If the data changed after ``since``, pull the last
-           ``n_observations`` observations (``last_n_observations``) — several,
-           not just the latest, to avoid leaving gaps when multiple periods
-           were revised. Otherwise return an empty DataFrame.
-
-        A first download (``since`` is ``None``) retrieves the full series.
-        When the last-update instant cannot be determined the method refreshes
-        conservatively (pulls the last ``n_observations``).
+        Several observations, not just the latest, are pulled to avoid leaving
+        gaps when multiple periods were revised.
 
         Args:
             query: Eurostat query request (``EurostatQueryRequestV30`` or
                 ``EurostatQueryRequestV21``).
-            since: Instant of the previous successful download, or ``None``
-                for a first (full) download.
-            n_observations: Number of most-recent observations to retrieve in
-                incremental mode.
+            n_observations: Number of most-recent observations to retrieve.
 
         Returns:
-            DataFrame with the retrieved data; empty when nothing was
-            published since ``since``.
+            DataFrame with the retrieved data.
         """
-        # Premier téléchargement : récupération complète de la série
-        if since is None:
-            return self.execute_query(query)
-
-        # Date de dernière mise à jour des données du dataflow
-        last_update = self.get_data_last_update(query.dataflow, query.version)
-
-        # Aucune nouvelle publication depuis le dernier téléchargement → vide.
-        # Comparaison robuste : normalisation des deux instants en UTC.
-        if last_update is not None and _to_utc(last_update) <= _to_utc(since):
-            # Logging
-            logger.info(
-                f"{query.dataflow}: no update since {since} "
-                f"(last update {last_update}); skipping data fetch"
-            )
-            return pd.DataFrame()
-
         # Récupération des n dernières observations (plusieurs pour éviter les trous)
         incremental_query = replace(query, last_n_observations=n_observations)
         return self.execute_query(incremental_query)

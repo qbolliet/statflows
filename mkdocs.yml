@@ -101,6 +101,7 @@ nav:
   - core:
     - APIClient: api/core/APIClient.md
     - AbstractSDMXClient: api/core/AbstractSDMXClient.md
+    - FreshnessCheckMixin: api/core/FreshnessCheckMixin.md
     - download_updates: api/core/download_updates.md
     - SDMXDownloader: api/core/SDMXDownloader.md
     - ClientFactory: api/core/ClientFactory.md
@@ -119,6 +120,7 @@ nav:
     - FetchReport: api/core/FetchReport.md
     - HttpStats: api/core/HttpStats.md
     - RateLimitStats: api/core/RateLimitStats.md
+    - FreshnessStats: api/core/FreshnessStats.md
     - SDMXVersion: api/core/SDMXVersion.md
     - DimensionAtObservation: api/core/DimensionAtObservation.md
     - StructureResourceType: api/core/StructureResourceType.md

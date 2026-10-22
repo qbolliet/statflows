@@ -402,11 +402,14 @@ def test_list_all_dataflows_uses_the_bulk_endpoint_per_version(client) -> None:
 LAST_UPDATE = datetime(2026, 3, 1, tzinfo=UTC)
 
 
-def test_data_last_update_reads_the_dataconstraint(client) -> None:
+# Lecture de l'artefact dataflow et non plus de la contrainte de données : la
+# contrainte Eurostat ne porte aucune annotation de mise à jour, seul son en-tête
+# Prepared y était lu (instant de la réponse, ou réponse en cache pour Comext)
+def test_data_last_update_reads_the_dataflow_artefact(client) -> None:
     client.api_client.get.return_value = _response(CONSTRAINT_XML)
     assert client.get_data_last_update("nama") == LAST_UPDATE
     assert client.api_client.get.call_args.args[0] == (
-        "/sdmx/3.0/structure/dataconstraint/ESTAT/nama/+"
+        "/sdmx/3.0/structure/dataflow/ESTAT/nama/+"
     )
 
 
@@ -444,3 +447,137 @@ def test_fetch_updates_pulls_the_last_n_observations(structured, last_update) ->
     assert (
         structured.api_client.get.call_args.kwargs["params"]["lastNObservations"] == "3"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Cache de fraîcheur par run
+# ──────────────────────────────────────────────────────────────────────
+
+DATAFLOW_XML = f"""<mes:Structure {NS3}><com:Annotation>
+  <com:AnnotationType>UPDATE_STRUCTURE</com:AnnotationType>
+  <com:AnnotationTitle>2026-01-01T00:00:00Z</com:AnnotationTitle>
+</com:Annotation><com:Annotation>
+  <com:AnnotationType>UPDATE_DATA</com:AnnotationType>
+  <com:AnnotationTitle>2026-03-01T11:00:00+0200</com:AnnotationTitle>
+</com:Annotation></mes:Structure>"""
+
+
+def _route(http_client: mock.Mock) -> mock.Mock:
+    """Answer structure calls with the dataflow artefact and data calls with CSV."""
+
+    def get(endpoint, **kwargs):
+        return _response(DATAFLOW_XML if "/structure/" in endpoint else CSV)
+
+    http_client.get.side_effect = get
+    return http_client
+
+
+def _structure_calls(http_client: mock.Mock) -> list[str]:
+    return [
+        c.args[0] for c in http_client.get.call_args_list if "/structure/" in c.args[0]
+    ]
+
+
+def test_n_queries_of_one_dataflow_cost_one_last_update_call(structured) -> None:
+    _route(structured.api_client)
+    queries = [
+        EurostatQueryRequestV30(
+            "nama", dimensions={"geo": f"G{i}"}, on_duplicate="ignore"
+        )
+        for i in range(1000)
+    ]
+    since = datetime(2026, 4, 1, tzinfo=UTC)
+
+    results = [structured.fetch_updates(query, since) for query in queries]
+
+    # Un seul appel à l'artefact dataflow, aucune requête de données
+    assert all(result.empty for result in results)
+    assert structured.api_client.get.call_count == 1
+    assert _structure_calls(structured.api_client) == [
+        "/sdmx/3.0/structure/dataflow/ESTAT/nama/+"
+    ]
+    assert structured.freshness_stats_.n_checks == 1
+    assert structured.freshness_stats_.n_cache_hits == 999
+
+
+def test_two_versions_or_two_dataflows_cost_two_calls(structured) -> None:
+    _route(structured.api_client)
+    since = datetime(2026, 4, 1, tzinfo=UTC)
+    for version in ("1.0", "2.0", "1.0"):
+        structured.fetch_updates(
+            EurostatQueryRequestV30("nama", version=version), since
+        )
+    assert len(_structure_calls(structured.api_client)) == 2
+
+    structured.api_client.reset_mock()
+    for dataflow in ("alpha", "beta", "alpha"):
+        structured.fetch_updates(EurostatQueryRequestV30(dataflow), since)
+    assert len(_structure_calls(structured.api_client)) == 2
+
+
+def test_data_wildcards_share_the_latest_version_key(structured) -> None:
+    _route(structured.api_client)
+    since = datetime(2026, 4, 1, tzinfo=UTC)
+    for version in ("*", "~", "+"):
+        structured.fetch_updates(
+            EurostatQueryRequestV30("nama", version=version), since
+        )
+    assert len(_structure_calls(structured.api_client)) == 1
+
+
+def test_updated_dataflow_pulls_every_query_after_one_check(structured) -> None:
+    _route(structured.api_client)
+    queries = [
+        EurostatQueryRequestV30("nama", dimensions={"geo": g}, on_duplicate="ignore")
+        for g in ("FR", "DE", "IT")
+    ]
+    since = datetime(2026, 2, 1, tzinfo=UTC)
+
+    results = [
+        structured.fetch_updates(query, since, n_observations=4) for query in queries
+    ]
+
+    assert [len(result) for result in results] == [2, 2, 2]
+    data_calls = [
+        c for c in structured.api_client.get.call_args_list if "/data/" in c.args[0]
+    ]
+    assert len(data_calls) == 3
+    assert {c.kwargs["params"]["lastNObservations"] for c in data_calls} == {"4"}
+    assert len(_structure_calls(structured.api_client)) == 1
+
+
+def test_comext_last_update_is_read_from_the_comext_endpoint(client) -> None:
+    client._comext_client = _route(mock.Mock())
+    since = datetime(2026, 4, 1, tzinfo=UTC)
+
+    for _ in range(3):
+        assert client.fetch_updates(EurostatQueryRequestV30("DS-045409"), since).empty
+
+    assert _structure_calls(client._comext_client) == [
+        "/sdmx/3.0/structure/dataflow/ESTAT/DS-045409/+"
+    ]
+    client.api_client.get.assert_not_called()
+
+
+def test_unresolved_last_update_refreshes_and_is_retried_after_the_ttl(
+    structured, monkeypatch
+) -> None:
+    import statflows.core.client as client_module
+
+    clock = iter([0.0, 10.0, 400.0, 400.0])
+    monkeypatch.setattr(client_module, "_monotonic", lambda: next(clock))
+    structured.api_client.get.side_effect = RuntimeError("down")
+    query = EurostatQueryRequestV30("nama", on_duplicate="ignore")
+    since = datetime(2026, 4, 1, tzinfo=UTC)
+
+    # Échec : rafraîchissement par précaution (données demandées), échec mémorisé
+    for _ in range(2):
+        with pytest.raises(ValueError):
+            structured.fetch_updates(query, since)
+    assert structured.freshness_stats_.n_checks == 1
+    assert structured.freshness_stats_.n_unresolved == 1
+
+    # Durée de mémorisation écoulée : nouvelle vérification, réussie cette fois
+    _route(structured.api_client)
+    assert structured.fetch_updates(query, since).empty
+    assert structured.freshness_stats_.n_checks == 2

@@ -14,6 +14,7 @@ import pytest
 from statflows.core.reports import (
     DownloadReport,
     FetchReport,
+    FreshnessStats,
     HttpStats,
     QueryReport,
     RateLimitStats,
@@ -156,3 +157,26 @@ def test_download_report_to_frame_has_one_row_per_query() -> None:
 
 def test_empty_download_report_to_frame_is_empty() -> None:
     assert DownloadReport().to_frame().empty
+
+
+def test_download_report_aggregates_the_freshness_counters() -> None:
+    report = DownloadReport(
+        queries=[
+            QueryReport(freshness=FreshnessStats(n_checks=1, n_unresolved=1)),
+            QueryReport(freshness=FreshnessStats(n_cache_hits=1)),
+            QueryReport(freshness=FreshnessStats(n_cache_hits=1)),
+        ],
+        callback_seconds=1.5,
+    )
+    metrics = report.to_metrics()
+    assert metrics["download.n_freshness_checks"] == 1.0
+    assert metrics["download.n_freshness_cache_hits"] == 2.0
+    assert metrics["download.n_freshness_unresolved"] == 1.0
+    assert metrics["download.callback_seconds"] == 1.5
+    frame = report.to_frame()
+    assert frame["freshness.n_cache_hits"].tolist() == [0, 1, 1]
+
+
+def test_query_report_metrics_carry_the_freshness_section() -> None:
+    metrics = QueryReport(freshness=FreshnessStats(n_cache_hits=1)).to_metrics()
+    assert metrics["query.freshness.n_cache_hits"] == 1.0

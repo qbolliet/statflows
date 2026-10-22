@@ -1,7 +1,10 @@
-"""Generic API client and abstract SDMX client base.
+"""Generic API client, shared last-update check and abstract SDMX client base.
 
 This module provides:
 - ``APIClient``: generic HTTP client with retry logic.
+- ``FreshnessCheckMixin``: template of the incremental ``fetch_updates`` for
+  providers that must ask "has the data changed since?" before fetching,
+  with a per-run cache of the provider's answer.
 - ``AbstractSDMXClient``: abstract base class mutualising logic shared by all
   SDMX provider clients (structure registry, duplicate checking, split-request
   execution, CSV parsing, context manager, etc.).
@@ -15,7 +18,8 @@ import operator
 import time
 import warnings
 from abc import ABC, abstractmethod
-from datetime import datetime
+from collections.abc import Hashable
+from datetime import UTC, datetime
 from functools import reduce
 from pathlib import Path
 
@@ -33,7 +37,7 @@ from .rate_limiter import CompositeRateLimiter, RateLimiter, build_rate_limiter
 
 # Import runtime du rate limiter (rate_limiter.py n'a pas de dépendance interne
 # au package, aucun risque de circularité)
-from .reports import FetchReport, HttpStats
+from .reports import FetchReport, FreshnessStats, HttpStats
 
 if TYPE_CHECKING:
     from .sdmx import DuplicateHandling
@@ -208,6 +212,344 @@ class APIClient:
     ) -> None:
         """Context manager exit."""
         self.close()
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Vérification de fraîcheur des données — approche mutualisée
+# ──────────────────────────────────────────────────────────────────────
+
+
+# Fonction de normalisation d'un datetime en UTC
+def _to_utc(value: datetime) -> datetime:
+    """Return a UTC-aware copy of a datetime (naive values assumed UTC).
+
+    Ensures the last-update / last-download comparison never raises on mixed
+    aware/naive datetimes.
+
+    Args:
+        value: Datetime to normalise.
+
+    Returns:
+        UTC-aware ``datetime``.
+
+    Examples:
+        >>> _to_utc(datetime(2026, 1, 1, 12))
+        datetime.datetime(2026, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)
+    """
+    # Datetime naïf → interprété comme UTC ; sinon conversion vers UTC
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
+# Horloge murale UTC de la vérification (isolée pour les tests)
+def _utc_now() -> datetime:
+    """Return the current instant as a UTC-aware datetime."""
+    return datetime.now(UTC)
+
+
+# Horloge monotone de l'expiration des échecs (isolée pour les tests)
+def _monotonic() -> float:
+    """Return a monotonic clock reading, in seconds."""
+    return time.monotonic()
+
+
+# Mixin de récupération incrémentale conditionnée à la date de mise à jour
+class FreshnessCheckMixin(ABC):
+    """Template of ``fetch_updates`` for providers gated by a last-update date.
+
+    Some providers offer no server-side "updated after" filter: before pulling
+    data, the client must ask when the data was last updated and compare that
+    instant with the previous download. The question is usually the same for
+    many queries (every product batch of a dataflow, every product batch of a
+    Comtrade period), so its answer is cached for the run.
+
+    The mixin goes first in the bases of a client exposing
+    ``execute_query(query)`` (``class MyClient(FreshnessCheckMixin,
+    AbstractSDMXClient)``); its concrete :meth:`fetch_updates` then satisfies
+    the abstract one of :class:`AbstractSDMXClient`. A provider implements:
+
+    - :meth:`_freshness_key` (required): what identifies "the same question",
+      independently of how the queries are split (e.g. ``(dataflow, version)``).
+    - :meth:`_fetch_last_update` (required): ask the provider when the data
+      behind a query was last updated. May raise.
+    - :meth:`_fetch_incremental` (optional): fetch a query whose data changed;
+      defaults to ``execute_query(query)``.
+    - :meth:`_log_no_update` (optional): log a skipped query.
+
+    Behaviour of :meth:`fetch_updates`:
+
+    - ``since is None`` (first download) → full ``execute_query``.
+    - Otherwise the last-update date is resolved (cached per key). When it is
+      known and not after ``since`` (both compared in UTC) the query is skipped
+      and an empty DataFrame returned; otherwise :meth:`_fetch_incremental`.
+
+    Cache policy:
+
+    - **Lifetime**: the client instance, never persisted.
+      :meth:`clear_freshness_cache` empties it, and the download orchestrator
+      calls it at the start of every run, so an answer never outlives its run.
+    - **Unresolved date** (the lookup raised or returned ``None``): the data is
+      refreshed as a precaution, and the failure is remembered for
+      :attr:`FRESHNESS_FAILURE_TTL` seconds before one new lookup is allowed.
+      Retrying on every query would add thousands of doomed calls (each with
+      its own HTTP retries) on top of the data fetches while a provider is
+      down; remembering the failure for the whole run would turn a few seconds
+      of outage into a full refresh of every query. ``None`` remembers the
+      failure for the whole run (used by quota-limited providers).
+    - **Update published during the run**: a cached "unchanged" answer only
+      covers what the provider knew when it was asked. When a query is skipped,
+      :attr:`last_fetch_as_of_` holds the instant the answer was requested, and
+      the orchestrator records it as the query's download date (instead of the
+      later start of the query), so an update published in between is still
+      detected at the next run. A date after ``since`` always triggers a fetch.
+    - **Threads**: no lock. The download orchestrator calls the client from a
+      single thread; a client must not be shared across threads.
+
+    Counters are accumulated in :attr:`freshness_stats_` and read by the
+    orchestrator next to the HTTP counters.
+
+    Attributes:
+        FRESHNESS_FAILURE_TTL: Seconds an unresolved date is remembered before
+            a new lookup (``None``: for the life of the cache).
+        freshness_stats_: Lookups sent, answers served by the cache, and
+            unresolved lookups.
+        last_fetch_as_of_: For the last :meth:`fetch_updates` call that skipped
+            its query, the instant the "unchanged" answer was requested;
+            ``None`` when the call fetched data (its result is then as recent
+            as the call itself).
+
+    Examples:
+        >>> class TinyClient(FreshnessCheckMixin):
+        ...     def _freshness_key(self, query):
+        ...         return query["dataflow"]
+        ...     def _fetch_last_update(self, query):
+        ...         return datetime(2026, 3, 1, tzinfo=UTC)
+        ...     def execute_query(self, query):
+        ...         return pd.DataFrame({"value": [1.0]})
+        >>> client = TinyClient()
+        >>> since = datetime(2026, 4, 1, tzinfo=UTC)
+        >>> [len(client.fetch_updates({"dataflow": "DF"}, since)) for _ in range(3)]
+        [0, 0, 0]
+        >>> client.freshness_stats_
+        FreshnessStats(n_checks=1, n_cache_hits=2, n_unresolved=0)
+        >>> len(client.fetch_updates({"dataflow": "DF"}, datetime(2026, 2, 1)))
+        1
+    """
+
+    # Durée de mémorisation d'un échec de résolution avant nouvelle tentative
+    FRESHNESS_FAILURE_TTL: ClassVar[float | None] = 300.0
+
+    # Initialisation coopérative : les arguments vont aux bases suivantes
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Cache des dates de dernière mise à jour par clé de fraîcheur
+        self._freshness_cache: dict[Hashable, datetime | None] = {}
+        # Instant (horloge monotone) du dernier échec de résolution par clé
+        self._freshness_failed_at: dict[Hashable, float] = {}
+        # Instant (UTC) de la demande ayant produit chaque réponse en cache
+        self._freshness_checked_at: dict[Hashable, datetime] = {}
+        # Compteurs de vérification (lus par l'orchestrateur)
+        self.freshness_stats_ = FreshnessStats()
+        # Horizon de connaissance de la dernière requête sautée
+        self.last_fetch_as_of_: datetime | None = None
+
+    # Signature attendue du client concret (définie par la base suivante)
+    if TYPE_CHECKING:
+
+        def execute_query(self, query: Any) -> pd.DataFrame: ...
+
+    # Point d'extension : clé de fraîcheur
+    @abstractmethod
+    def _freshness_key(self, query: Any) -> Hashable:
+        """Return what identifies the last-update question of a query.
+
+        Two queries sharing a key share the provider's answer: the key must
+        therefore ignore everything that does not change that answer (product
+        batch, dimension filters, …) and include everything that does
+        (dataflow, version, period, …).
+
+        Args:
+            query: Provider query request.
+
+        Returns:
+            Hashable key.
+        """
+
+    # Point d'extension : date de dernière mise à jour côté fournisseur
+    @abstractmethod
+    def _fetch_last_update(self, query: Any) -> datetime | None:
+        """Ask the provider when the data behind a query was last updated.
+
+        Called at most once per :meth:`_freshness_key` and per run (plus the
+        retries of an expired failure). No caching is needed here.
+
+        Args:
+            query: Provider query request.
+
+        Returns:
+            The last data-update instant (naive values are read as UTC), or
+            ``None`` when the provider does not tell.
+
+        Raises:
+            Exception: Any failure; it is logged and treated like ``None``.
+        """
+
+    # Point d'extension : récupération d'une requête dont les données ont changé
+    def _fetch_incremental(self, query: Any, n_observations: int) -> pd.DataFrame:
+        """Fetch a query whose data changed since the previous download.
+
+        Defaults to a full ``execute_query``; providers able to restrict the
+        fetch (e.g. to the last observations) override it.
+
+        Args:
+            query: Provider query request.
+            n_observations: Number of most-recent observations requested by
+                the orchestrator (ignored by the default implementation).
+
+        Returns:
+            DataFrame with the retrieved data.
+        """
+        return self.execute_query(query)
+
+    # Point d'extension : journalisation d'une requête sautée
+    def _log_no_update(
+        self, query: Any, since: datetime, last_update: datetime
+    ) -> None:
+        """Log that a query is skipped because nothing changed.
+
+        Args:
+            query: Skipped query.
+            since: Previous download instant of the query.
+            last_update: Last data-update instant of the provider.
+        """
+        # Logging
+        logger.info(
+            f"{getattr(query, 'dataflow', query)}: no update since {since} "
+            f"(last update {last_update}); skipping data fetch"
+        )
+
+    # Méthode patron de la récupération incrémentale
+    def fetch_updates(
+        self,
+        query: Any,
+        since: datetime | None,
+        n_observations: int = 10,
+    ) -> pd.DataFrame:
+        """Fetch the data for a query, incrementally when possible.
+
+        Provider seam used by the download orchestrator
+        (:class:`~statflows.core.download.SDMXDownloader`); see the class
+        docstring for the decision rules and the cache policy.
+
+        Args:
+            query: Provider query request.
+            since: Instant of the previous successful download for this query,
+                or ``None`` if it was never downloaded.
+            n_observations: Number of most-recent observations to retrieve in
+                incremental mode, forwarded to :meth:`_fetch_incremental`.
+
+        Returns:
+            DataFrame with the retrieved data; empty when nothing was published
+            since ``since``.
+        """
+        # Horizon réinitialisé : seul un saut le renseigne
+        self.last_fetch_as_of_ = None
+
+        # Premier téléchargement : récupération complète
+        if since is None:
+            return self.execute_query(query)
+
+        # Date de dernière mise à jour (cache par run)
+        last_update = self._query_last_update(query)
+
+        # Aucune publication depuis le dernier téléchargement → requête sautée
+        if last_update is not None and _to_utc(last_update) <= _to_utc(since):
+            # Horizon : instant de la demande dont la réponse a servi, pour que
+            # le registre n'avance pas au-delà de ce que le fournisseur savait
+            self.last_fetch_as_of_ = self._freshness_checked_at.get(
+                self._freshness_key(query)
+            )
+            self._log_no_update(query, since, last_update)
+            return pd.DataFrame()
+
+        # Données modifiées, ou date inconnue (rafraîchissement par précaution)
+        return self._fetch_incremental(query, n_observations)
+
+    # Méthode de résolution mise en cache de la date de dernière mise à jour
+    def _query_last_update(self, query: Any) -> datetime | None:
+        """Return the last-update date of a query, cached per freshness key.
+
+        Args:
+            query: Provider query request.
+
+        Returns:
+            UTC-aware last data-update instant, or ``None`` when it could not
+            be resolved.
+        """
+        # Extraction de la clé
+        key = self._freshness_key(query)
+
+        # Réponse en cache, sauf échec dont la durée de mémorisation est écoulée
+        if key in self._freshness_cache and not self._freshness_failure_expired(key):
+            self.freshness_stats_.n_cache_hits += 1
+            return self._freshness_cache[key]
+
+        # Instant capturé avant l'appel : borne de ce que la réponse couvre
+        checked_at = _utc_now()
+        self.freshness_stats_.n_checks += 1
+        try:
+            last_update = self._fetch_last_update(query)
+        # Seules les erreurs ordinaires sont absorbées : un arrêt demandé
+        # (SIGTERM) traverse la méthode sans rien mettre en cache
+        except Exception as e:
+            # Logging
+            logger.warning(f"Could not resolve the last update for {key!r}: {e}")
+            last_update = None
+
+        # Échec mémorisé avec son instant ; succès normalisé en UTC
+        if last_update is None:
+            self.freshness_stats_.n_unresolved += 1
+            self._freshness_failed_at[key] = _monotonic()
+        else:
+            last_update = _to_utc(last_update)
+            self._freshness_failed_at.pop(key, None)
+        self._freshness_cache[key] = last_update
+        self._freshness_checked_at[key] = checked_at
+        return last_update
+
+    # Méthode de test d'expiration d'un échec mémorisé
+    def _freshness_failure_expired(self, key: Hashable) -> bool:
+        """Tell whether a remembered failure may be retried.
+
+        Args:
+            key: Freshness key.
+
+        Returns:
+            ``True`` when the key holds a failure older than
+            :attr:`FRESHNESS_FAILURE_TTL`; ``False`` otherwise (success, recent
+            failure, or failures remembered for the life of the cache).
+        """
+        failed_at = self._freshness_failed_at.get(key)
+        ttl = self.FRESHNESS_FAILURE_TTL
+        return (
+            failed_at is not None
+            and ttl is not None
+            and _monotonic() - failed_at >= ttl
+        )
+
+    # Méthode de vidage du cache de fraîcheur
+    def clear_freshness_cache(self) -> None:
+        """Forget every cached last-update answer (counters are kept).
+
+        Called by the download orchestrator at the start of each run, so that
+        a client reused across runs never serves an answer from a previous one.
+        """
+        # Vidage sur place : les références détenues (alias) restent valides
+        self._freshness_cache.clear()
+        self._freshness_failed_at.clear()
+        self._freshness_checked_at.clear()
+        self.last_fetch_as_of_ = None
 
 
 # ──────────────────────────────────────────────────────────────────────
