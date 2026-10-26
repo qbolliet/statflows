@@ -2785,33 +2785,33 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>statflows/core/sdmx.py</code></summary>
-                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-77">77</a></span>
-<span class="normal"><a href="#__codelineno-0-78">78</a></span>
-<span class="normal"><a href="#__codelineno-0-79">79</a></span>
-<span class="normal"><a href="#__codelineno-0-80">80</a></span>
-<span class="normal"><a href="#__codelineno-0-81">81</a></span>
-<span class="normal"><a href="#__codelineno-0-82">82</a></span>
-<span class="normal"><a href="#__codelineno-0-83">83</a></span>
-<span class="normal"><a href="#__codelineno-0-84">84</a></span>
-<span class="normal"><a href="#__codelineno-0-85">85</a></span>
-<span class="normal"><a href="#__codelineno-0-86">86</a></span>
-<span class="normal"><a href="#__codelineno-0-87">87</a></span>
-<span class="normal"><a href="#__codelineno-0-88">88</a></span>
-<span class="normal"><a href="#__codelineno-0-89">89</a></span>
-<span class="normal"><a href="#__codelineno-0-90">90</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="k">class</span><span class="w"> </span><span class="nc">SDMXVersion</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
-</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="w">    </span><span class="sd">"""SDMX API version.</span>
-</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a>
-</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">    Attributes:</span>
-</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">        V1: OECD SDMX API v1 (legacy REST format).</span>
-</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">        V2: OECD SDMX API v2 (current REST format).</span>
-</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">        V2_1: SDMX 2.1 standard (used by Eurostat legacy endpoint).</span>
-</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        V3: SDMX 3.0 standard (used by Eurostat primary endpoint).</span>
-</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">    """</span>
-</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a>
-</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>    <span class="n">V1</span> <span class="o">=</span> <span class="s2">"v1"</span>
-</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a>    <span class="n">V2</span> <span class="o">=</span> <span class="s2">"v2"</span>
-</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="n">V2_1</span> <span class="o">=</span> <span class="s2">"v2_1"</span>
-</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a>    <span class="n">V3</span> <span class="o">=</span> <span class="s2">"v3"</span>
+                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-78">78</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-79">79</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-80">80</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-81">81</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-82">82</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-85">85</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-86">86</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-87">87</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-88">88</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-89">89</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.SDMXVersion--source--__codelineno-0-90">90</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-77"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-77" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-77"></a><span class="k">class</span><span class="w"> </span><span class="nc">SDMXVersion</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-78"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-78" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-78"></a><span class="w">    </span><span class="sd">"""SDMX API version.</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-79"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-79" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-79"></a>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-80"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-80" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-80"></a><span class="sd">    Attributes:</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-81"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-81" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-81"></a><span class="sd">        V1: OECD SDMX API v1 (legacy REST format).</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-82"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-82" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-82"></a><span class="sd">        V2: OECD SDMX API v2 (current REST format).</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-83"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-83" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-83"></a><span class="sd">        V2_1: SDMX 2.1 standard (used by Eurostat legacy endpoint).</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-84"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-84" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-84"></a><span class="sd">        V3: SDMX 3.0 standard (used by Eurostat primary endpoint).</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-85"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-85" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-85"></a><span class="sd">    """</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-86"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-86" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-86"></a>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-87"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-87" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-87"></a>    <span class="n">V1</span> <span class="o">=</span> <span class="s2">"v1"</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-88"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-88" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-88"></a>    <span class="n">V2</span> <span class="o">=</span> <span class="s2">"v2"</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-89"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-89" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-89"></a>    <span class="n">V2_1</span> <span class="o">=</span> <span class="s2">"v2_1"</span>
+</span><span id="statflows.core.sdmx.SDMXVersion--source--__span-0-90"><a id="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-90" name="statflows.core.sdmx.SDMXVersion--source--__codelineno-0-90"></a>    <span class="n">V3</span> <span class="o">=</span> <span class="s2">"v3"</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 

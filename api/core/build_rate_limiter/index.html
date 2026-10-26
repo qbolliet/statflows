@@ -2875,105 +2875,105 @@ CompositeRateLimiter(...)</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>statflows/core/rate_limiter.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-395">395</a></span>
-<span class="normal"><a href="#__codelineno-0-396">396</a></span>
-<span class="normal"><a href="#__codelineno-0-397">397</a></span>
-<span class="normal"><a href="#__codelineno-0-398">398</a></span>
-<span class="normal"><a href="#__codelineno-0-399">399</a></span>
-<span class="normal"><a href="#__codelineno-0-400">400</a></span>
-<span class="normal"><a href="#__codelineno-0-401">401</a></span>
-<span class="normal"><a href="#__codelineno-0-402">402</a></span>
-<span class="normal"><a href="#__codelineno-0-403">403</a></span>
-<span class="normal"><a href="#__codelineno-0-404">404</a></span>
-<span class="normal"><a href="#__codelineno-0-405">405</a></span>
-<span class="normal"><a href="#__codelineno-0-406">406</a></span>
-<span class="normal"><a href="#__codelineno-0-407">407</a></span>
-<span class="normal"><a href="#__codelineno-0-408">408</a></span>
-<span class="normal"><a href="#__codelineno-0-409">409</a></span>
-<span class="normal"><a href="#__codelineno-0-410">410</a></span>
-<span class="normal"><a href="#__codelineno-0-411">411</a></span>
-<span class="normal"><a href="#__codelineno-0-412">412</a></span>
-<span class="normal"><a href="#__codelineno-0-413">413</a></span>
-<span class="normal"><a href="#__codelineno-0-414">414</a></span>
-<span class="normal"><a href="#__codelineno-0-415">415</a></span>
-<span class="normal"><a href="#__codelineno-0-416">416</a></span>
-<span class="normal"><a href="#__codelineno-0-417">417</a></span>
-<span class="normal"><a href="#__codelineno-0-418">418</a></span>
-<span class="normal"><a href="#__codelineno-0-419">419</a></span>
-<span class="normal"><a href="#__codelineno-0-420">420</a></span>
-<span class="normal"><a href="#__codelineno-0-421">421</a></span>
-<span class="normal"><a href="#__codelineno-0-422">422</a></span>
-<span class="normal"><a href="#__codelineno-0-423">423</a></span>
-<span class="normal"><a href="#__codelineno-0-424">424</a></span>
-<span class="normal"><a href="#__codelineno-0-425">425</a></span>
-<span class="normal"><a href="#__codelineno-0-426">426</a></span>
-<span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span>
-<span class="normal"><a href="#__codelineno-0-429">429</a></span>
-<span class="normal"><a href="#__codelineno-0-430">430</a></span>
-<span class="normal"><a href="#__codelineno-0-431">431</a></span>
-<span class="normal"><a href="#__codelineno-0-432">432</a></span>
-<span class="normal"><a href="#__codelineno-0-433">433</a></span>
-<span class="normal"><a href="#__codelineno-0-434">434</a></span>
-<span class="normal"><a href="#__codelineno-0-435">435</a></span>
-<span class="normal"><a href="#__codelineno-0-436">436</a></span>
-<span class="normal"><a href="#__codelineno-0-437">437</a></span>
-<span class="normal"><a href="#__codelineno-0-438">438</a></span>
-<span class="normal"><a href="#__codelineno-0-439">439</a></span>
-<span class="normal"><a href="#__codelineno-0-440">440</a></span>
-<span class="normal"><a href="#__codelineno-0-441">441</a></span>
-<span class="normal"><a href="#__codelineno-0-442">442</a></span>
-<span class="normal"><a href="#__codelineno-0-443">443</a></span>
-<span class="normal"><a href="#__codelineno-0-444">444</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_rate_limiter</span><span class="p">(</span>
-</span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a>    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
-</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RateLimiter</span> <span class="o">|</span> <span class="n">CompositeRateLimiter</span><span class="p">:</span>
-</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="w">    </span><span class="sd">"""Build a rate limiter from a configuration entry.</span>
-</span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a>
-</span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">    Accepts either a single limit specification (a dict, returning a</span>
-</span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">    :class:`RateLimiter`) or several specifications (a list, returning a</span>
-</span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">    :class:`CompositeRateLimiter`). This keeps the ``RATE_LIMIT`` section of the</span>
-</span><span id="__span-0-403"><a id="__codelineno-0-403" name="__codelineno-0-403"></a><span class="sd">    provider configuration files backward compatible: Eurostat/OECD keep a</span>
-</span><span id="__span-0-404"><a id="__codelineno-0-404" name="__codelineno-0-404"></a><span class="sd">    single dict, while Comtrade declares a list of limits.</span>
-</span><span id="__span-0-405"><a id="__codelineno-0-405" name="__codelineno-0-405"></a>
-</span><span id="__span-0-406"><a id="__codelineno-0-406" name="__codelineno-0-406"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-407"><a id="__codelineno-0-407" name="__codelineno-0-407"></a><span class="sd">        config: A single ``{requests, unit, count}`` dict, or a non-empty list</span>
-</span><span id="__span-0-408"><a id="__codelineno-0-408" name="__codelineno-0-408"></a><span class="sd">            of such dicts.</span>
-</span><span id="__span-0-409"><a id="__codelineno-0-409" name="__codelineno-0-409"></a>
-</span><span id="__span-0-410"><a id="__codelineno-0-410" name="__codelineno-0-410"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-411"><a id="__codelineno-0-411" name="__codelineno-0-411"></a><span class="sd">        A :class:`RateLimiter` for a single limit, or a</span>
-</span><span id="__span-0-412"><a id="__codelineno-0-412" name="__codelineno-0-412"></a><span class="sd">        :class:`CompositeRateLimiter` for several.</span>
-</span><span id="__span-0-413"><a id="__codelineno-0-413" name="__codelineno-0-413"></a>
-</span><span id="__span-0-414"><a id="__codelineno-0-414" name="__codelineno-0-414"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-415"><a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="sd">        ValueError: If ``config`` is an empty list or an unsupported type.</span>
-</span><span id="__span-0-416"><a id="__codelineno-0-416" name="__codelineno-0-416"></a>
-</span><span id="__span-0-417"><a id="__codelineno-0-417" name="__codelineno-0-417"></a><span class="sd">    Example:</span>
-</span><span id="__span-0-418"><a id="__codelineno-0-418" name="__codelineno-0-418"></a><span class="sd">        &gt;&gt;&gt; build_rate_limiter({"requests": 30, "unit": "minutes"})</span>
-</span><span id="__span-0-419"><a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">        RateLimiter(max_requests=30, time_unit='minutes', time_count=1)</span>
-</span><span id="__span-0-420"><a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">        &gt;&gt;&gt; build_rate_limiter([</span>
-</span><span id="__span-0-421"><a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">        ...     {"requests": 1, "unit": "seconds"},</span>
-</span><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        ...     {"requests": 500, "unit": "days"},</span>
-</span><span id="__span-0-423"><a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">        ... ])  # doctest: +ELLIPSIS</span>
-</span><span id="__span-0-424"><a id="__codelineno-0-424" name="__codelineno-0-424"></a><span class="sd">        CompositeRateLimiter(...)</span>
-</span><span id="__span-0-425"><a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">    """</span>
-</span><span id="__span-0-426"><a id="__codelineno-0-426" name="__codelineno-0-426"></a>    <span class="c1"># Cas d'une liste de spécifications → limiteur composite</span>
-</span><span id="__span-0-427"><a id="__codelineno-0-427" name="__codelineno-0-427"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-</span><span id="__span-0-428"><a id="__codelineno-0-428" name="__codelineno-0-428"></a>        <span class="c1"># Validation : liste non vide</span>
-</span><span id="__span-0-429"><a id="__codelineno-0-429" name="__codelineno-0-429"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="p">:</span>
-</span><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"RATE_LIMIT list must contain at least one entry"</span><span class="p">)</span>
-</span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a>        <span class="c1"># Un seul élément : un RateLimiter simple suffit</span>
-</span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a>        <span class="n">limiters</span> <span class="o">=</span> <span class="p">[</span><span class="n">RateLimiter</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">config</span><span class="p">]</span>
-</span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">limiters</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-</span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a>            <span class="k">return</span> <span class="n">limiters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-</span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a>        <span class="k">return</span> <span class="n">CompositeRateLimiter</span><span class="p">(</span><span class="n">limiters</span><span class="p">)</span>
-</span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a>
-</span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a>    <span class="c1"># Cas d'un dictionnaire unique → limiteur simple</span>
-</span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-</span><span id="__span-0-439"><a id="__codelineno-0-439" name="__codelineno-0-439"></a>        <span class="k">return</span> <span class="n">RateLimiter</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="__span-0-440"><a id="__codelineno-0-440" name="__codelineno-0-440"></a>
-</span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a>    <span class="c1"># Type non supporté</span>
-</span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a>    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a>        <span class="sa">f</span><span class="s2">"Unsupported RATE_LIMIT configuration type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
-</span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a>    <span class="p">)</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-395">395</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-396">396</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-397">397</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-398">398</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-399">399</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-400">400</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-401">401</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-402">402</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-403">403</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-404">404</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-405">405</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-406">406</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-407">407</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-408">408</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-409">409</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-410">410</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-411">411</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-412">412</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-413">413</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-414">414</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-415">415</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-416">416</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-417">417</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-418">418</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-419">419</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-420">420</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-421">421</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-424">424</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-425">425</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-442">442</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-443">443</a></span>
+<span class="normal"><a href="#statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-444">444</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-395"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-395" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-395"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_rate_limiter</span><span class="p">(</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-396"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-396" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-396"></a>    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-397"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-397" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-397"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RateLimiter</span> <span class="o">|</span> <span class="n">CompositeRateLimiter</span><span class="p">:</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-398"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-398" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-398"></a><span class="w">    </span><span class="sd">"""Build a rate limiter from a configuration entry.</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-399"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-399" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-399"></a>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-400"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-400" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-400"></a><span class="sd">    Accepts either a single limit specification (a dict, returning a</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-401"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-401" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-401"></a><span class="sd">    :class:`RateLimiter`) or several specifications (a list, returning a</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-402"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-402" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-402"></a><span class="sd">    :class:`CompositeRateLimiter`). This keeps the ``RATE_LIMIT`` section of the</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-403"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-403" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-403"></a><span class="sd">    provider configuration files backward compatible: Eurostat/OECD keep a</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-404"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-404" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-404"></a><span class="sd">    single dict, while Comtrade declares a list of limits.</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-405"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-405" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-405"></a>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-406"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-406" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-406"></a><span class="sd">    Args:</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-407"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-407" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-407"></a><span class="sd">        config: A single ``{requests, unit, count}`` dict, or a non-empty list</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-408"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-408" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-408"></a><span class="sd">            of such dicts.</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-409"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-409" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-409"></a>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-410"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-410" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-410"></a><span class="sd">    Returns:</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-411"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-411" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-411"></a><span class="sd">        A :class:`RateLimiter` for a single limit, or a</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-412"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-412" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-412"></a><span class="sd">        :class:`CompositeRateLimiter` for several.</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-413"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-413" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-413"></a>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-414"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-414" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-414"></a><span class="sd">    Raises:</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-415"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-415" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-415"></a><span class="sd">        ValueError: If ``config`` is an empty list or an unsupported type.</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-416"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-416" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-416"></a>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-417"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-417" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-417"></a><span class="sd">    Example:</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-418"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-418" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-418"></a><span class="sd">        &gt;&gt;&gt; build_rate_limiter({"requests": 30, "unit": "minutes"})</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-419"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-419" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-419"></a><span class="sd">        RateLimiter(max_requests=30, time_unit='minutes', time_count=1)</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-420"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-420" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-420"></a><span class="sd">        &gt;&gt;&gt; build_rate_limiter([</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-421"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-421" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-421"></a><span class="sd">        ...     {"requests": 1, "unit": "seconds"},</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-422"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-422" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-422"></a><span class="sd">        ...     {"requests": 500, "unit": "days"},</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-423"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-423" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-423"></a><span class="sd">        ... ])  # doctest: +ELLIPSIS</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-424"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-424" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-424"></a><span class="sd">        CompositeRateLimiter(...)</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-425"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-425" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-425"></a><span class="sd">    """</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-426"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-426" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-426"></a>    <span class="c1"># Cas d'une liste de spécifications → limiteur composite</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-427"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-427" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-427"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-428"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-428" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-428"></a>        <span class="c1"># Validation : liste non vide</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-429"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-429" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-429"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">config</span><span class="p">:</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-430"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-430" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-430"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"RATE_LIMIT list must contain at least one entry"</span><span class="p">)</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-431"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-431" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-431"></a>        <span class="c1"># Un seul élément : un RateLimiter simple suffit</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-432"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-432" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-432"></a>        <span class="n">limiters</span> <span class="o">=</span> <span class="p">[</span><span class="n">RateLimiter</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">config</span><span class="p">]</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-433"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-433" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-433"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">limiters</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-434"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-434" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-434"></a>            <span class="k">return</span> <span class="n">limiters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-435"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-435" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-435"></a>        <span class="k">return</span> <span class="n">CompositeRateLimiter</span><span class="p">(</span><span class="n">limiters</span><span class="p">)</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-436"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-436" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-436"></a>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-437"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-437" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-437"></a>    <span class="c1"># Cas d'un dictionnaire unique → limiteur simple</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-438"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-438" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-438"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-439"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-439" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-439"></a>        <span class="k">return</span> <span class="n">RateLimiter</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-440"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-440" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-440"></a>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-441"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-441" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-441"></a>    <span class="c1"># Type non supporté</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-442"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-442" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-442"></a>    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-443"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-443" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-443"></a>        <span class="sa">f</span><span class="s2">"Unsupported RATE_LIMIT configuration type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="statflows.core.rate_limiter.build_rate_limiter--source--__span-0-444"><a id="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-444" name="statflows.core.rate_limiter.build_rate_limiter--source--__codelineno-0-444"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

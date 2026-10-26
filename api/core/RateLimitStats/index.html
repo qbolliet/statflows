@@ -2773,41 +2773,41 @@ be visible only through <code>logger.debug</code> lines.</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>statflows/core/reports.py</code></summary>
-                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-190">190</a></span>
-<span class="normal"><a href="#__codelineno-0-191">191</a></span>
-<span class="normal"><a href="#__codelineno-0-192">192</a></span>
-<span class="normal"><a href="#__codelineno-0-193">193</a></span>
-<span class="normal"><a href="#__codelineno-0-194">194</a></span>
-<span class="normal"><a href="#__codelineno-0-195">195</a></span>
-<span class="normal"><a href="#__codelineno-0-196">196</a></span>
-<span class="normal"><a href="#__codelineno-0-197">197</a></span>
-<span class="normal"><a href="#__codelineno-0-198">198</a></span>
-<span class="normal"><a href="#__codelineno-0-199">199</a></span>
-<span class="normal"><a href="#__codelineno-0-200">200</a></span>
-<span class="normal"><a href="#__codelineno-0-201">201</a></span>
-<span class="normal"><a href="#__codelineno-0-202">202</a></span>
-<span class="normal"><a href="#__codelineno-0-203">203</a></span>
-<span class="normal"><a href="#__codelineno-0-204">204</a></span>
-<span class="normal"><a href="#__codelineno-0-205">205</a></span>
-<span class="normal"><a href="#__codelineno-0-206">206</a></span>
-<span class="normal"><a href="#__codelineno-0-207">207</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-190"><a id="__codelineno-0-190" name="__codelineno-0-190"></a><span class="nd">@dataclass</span>
-</span><span id="__span-0-191"><a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="k">class</span><span class="w"> </span><span class="nc">RateLimitStats</span><span class="p">:</span>
-</span><span id="__span-0-192"><a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="w">    </span><span class="sd">"""Counters of the rate limiter.</span>
-</span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a>
-</span><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a><span class="sd">    The wait it imposes is the main hidden cost of a long download; it used to</span>
-</span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a><span class="sd">    be visible only through ``logger.debug`` lines.</span>
-</span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a>
-</span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a><span class="sd">    Attributes:</span>
-</span><span id="__span-0-198"><a id="__codelineno-0-198" name="__codelineno-0-198"></a><span class="sd">        n_acquisitions: Number of acquisitions granted.</span>
-</span><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="sd">        total_wait_seconds: Cumulated time spent waiting for a slot.</span>
-</span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="sd">        max_wait_seconds: Longest single wait.</span>
-</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="sd">        remaining_requests: Slots still available in the current window.</span>
-</span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    """</span>
-</span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a>
-</span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="n">n_acquisitions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a>    <span class="n">total_wait_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-</span><span id="__span-0-206"><a id="__codelineno-0-206" name="__codelineno-0-206"></a>    <span class="n">max_wait_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-</span><span id="__span-0-207"><a id="__codelineno-0-207" name="__codelineno-0-207"></a>    <span class="n">remaining_requests</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-190">190</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-191">191</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-192">192</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-193">193</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-194">194</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-195">195</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-196">196</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-197">197</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-198">198</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-199">199</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-200">200</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-201">201</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-202">202</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-203">203</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-204">204</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-205">205</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-206">206</a></span>
+<span class="normal"><a href="#statflows.core.reports.RateLimitStats--source--__codelineno-0-207">207</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.reports.RateLimitStats--source--__span-0-190"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-190" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-190"></a><span class="nd">@dataclass</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-191"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-191" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-191"></a><span class="k">class</span><span class="w"> </span><span class="nc">RateLimitStats</span><span class="p">:</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-192"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-192" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-192"></a><span class="w">    </span><span class="sd">"""Counters of the rate limiter.</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-193"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-193" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-193"></a>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-194"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-194" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-194"></a><span class="sd">    The wait it imposes is the main hidden cost of a long download; it used to</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-195"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-195" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-195"></a><span class="sd">    be visible only through ``logger.debug`` lines.</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-196"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-196" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-196"></a>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-197"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-197" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-197"></a><span class="sd">    Attributes:</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-198"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-198" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-198"></a><span class="sd">        n_acquisitions: Number of acquisitions granted.</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-199"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-199" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-199"></a><span class="sd">        total_wait_seconds: Cumulated time spent waiting for a slot.</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-200"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-200" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-200"></a><span class="sd">        max_wait_seconds: Longest single wait.</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-201"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-201" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-201"></a><span class="sd">        remaining_requests: Slots still available in the current window.</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-202"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-202" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-202"></a><span class="sd">    """</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-203"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-203" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-203"></a>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-204"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-204" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-204"></a>    <span class="n">n_acquisitions</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-205"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-205" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-205"></a>    <span class="n">total_wait_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-206"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-206" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-206"></a>    <span class="n">max_wait_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="statflows.core.reports.RateLimitStats--source--__span-0-207"><a id="statflows.core.reports.RateLimitStats--source--__codelineno-0-207" name="statflows.core.reports.RateLimitStats--source--__codelineno-0-207"></a>    <span class="n">remaining_requests</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 

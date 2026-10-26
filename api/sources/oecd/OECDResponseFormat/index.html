@@ -2818,33 +2818,33 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>statflows/sources/oecd/formats.py</code></summary>
-                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-12">12</a></span>
-<span class="normal"><a href="#__codelineno-0-13">13</a></span>
-<span class="normal"><a href="#__codelineno-0-14">14</a></span>
-<span class="normal"><a href="#__codelineno-0-15">15</a></span>
-<span class="normal"><a href="#__codelineno-0-16">16</a></span>
-<span class="normal"><a href="#__codelineno-0-17">17</a></span>
-<span class="normal"><a href="#__codelineno-0-18">18</a></span>
-<span class="normal"><a href="#__codelineno-0-19">19</a></span>
-<span class="normal"><a href="#__codelineno-0-20">20</a></span>
-<span class="normal"><a href="#__codelineno-0-21">21</a></span>
-<span class="normal"><a href="#__codelineno-0-22">22</a></span>
-<span class="normal"><a href="#__codelineno-0-23">23</a></span>
-<span class="normal"><a href="#__codelineno-0-24">24</a></span>
-<span class="normal"><a href="#__codelineno-0-25">25</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">OECDResponseFormat</span><span class="p">(</span><span class="n">SDMXResponseFormat</span><span class="p">):</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="w">    </span><span class="sd">"""Response format options for the OECD API.</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="sd">    Attributes:</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="sd">        JSON: JSON format (jsondata parameter).</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a><span class="sd">        CSV: CSV format without labels (csvfile parameter).</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a><span class="sd">        CSV_LABELS: CSV format with labels (csvfilewithlabels parameter).</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="sd">        XML: XML generic data format (genericdata parameter).</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20"></a><span class="sd">    """</span>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a>    <span class="n">JSON</span> <span class="o">=</span> <span class="s2">"json"</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a>    <span class="n">CSV</span> <span class="o">=</span> <span class="s2">"csv"</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24"></a>    <span class="n">CSV_LABELS</span> <span class="o">=</span> <span class="s2">"csv_labels"</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a>    <span class="n">XML</span> <span class="o">=</span> <span class="s2">"xml"</span>
+                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-13">13</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-14">14</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-15">15</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-16">16</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-17">17</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-18">18</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-19">19</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-20">20</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-21">21</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-22">22</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-23">23</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-24">24</a></span>
+<span class="normal"><a href="#statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-25">25</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-12"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-12" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">OECDResponseFormat</span><span class="p">(</span><span class="n">SDMXResponseFormat</span><span class="p">):</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-13"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-13" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-13"></a><span class="w">    </span><span class="sd">"""Response format options for the OECD API.</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-14"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-14" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-14"></a>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-15"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-15" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-15"></a><span class="sd">    Attributes:</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-16"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-16" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-16"></a><span class="sd">        JSON: JSON format (jsondata parameter).</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-17"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-17" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-17"></a><span class="sd">        CSV: CSV format without labels (csvfile parameter).</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-18"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-18" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-18"></a><span class="sd">        CSV_LABELS: CSV format with labels (csvfilewithlabels parameter).</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-19"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-19" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-19"></a><span class="sd">        XML: XML generic data format (genericdata parameter).</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-20"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-20" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-20"></a><span class="sd">    """</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-21"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-21" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-21"></a>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-22"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-22" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-22"></a>    <span class="n">JSON</span> <span class="o">=</span> <span class="s2">"json"</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-23"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-23" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-23"></a>    <span class="n">CSV</span> <span class="o">=</span> <span class="s2">"csv"</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-24"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-24" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-24"></a>    <span class="n">CSV_LABELS</span> <span class="o">=</span> <span class="s2">"csv_labels"</span>
+</span><span id="statflows.sources.oecd.formats.OECDResponseFormat--source--__span-0-25"><a id="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-25" name="statflows.sources.oecd.formats.OECDResponseFormat--source--__codelineno-0-25"></a>    <span class="n">XML</span> <span class="o">=</span> <span class="s2">"xml"</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 

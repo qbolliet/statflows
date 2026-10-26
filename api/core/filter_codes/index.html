@@ -2995,143 +2995,143 @@ skipped when <code>None</code>:</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>statflows/core/factory.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-538">538</a></span>
-<span class="normal"><a href="#__codelineno-0-539">539</a></span>
-<span class="normal"><a href="#__codelineno-0-540">540</a></span>
-<span class="normal"><a href="#__codelineno-0-541">541</a></span>
-<span class="normal"><a href="#__codelineno-0-542">542</a></span>
-<span class="normal"><a href="#__codelineno-0-543">543</a></span>
-<span class="normal"><a href="#__codelineno-0-544">544</a></span>
-<span class="normal"><a href="#__codelineno-0-545">545</a></span>
-<span class="normal"><a href="#__codelineno-0-546">546</a></span>
-<span class="normal"><a href="#__codelineno-0-547">547</a></span>
-<span class="normal"><a href="#__codelineno-0-548">548</a></span>
-<span class="normal"><a href="#__codelineno-0-549">549</a></span>
-<span class="normal"><a href="#__codelineno-0-550">550</a></span>
-<span class="normal"><a href="#__codelineno-0-551">551</a></span>
-<span class="normal"><a href="#__codelineno-0-552">552</a></span>
-<span class="normal"><a href="#__codelineno-0-553">553</a></span>
-<span class="normal"><a href="#__codelineno-0-554">554</a></span>
-<span class="normal"><a href="#__codelineno-0-555">555</a></span>
-<span class="normal"><a href="#__codelineno-0-556">556</a></span>
-<span class="normal"><a href="#__codelineno-0-557">557</a></span>
-<span class="normal"><a href="#__codelineno-0-558">558</a></span>
-<span class="normal"><a href="#__codelineno-0-559">559</a></span>
-<span class="normal"><a href="#__codelineno-0-560">560</a></span>
-<span class="normal"><a href="#__codelineno-0-561">561</a></span>
-<span class="normal"><a href="#__codelineno-0-562">562</a></span>
-<span class="normal"><a href="#__codelineno-0-563">563</a></span>
-<span class="normal"><a href="#__codelineno-0-564">564</a></span>
-<span class="normal"><a href="#__codelineno-0-565">565</a></span>
-<span class="normal"><a href="#__codelineno-0-566">566</a></span>
-<span class="normal"><a href="#__codelineno-0-567">567</a></span>
-<span class="normal"><a href="#__codelineno-0-568">568</a></span>
-<span class="normal"><a href="#__codelineno-0-569">569</a></span>
-<span class="normal"><a href="#__codelineno-0-570">570</a></span>
-<span class="normal"><a href="#__codelineno-0-571">571</a></span>
-<span class="normal"><a href="#__codelineno-0-572">572</a></span>
-<span class="normal"><a href="#__codelineno-0-573">573</a></span>
-<span class="normal"><a href="#__codelineno-0-574">574</a></span>
-<span class="normal"><a href="#__codelineno-0-575">575</a></span>
-<span class="normal"><a href="#__codelineno-0-576">576</a></span>
-<span class="normal"><a href="#__codelineno-0-577">577</a></span>
-<span class="normal"><a href="#__codelineno-0-578">578</a></span>
-<span class="normal"><a href="#__codelineno-0-579">579</a></span>
-<span class="normal"><a href="#__codelineno-0-580">580</a></span>
-<span class="normal"><a href="#__codelineno-0-581">581</a></span>
-<span class="normal"><a href="#__codelineno-0-582">582</a></span>
-<span class="normal"><a href="#__codelineno-0-583">583</a></span>
-<span class="normal"><a href="#__codelineno-0-584">584</a></span>
-<span class="normal"><a href="#__codelineno-0-585">585</a></span>
-<span class="normal"><a href="#__codelineno-0-586">586</a></span>
-<span class="normal"><a href="#__codelineno-0-587">587</a></span>
-<span class="normal"><a href="#__codelineno-0-588">588</a></span>
-<span class="normal"><a href="#__codelineno-0-589">589</a></span>
-<span class="normal"><a href="#__codelineno-0-590">590</a></span>
-<span class="normal"><a href="#__codelineno-0-591">591</a></span>
-<span class="normal"><a href="#__codelineno-0-592">592</a></span>
-<span class="normal"><a href="#__codelineno-0-593">593</a></span>
-<span class="normal"><a href="#__codelineno-0-594">594</a></span>
-<span class="normal"><a href="#__codelineno-0-595">595</a></span>
-<span class="normal"><a href="#__codelineno-0-596">596</a></span>
-<span class="normal"><a href="#__codelineno-0-597">597</a></span>
-<span class="normal"><a href="#__codelineno-0-598">598</a></span>
-<span class="normal"><a href="#__codelineno-0-599">599</a></span>
-<span class="normal"><a href="#__codelineno-0-600">600</a></span>
-<span class="normal"><a href="#__codelineno-0-601">601</a></span>
-<span class="normal"><a href="#__codelineno-0-602">602</a></span>
-<span class="normal"><a href="#__codelineno-0-603">603</a></span>
-<span class="normal"><a href="#__codelineno-0-604">604</a></span>
-<span class="normal"><a href="#__codelineno-0-605">605</a></span>
-<span class="normal"><a href="#__codelineno-0-606">606</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a><span class="k">def</span><span class="w"> </span><span class="nf">filter_codes</span><span class="p">(</span>
-</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="n">available</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a>    <span class="n">include</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a>    <span class="n">exclude</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-542"><a id="__codelineno-0-542" name="__codelineno-0-542"></a>    <span class="n">include_regex</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-543"><a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="n">exclude_regex</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-544"><a id="__codelineno-0-544" name="__codelineno-0-544"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-</span><span id="__span-0-545"><a id="__codelineno-0-545" name="__codelineno-0-545"></a><span class="w">    </span><span class="sd">"""Filter a codelist by include/exclude lists and regular expressions.</span>
-</span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a>
-</span><span id="__span-0-547"><a id="__codelineno-0-547" name="__codelineno-0-547"></a><span class="sd">    Selects the codes to keep when iterating a split dimension (e.g. the</span>
-</span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a><span class="sd">    Eurostat ``reporter`` or ``product`` dimensions) to build the cartesian</span>
-</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a><span class="sd">    product of queries. The four criteria are applied in order and each is</span>
-</span><span id="__span-0-550"><a id="__codelineno-0-550" name="__codelineno-0-550"></a><span class="sd">    skipped when ``None``:</span>
-</span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a>
-</span><span id="__span-0-552"><a id="__codelineno-0-552" name="__codelineno-0-552"></a><span class="sd">    1. ``include`` (list): keep only codes present in this list.</span>
-</span><span id="__span-0-553"><a id="__codelineno-0-553" name="__codelineno-0-553"></a><span class="sd">    2. ``include_regex``: keep only codes fully matching this pattern.</span>
-</span><span id="__span-0-554"><a id="__codelineno-0-554" name="__codelineno-0-554"></a><span class="sd">    3. ``exclude`` (list): drop these codes.</span>
-</span><span id="__span-0-555"><a id="__codelineno-0-555" name="__codelineno-0-555"></a><span class="sd">    4. ``exclude_regex``: drop codes fully matching this pattern.</span>
-</span><span id="__span-0-556"><a id="__codelineno-0-556" name="__codelineno-0-556"></a>
-</span><span id="__span-0-557"><a id="__codelineno-0-557" name="__codelineno-0-557"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a><span class="sd">        available: Codes available in the dimension codelist.</span>
-</span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a><span class="sd">        include: Allow-list of codes; ``None`` keeps every available code.</span>
-</span><span id="__span-0-560"><a id="__codelineno-0-560" name="__codelineno-0-560"></a><span class="sd">        exclude: Deny-list of codes; ``None`` removes nothing.</span>
-</span><span id="__span-0-561"><a id="__codelineno-0-561" name="__codelineno-0-561"></a><span class="sd">        include_regex: Pattern a code must fully match to be kept (``re.fullmatch``).</span>
-</span><span id="__span-0-562"><a id="__codelineno-0-562" name="__codelineno-0-562"></a><span class="sd">        exclude_regex: Pattern that drops a code when fully matched.</span>
-</span><span id="__span-0-563"><a id="__codelineno-0-563" name="__codelineno-0-563"></a>
-</span><span id="__span-0-564"><a id="__codelineno-0-564" name="__codelineno-0-564"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-565"><a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">        Sorted list of selected codes (deterministic, duplicates removed).</span>
-</span><span id="__span-0-566"><a id="__codelineno-0-566" name="__codelineno-0-566"></a>
-</span><span id="__span-0-567"><a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-568"><a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">        &gt;&gt;&gt; filter_codes(</span>
-</span><span id="__span-0-569"><a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">        ...     ["00", "27", "2710", "TOTAL", "2710XX", "271012"],</span>
-</span><span id="__span-0-570"><a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">        ...     include_regex=r"^(\\d{2}|\\d{4}|\\d{6}|\\d{8})$",</span>
-</span><span id="__span-0-571"><a id="__codelineno-0-571" name="__codelineno-0-571"></a><span class="sd">        ...     exclude=["00"],</span>
-</span><span id="__span-0-572"><a id="__codelineno-0-572" name="__codelineno-0-572"></a><span class="sd">        ... )</span>
-</span><span id="__span-0-573"><a id="__codelineno-0-573" name="__codelineno-0-573"></a><span class="sd">        ['27', '2710', '271012']</span>
-</span><span id="__span-0-574"><a id="__codelineno-0-574" name="__codelineno-0-574"></a><span class="sd">    """</span>
-</span><span id="__span-0-575"><a id="__codelineno-0-575" name="__codelineno-0-575"></a>    <span class="c1"># Déduplication des codes disponibles</span>
-</span><span id="__span-0-576"><a id="__codelineno-0-576" name="__codelineno-0-576"></a>    <span class="n">selected</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">available</span><span class="p">}</span>
-</span><span id="__span-0-577"><a id="__codelineno-0-577" name="__codelineno-0-577"></a>
-</span><span id="__span-0-578"><a id="__codelineno-0-578" name="__codelineno-0-578"></a>    <span class="c1"># Avertissement si des codes inclus sont absents de la codelist</span>
-</span><span id="__span-0-579"><a id="__codelineno-0-579" name="__codelineno-0-579"></a>    <span class="c1"># (diagnostic d'une codelist qui a évolué côté provider)</span>
-</span><span id="__span-0-580"><a id="__codelineno-0-580" name="__codelineno-0-580"></a>    <span class="k">if</span> <span class="n">include</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-581"><a id="__codelineno-0-581" name="__codelineno-0-581"></a>        <span class="n">include_set</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">include</span><span class="p">}</span>
-</span><span id="__span-0-582"><a id="__codelineno-0-582" name="__codelineno-0-582"></a>        <span class="n">missing</span> <span class="o">=</span> <span class="n">include_set</span> <span class="o">-</span> <span class="n">selected</span>
-</span><span id="__span-0-583"><a id="__codelineno-0-583" name="__codelineno-0-583"></a>        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
-</span><span id="__span-0-584"><a id="__codelineno-0-584" name="__codelineno-0-584"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-</span><span id="__span-0-585"><a id="__codelineno-0-585" name="__codelineno-0-585"></a>                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2"> included code(s) absent from the codelist: "</span>
-</span><span id="__span-0-586"><a id="__codelineno-0-586" name="__codelineno-0-586"></a>                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
-</span><span id="__span-0-587"><a id="__codelineno-0-587" name="__codelineno-0-587"></a>            <span class="p">)</span>
-</span><span id="__span-0-588"><a id="__codelineno-0-588" name="__codelineno-0-588"></a>        <span class="c1"># Restriction à la liste d'inclusion</span>
-</span><span id="__span-0-589"><a id="__codelineno-0-589" name="__codelineno-0-589"></a>        <span class="n">selected</span> <span class="o">&amp;=</span> <span class="n">include_set</span>
-</span><span id="__span-0-590"><a id="__codelineno-0-590" name="__codelineno-0-590"></a>
-</span><span id="__span-0-591"><a id="__codelineno-0-591" name="__codelineno-0-591"></a>    <span class="c1"># Restriction au motif d'inclusion</span>
-</span><span id="__span-0-592"><a id="__codelineno-0-592" name="__codelineno-0-592"></a>    <span class="k">if</span> <span class="n">include_regex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-593"><a id="__codelineno-0-593" name="__codelineno-0-593"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">include_regex</span><span class="p">)</span>
-</span><span id="__span-0-594"><a id="__codelineno-0-594" name="__codelineno-0-594"></a>        <span class="n">selected</span> <span class="o">=</span> <span class="p">{</span><span class="n">code</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">selected</span> <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">code</span><span class="p">)}</span>
-</span><span id="__span-0-595"><a id="__codelineno-0-595" name="__codelineno-0-595"></a>
-</span><span id="__span-0-596"><a id="__codelineno-0-596" name="__codelineno-0-596"></a>    <span class="c1"># Retrait de la liste d'exclusion</span>
-</span><span id="__span-0-597"><a id="__codelineno-0-597" name="__codelineno-0-597"></a>    <span class="k">if</span> <span class="n">exclude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-598"><a id="__codelineno-0-598" name="__codelineno-0-598"></a>        <span class="n">selected</span> <span class="o">-=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">}</span>
-</span><span id="__span-0-599"><a id="__codelineno-0-599" name="__codelineno-0-599"></a>
-</span><span id="__span-0-600"><a id="__codelineno-0-600" name="__codelineno-0-600"></a>    <span class="c1"># Retrait du motif d'exclusion</span>
-</span><span id="__span-0-601"><a id="__codelineno-0-601" name="__codelineno-0-601"></a>    <span class="k">if</span> <span class="n">exclude_regex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-602"><a id="__codelineno-0-602" name="__codelineno-0-602"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">exclude_regex</span><span class="p">)</span>
-</span><span id="__span-0-603"><a id="__codelineno-0-603" name="__codelineno-0-603"></a>        <span class="n">selected</span> <span class="o">=</span> <span class="p">{</span><span class="n">code</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">selected</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">pattern</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">code</span><span class="p">)}</span>
-</span><span id="__span-0-604"><a id="__codelineno-0-604" name="__codelineno-0-604"></a>
-</span><span id="__span-0-605"><a id="__codelineno-0-605" name="__codelineno-0-605"></a>    <span class="c1"># Retour trié déterministe</span>
-</span><span id="__span-0-606"><a id="__codelineno-0-606" name="__codelineno-0-606"></a>    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-538">538</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-539">539</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-540">540</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-541">541</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-542">542</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-543">543</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-544">544</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-545">545</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-546">546</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-547">547</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-548">548</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-549">549</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-550">550</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-551">551</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-555">555</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-556">556</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-563">563</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-564">564</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-565">565</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-566">566</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-567">567</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-568">568</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-569">569</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-570">570</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-571">571</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-572">572</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-573">573</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-574">574</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-575">575</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-576">576</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-577">577</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-578">578</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-579">579</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-580">580</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-581">581</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-582">582</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-583">583</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-584">584</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-585">585</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-586">586</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-587">587</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-588">588</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-589">589</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-590">590</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-591">591</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-592">592</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-593">593</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-594">594</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-595">595</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-596">596</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-597">597</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-598">598</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-599">599</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-600">600</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-601">601</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-602">602</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-603">603</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-604">604</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-605">605</a></span>
+<span class="normal"><a href="#statflows.core.factory.filter_codes--source--__codelineno-0-606">606</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.factory.filter_codes--source--__span-0-538"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-538" name="statflows.core.factory.filter_codes--source--__codelineno-0-538"></a><span class="k">def</span><span class="w"> </span><span class="nf">filter_codes</span><span class="p">(</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-539"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-539" name="statflows.core.factory.filter_codes--source--__codelineno-0-539"></a>    <span class="n">available</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-540"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-540" name="statflows.core.factory.filter_codes--source--__codelineno-0-540"></a>    <span class="n">include</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-541"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-541" name="statflows.core.factory.filter_codes--source--__codelineno-0-541"></a>    <span class="n">exclude</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-542"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-542" name="statflows.core.factory.filter_codes--source--__codelineno-0-542"></a>    <span class="n">include_regex</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-543"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-543" name="statflows.core.factory.filter_codes--source--__codelineno-0-543"></a>    <span class="n">exclude_regex</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-544"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-544" name="statflows.core.factory.filter_codes--source--__codelineno-0-544"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-545"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-545" name="statflows.core.factory.filter_codes--source--__codelineno-0-545"></a><span class="w">    </span><span class="sd">"""Filter a codelist by include/exclude lists and regular expressions.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-546"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-546" name="statflows.core.factory.filter_codes--source--__codelineno-0-546"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-547"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-547" name="statflows.core.factory.filter_codes--source--__codelineno-0-547"></a><span class="sd">    Selects the codes to keep when iterating a split dimension (e.g. the</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-548"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-548" name="statflows.core.factory.filter_codes--source--__codelineno-0-548"></a><span class="sd">    Eurostat ``reporter`` or ``product`` dimensions) to build the cartesian</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-549"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-549" name="statflows.core.factory.filter_codes--source--__codelineno-0-549"></a><span class="sd">    product of queries. The four criteria are applied in order and each is</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-550"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-550" name="statflows.core.factory.filter_codes--source--__codelineno-0-550"></a><span class="sd">    skipped when ``None``:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-551"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-551" name="statflows.core.factory.filter_codes--source--__codelineno-0-551"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-552"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-552" name="statflows.core.factory.filter_codes--source--__codelineno-0-552"></a><span class="sd">    1. ``include`` (list): keep only codes present in this list.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-553"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-553" name="statflows.core.factory.filter_codes--source--__codelineno-0-553"></a><span class="sd">    2. ``include_regex``: keep only codes fully matching this pattern.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-554"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-554" name="statflows.core.factory.filter_codes--source--__codelineno-0-554"></a><span class="sd">    3. ``exclude`` (list): drop these codes.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-555"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-555" name="statflows.core.factory.filter_codes--source--__codelineno-0-555"></a><span class="sd">    4. ``exclude_regex``: drop codes fully matching this pattern.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-556"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-556" name="statflows.core.factory.filter_codes--source--__codelineno-0-556"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-557"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-557" name="statflows.core.factory.filter_codes--source--__codelineno-0-557"></a><span class="sd">    Args:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-558"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-558" name="statflows.core.factory.filter_codes--source--__codelineno-0-558"></a><span class="sd">        available: Codes available in the dimension codelist.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-559"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-559" name="statflows.core.factory.filter_codes--source--__codelineno-0-559"></a><span class="sd">        include: Allow-list of codes; ``None`` keeps every available code.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-560"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-560" name="statflows.core.factory.filter_codes--source--__codelineno-0-560"></a><span class="sd">        exclude: Deny-list of codes; ``None`` removes nothing.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-561"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-561" name="statflows.core.factory.filter_codes--source--__codelineno-0-561"></a><span class="sd">        include_regex: Pattern a code must fully match to be kept (``re.fullmatch``).</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-562"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-562" name="statflows.core.factory.filter_codes--source--__codelineno-0-562"></a><span class="sd">        exclude_regex: Pattern that drops a code when fully matched.</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-563"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-563" name="statflows.core.factory.filter_codes--source--__codelineno-0-563"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-564"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-564" name="statflows.core.factory.filter_codes--source--__codelineno-0-564"></a><span class="sd">    Returns:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-565"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-565" name="statflows.core.factory.filter_codes--source--__codelineno-0-565"></a><span class="sd">        Sorted list of selected codes (deterministic, duplicates removed).</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-566"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-566" name="statflows.core.factory.filter_codes--source--__codelineno-0-566"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-567"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-567" name="statflows.core.factory.filter_codes--source--__codelineno-0-567"></a><span class="sd">    Examples:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-568"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-568" name="statflows.core.factory.filter_codes--source--__codelineno-0-568"></a><span class="sd">        &gt;&gt;&gt; filter_codes(</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-569"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-569" name="statflows.core.factory.filter_codes--source--__codelineno-0-569"></a><span class="sd">        ...     ["00", "27", "2710", "TOTAL", "2710XX", "271012"],</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-570"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-570" name="statflows.core.factory.filter_codes--source--__codelineno-0-570"></a><span class="sd">        ...     include_regex=r"^(\\d{2}|\\d{4}|\\d{6}|\\d{8})$",</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-571"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-571" name="statflows.core.factory.filter_codes--source--__codelineno-0-571"></a><span class="sd">        ...     exclude=["00"],</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-572"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-572" name="statflows.core.factory.filter_codes--source--__codelineno-0-572"></a><span class="sd">        ... )</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-573"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-573" name="statflows.core.factory.filter_codes--source--__codelineno-0-573"></a><span class="sd">        ['27', '2710', '271012']</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-574"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-574" name="statflows.core.factory.filter_codes--source--__codelineno-0-574"></a><span class="sd">    """</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-575"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-575" name="statflows.core.factory.filter_codes--source--__codelineno-0-575"></a>    <span class="c1"># Déduplication des codes disponibles</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-576"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-576" name="statflows.core.factory.filter_codes--source--__codelineno-0-576"></a>    <span class="n">selected</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">available</span><span class="p">}</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-577"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-577" name="statflows.core.factory.filter_codes--source--__codelineno-0-577"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-578"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-578" name="statflows.core.factory.filter_codes--source--__codelineno-0-578"></a>    <span class="c1"># Avertissement si des codes inclus sont absents de la codelist</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-579"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-579" name="statflows.core.factory.filter_codes--source--__codelineno-0-579"></a>    <span class="c1"># (diagnostic d'une codelist qui a évolué côté provider)</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-580"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-580" name="statflows.core.factory.filter_codes--source--__codelineno-0-580"></a>    <span class="k">if</span> <span class="n">include</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-581"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-581" name="statflows.core.factory.filter_codes--source--__codelineno-0-581"></a>        <span class="n">include_set</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">include</span><span class="p">}</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-582"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-582" name="statflows.core.factory.filter_codes--source--__codelineno-0-582"></a>        <span class="n">missing</span> <span class="o">=</span> <span class="n">include_set</span> <span class="o">-</span> <span class="n">selected</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-583"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-583" name="statflows.core.factory.filter_codes--source--__codelineno-0-583"></a>        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-584"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-584" name="statflows.core.factory.filter_codes--source--__codelineno-0-584"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-585"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-585" name="statflows.core.factory.filter_codes--source--__codelineno-0-585"></a>                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2"> included code(s) absent from the codelist: "</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-586"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-586" name="statflows.core.factory.filter_codes--source--__codelineno-0-586"></a>                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-587"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-587" name="statflows.core.factory.filter_codes--source--__codelineno-0-587"></a>            <span class="p">)</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-588"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-588" name="statflows.core.factory.filter_codes--source--__codelineno-0-588"></a>        <span class="c1"># Restriction à la liste d'inclusion</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-589"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-589" name="statflows.core.factory.filter_codes--source--__codelineno-0-589"></a>        <span class="n">selected</span> <span class="o">&amp;=</span> <span class="n">include_set</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-590"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-590" name="statflows.core.factory.filter_codes--source--__codelineno-0-590"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-591"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-591" name="statflows.core.factory.filter_codes--source--__codelineno-0-591"></a>    <span class="c1"># Restriction au motif d'inclusion</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-592"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-592" name="statflows.core.factory.filter_codes--source--__codelineno-0-592"></a>    <span class="k">if</span> <span class="n">include_regex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-593"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-593" name="statflows.core.factory.filter_codes--source--__codelineno-0-593"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">include_regex</span><span class="p">)</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-594"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-594" name="statflows.core.factory.filter_codes--source--__codelineno-0-594"></a>        <span class="n">selected</span> <span class="o">=</span> <span class="p">{</span><span class="n">code</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">selected</span> <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">code</span><span class="p">)}</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-595"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-595" name="statflows.core.factory.filter_codes--source--__codelineno-0-595"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-596"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-596" name="statflows.core.factory.filter_codes--source--__codelineno-0-596"></a>    <span class="c1"># Retrait de la liste d'exclusion</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-597"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-597" name="statflows.core.factory.filter_codes--source--__codelineno-0-597"></a>    <span class="k">if</span> <span class="n">exclude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-598"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-598" name="statflows.core.factory.filter_codes--source--__codelineno-0-598"></a>        <span class="n">selected</span> <span class="o">-=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">}</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-599"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-599" name="statflows.core.factory.filter_codes--source--__codelineno-0-599"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-600"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-600" name="statflows.core.factory.filter_codes--source--__codelineno-0-600"></a>    <span class="c1"># Retrait du motif d'exclusion</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-601"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-601" name="statflows.core.factory.filter_codes--source--__codelineno-0-601"></a>    <span class="k">if</span> <span class="n">exclude_regex</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-602"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-602" name="statflows.core.factory.filter_codes--source--__codelineno-0-602"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">exclude_regex</span><span class="p">)</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-603"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-603" name="statflows.core.factory.filter_codes--source--__codelineno-0-603"></a>        <span class="n">selected</span> <span class="o">=</span> <span class="p">{</span><span class="n">code</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">selected</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">pattern</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">code</span><span class="p">)}</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-604"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-604" name="statflows.core.factory.filter_codes--source--__codelineno-0-604"></a>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-605"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-605" name="statflows.core.factory.filter_codes--source--__codelineno-0-605"></a>    <span class="c1"># Retour trié déterministe</span>
+</span><span id="statflows.core.factory.filter_codes--source--__span-0-606"><a id="statflows.core.factory.filter_codes--source--__codelineno-0-606" name="statflows.core.factory.filter_codes--source--__codelineno-0-606"></a>    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

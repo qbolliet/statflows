@@ -3105,303 +3105,303 @@ completes when its write batch is committed or fails).</p>
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>statflows/core/reports.py</code></summary>
-                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-365">365</a></span>
-<span class="normal"><a href="#__codelineno-0-366">366</a></span>
-<span class="normal"><a href="#__codelineno-0-367">367</a></span>
-<span class="normal"><a href="#__codelineno-0-368">368</a></span>
-<span class="normal"><a href="#__codelineno-0-369">369</a></span>
-<span class="normal"><a href="#__codelineno-0-370">370</a></span>
-<span class="normal"><a href="#__codelineno-0-371">371</a></span>
-<span class="normal"><a href="#__codelineno-0-372">372</a></span>
-<span class="normal"><a href="#__codelineno-0-373">373</a></span>
-<span class="normal"><a href="#__codelineno-0-374">374</a></span>
-<span class="normal"><a href="#__codelineno-0-375">375</a></span>
-<span class="normal"><a href="#__codelineno-0-376">376</a></span>
-<span class="normal"><a href="#__codelineno-0-377">377</a></span>
-<span class="normal"><a href="#__codelineno-0-378">378</a></span>
-<span class="normal"><a href="#__codelineno-0-379">379</a></span>
-<span class="normal"><a href="#__codelineno-0-380">380</a></span>
-<span class="normal"><a href="#__codelineno-0-381">381</a></span>
-<span class="normal"><a href="#__codelineno-0-382">382</a></span>
-<span class="normal"><a href="#__codelineno-0-383">383</a></span>
-<span class="normal"><a href="#__codelineno-0-384">384</a></span>
-<span class="normal"><a href="#__codelineno-0-385">385</a></span>
-<span class="normal"><a href="#__codelineno-0-386">386</a></span>
-<span class="normal"><a href="#__codelineno-0-387">387</a></span>
-<span class="normal"><a href="#__codelineno-0-388">388</a></span>
-<span class="normal"><a href="#__codelineno-0-389">389</a></span>
-<span class="normal"><a href="#__codelineno-0-390">390</a></span>
-<span class="normal"><a href="#__codelineno-0-391">391</a></span>
-<span class="normal"><a href="#__codelineno-0-392">392</a></span>
-<span class="normal"><a href="#__codelineno-0-393">393</a></span>
-<span class="normal"><a href="#__codelineno-0-394">394</a></span>
-<span class="normal"><a href="#__codelineno-0-395">395</a></span>
-<span class="normal"><a href="#__codelineno-0-396">396</a></span>
-<span class="normal"><a href="#__codelineno-0-397">397</a></span>
-<span class="normal"><a href="#__codelineno-0-398">398</a></span>
-<span class="normal"><a href="#__codelineno-0-399">399</a></span>
-<span class="normal"><a href="#__codelineno-0-400">400</a></span>
-<span class="normal"><a href="#__codelineno-0-401">401</a></span>
-<span class="normal"><a href="#__codelineno-0-402">402</a></span>
-<span class="normal"><a href="#__codelineno-0-403">403</a></span>
-<span class="normal"><a href="#__codelineno-0-404">404</a></span>
-<span class="normal"><a href="#__codelineno-0-405">405</a></span>
-<span class="normal"><a href="#__codelineno-0-406">406</a></span>
-<span class="normal"><a href="#__codelineno-0-407">407</a></span>
-<span class="normal"><a href="#__codelineno-0-408">408</a></span>
-<span class="normal"><a href="#__codelineno-0-409">409</a></span>
-<span class="normal"><a href="#__codelineno-0-410">410</a></span>
-<span class="normal"><a href="#__codelineno-0-411">411</a></span>
-<span class="normal"><a href="#__codelineno-0-412">412</a></span>
-<span class="normal"><a href="#__codelineno-0-413">413</a></span>
-<span class="normal"><a href="#__codelineno-0-414">414</a></span>
-<span class="normal"><a href="#__codelineno-0-415">415</a></span>
-<span class="normal"><a href="#__codelineno-0-416">416</a></span>
-<span class="normal"><a href="#__codelineno-0-417">417</a></span>
-<span class="normal"><a href="#__codelineno-0-418">418</a></span>
-<span class="normal"><a href="#__codelineno-0-419">419</a></span>
-<span class="normal"><a href="#__codelineno-0-420">420</a></span>
-<span class="normal"><a href="#__codelineno-0-421">421</a></span>
-<span class="normal"><a href="#__codelineno-0-422">422</a></span>
-<span class="normal"><a href="#__codelineno-0-423">423</a></span>
-<span class="normal"><a href="#__codelineno-0-424">424</a></span>
-<span class="normal"><a href="#__codelineno-0-425">425</a></span>
-<span class="normal"><a href="#__codelineno-0-426">426</a></span>
-<span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span>
-<span class="normal"><a href="#__codelineno-0-429">429</a></span>
-<span class="normal"><a href="#__codelineno-0-430">430</a></span>
-<span class="normal"><a href="#__codelineno-0-431">431</a></span>
-<span class="normal"><a href="#__codelineno-0-432">432</a></span>
-<span class="normal"><a href="#__codelineno-0-433">433</a></span>
-<span class="normal"><a href="#__codelineno-0-434">434</a></span>
-<span class="normal"><a href="#__codelineno-0-435">435</a></span>
-<span class="normal"><a href="#__codelineno-0-436">436</a></span>
-<span class="normal"><a href="#__codelineno-0-437">437</a></span>
-<span class="normal"><a href="#__codelineno-0-438">438</a></span>
-<span class="normal"><a href="#__codelineno-0-439">439</a></span>
-<span class="normal"><a href="#__codelineno-0-440">440</a></span>
-<span class="normal"><a href="#__codelineno-0-441">441</a></span>
-<span class="normal"><a href="#__codelineno-0-442">442</a></span>
-<span class="normal"><a href="#__codelineno-0-443">443</a></span>
-<span class="normal"><a href="#__codelineno-0-444">444</a></span>
-<span class="normal"><a href="#__codelineno-0-445">445</a></span>
-<span class="normal"><a href="#__codelineno-0-446">446</a></span>
-<span class="normal"><a href="#__codelineno-0-447">447</a></span>
-<span class="normal"><a href="#__codelineno-0-448">448</a></span>
-<span class="normal"><a href="#__codelineno-0-449">449</a></span>
-<span class="normal"><a href="#__codelineno-0-450">450</a></span>
-<span class="normal"><a href="#__codelineno-0-451">451</a></span>
-<span class="normal"><a href="#__codelineno-0-452">452</a></span>
-<span class="normal"><a href="#__codelineno-0-453">453</a></span>
-<span class="normal"><a href="#__codelineno-0-454">454</a></span>
-<span class="normal"><a href="#__codelineno-0-455">455</a></span>
-<span class="normal"><a href="#__codelineno-0-456">456</a></span>
-<span class="normal"><a href="#__codelineno-0-457">457</a></span>
-<span class="normal"><a href="#__codelineno-0-458">458</a></span>
-<span class="normal"><a href="#__codelineno-0-459">459</a></span>
-<span class="normal"><a href="#__codelineno-0-460">460</a></span>
-<span class="normal"><a href="#__codelineno-0-461">461</a></span>
-<span class="normal"><a href="#__codelineno-0-462">462</a></span>
-<span class="normal"><a href="#__codelineno-0-463">463</a></span>
-<span class="normal"><a href="#__codelineno-0-464">464</a></span>
-<span class="normal"><a href="#__codelineno-0-465">465</a></span>
-<span class="normal"><a href="#__codelineno-0-466">466</a></span>
-<span class="normal"><a href="#__codelineno-0-467">467</a></span>
-<span class="normal"><a href="#__codelineno-0-468">468</a></span>
-<span class="normal"><a href="#__codelineno-0-469">469</a></span>
-<span class="normal"><a href="#__codelineno-0-470">470</a></span>
-<span class="normal"><a href="#__codelineno-0-471">471</a></span>
-<span class="normal"><a href="#__codelineno-0-472">472</a></span>
-<span class="normal"><a href="#__codelineno-0-473">473</a></span>
-<span class="normal"><a href="#__codelineno-0-474">474</a></span>
-<span class="normal"><a href="#__codelineno-0-475">475</a></span>
-<span class="normal"><a href="#__codelineno-0-476">476</a></span>
-<span class="normal"><a href="#__codelineno-0-477">477</a></span>
-<span class="normal"><a href="#__codelineno-0-478">478</a></span>
-<span class="normal"><a href="#__codelineno-0-479">479</a></span>
-<span class="normal"><a href="#__codelineno-0-480">480</a></span>
-<span class="normal"><a href="#__codelineno-0-481">481</a></span>
-<span class="normal"><a href="#__codelineno-0-482">482</a></span>
-<span class="normal"><a href="#__codelineno-0-483">483</a></span>
-<span class="normal"><a href="#__codelineno-0-484">484</a></span>
-<span class="normal"><a href="#__codelineno-0-485">485</a></span>
-<span class="normal"><a href="#__codelineno-0-486">486</a></span>
-<span class="normal"><a href="#__codelineno-0-487">487</a></span>
-<span class="normal"><a href="#__codelineno-0-488">488</a></span>
-<span class="normal"><a href="#__codelineno-0-489">489</a></span>
-<span class="normal"><a href="#__codelineno-0-490">490</a></span>
-<span class="normal"><a href="#__codelineno-0-491">491</a></span>
-<span class="normal"><a href="#__codelineno-0-492">492</a></span>
-<span class="normal"><a href="#__codelineno-0-493">493</a></span>
-<span class="normal"><a href="#__codelineno-0-494">494</a></span>
-<span class="normal"><a href="#__codelineno-0-495">495</a></span>
-<span class="normal"><a href="#__codelineno-0-496">496</a></span>
-<span class="normal"><a href="#__codelineno-0-497">497</a></span>
-<span class="normal"><a href="#__codelineno-0-498">498</a></span>
-<span class="normal"><a href="#__codelineno-0-499">499</a></span>
-<span class="normal"><a href="#__codelineno-0-500">500</a></span>
-<span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span>
-<span class="normal"><a href="#__codelineno-0-505">505</a></span>
-<span class="normal"><a href="#__codelineno-0-506">506</a></span>
-<span class="normal"><a href="#__codelineno-0-507">507</a></span>
-<span class="normal"><a href="#__codelineno-0-508">508</a></span>
-<span class="normal"><a href="#__codelineno-0-509">509</a></span>
-<span class="normal"><a href="#__codelineno-0-510">510</a></span>
-<span class="normal"><a href="#__codelineno-0-511">511</a></span>
-<span class="normal"><a href="#__codelineno-0-512">512</a></span>
-<span class="normal"><a href="#__codelineno-0-513">513</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="nd">@dataclass</span>
-</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a><span class="k">class</span><span class="w"> </span><span class="nc">DownloadReport</span><span class="p">:</span>
-</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="w">    </span><span class="sd">"""Summary of a download run.</span>
-</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a>
-</span><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">    The five historical counters are kept as they were; the run now also</span>
-</span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="sd">    carries its per-query detail, so a consuming project can log both run-level</span>
-</span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a><span class="sd">    metrics and a per-query table.</span>
-</span><span id="__span-0-372"><a id="__codelineno-0-372" name="__codelineno-0-372"></a>
-</span><span id="__span-0-373"><a id="__codelineno-0-373" name="__codelineno-0-373"></a><span class="sd">    Attributes:</span>
-</span><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a><span class="sd">        processed: Number of queries processed.</span>
-</span><span id="__span-0-375"><a id="__codelineno-0-375" name="__codelineno-0-375"></a><span class="sd">        rows_written: Total rows written/upserted into DuckLake.</span>
-</span><span id="__span-0-376"><a id="__codelineno-0-376" name="__codelineno-0-376"></a><span class="sd">        empty: Number of queries that returned no new data.</span>
-</span><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a><span class="sd">        errors: Number of queries that failed.</span>
-</span><span id="__span-0-378"><a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">        stopped_early: Whether the run stopped on the graceful-shutdown</span>
-</span><span id="__span-0-379"><a id="__codelineno-0-379" name="__codelineno-0-379"></a><span class="sd">            deadline before processing every query.</span>
-</span><span id="__span-0-380"><a id="__codelineno-0-380" name="__codelineno-0-380"></a><span class="sd">        n_queries_planned: Number of queries handed to the run.</span>
-</span><span id="__span-0-381"><a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">        n_queries_remaining: Queries left unprocessed on an early stop.</span>
-</span><span id="__span-0-382"><a id="__codelineno-0-382" name="__codelineno-0-382"></a><span class="sd">        n_tables_created: Schemas created during the run (vs. upserted).</span>
-</span><span id="__span-0-383"><a id="__codelineno-0-383" name="__codelineno-0-383"></a><span class="sd">        n_structures_fetched: Dataflow structures downloaded (registry misses).</span>
-</span><span id="__span-0-384"><a id="__codelineno-0-384" name="__codelineno-0-384"></a><span class="sd">        duration_seconds: Wall-clock duration of the whole run.</span>
-</span><span id="__span-0-385"><a id="__codelineno-0-385" name="__codelineno-0-385"></a><span class="sd">        n_registry_flushes: Times the last-download registry was persisted</span>
-</span><span id="__span-0-386"><a id="__codelineno-0-386" name="__codelineno-0-386"></a><span class="sd">            (one per flush, whatever the number of fragments rewritten).</span>
-</span><span id="__span-0-387"><a id="__codelineno-0-387" name="__codelineno-0-387"></a><span class="sd">        n_write_batches: DuckLake write calls (one snapshot transaction each);</span>
-</span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a><span class="sd">            equal to the number of non-empty queries without write batching.</span>
-</span><span id="__span-0-389"><a id="__codelineno-0-389" name="__codelineno-0-389"></a><span class="sd">        rows_pending_at_stop: Rows still buffered, unwritten, when the run</span>
-</span><span id="__span-0-390"><a id="__codelineno-0-390" name="__codelineno-0-390"></a><span class="sd">            ended. Always ``0`` unless the final flush itself was interrupted;</span>
-</span><span id="__span-0-391"><a id="__codelineno-0-391" name="__codelineno-0-391"></a><span class="sd">            any other value means data was fetched but neither written nor</span>
-</span><span id="__span-0-392"><a id="__codelineno-0-392" name="__codelineno-0-392"></a><span class="sd">            recorded (those queries will simply be downloaded again).</span>
-</span><span id="__span-0-393"><a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="sd">        n_modified: Number of queries whose write actually inserted or</span>
-</span><span id="__span-0-394"><a id="__codelineno-0-394" name="__codelineno-0-394"></a><span class="sd">            updated rows — ``0`` means downstream steps have nothing to</span>
-</span><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a><span class="sd">            recompute.</span>
-</span><span id="__span-0-396"><a id="__codelineno-0-396" name="__codelineno-0-396"></a><span class="sd">        callback_seconds: Cumulated wall-clock time spent in the caller's</span>
-</span><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="sd">            ``on_query_complete`` callback (e.g. streaming metrics to an</span>
-</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="sd">            experiment tracker) — time the run spends outside the provider and</span>
-</span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="sd">            outside DuckLake.</span>
-</span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a><span class="sd">        queries: Per-query diagnostics, in completion order (a buffered query</span>
-</span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">            completes when its write batch is committed or fails).</span>
-</span><span id="__span-0-402"><a id="__codelineno-0-402" name="__codelineno-0-402"></a><span class="sd">    """</span>
-</span><span id="__span-0-403"><a id="__codelineno-0-403" name="__codelineno-0-403"></a>
-</span><span id="__span-0-404"><a id="__codelineno-0-404" name="__codelineno-0-404"></a>    <span class="n">processed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-405"><a id="__codelineno-0-405" name="__codelineno-0-405"></a>    <span class="n">rows_written</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-406"><a id="__codelineno-0-406" name="__codelineno-0-406"></a>    <span class="n">empty</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-407"><a id="__codelineno-0-407" name="__codelineno-0-407"></a>    <span class="n">errors</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-408"><a id="__codelineno-0-408" name="__codelineno-0-408"></a>    <span class="n">stopped_early</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="__span-0-409"><a id="__codelineno-0-409" name="__codelineno-0-409"></a>    <span class="c1"># Contexte de l'exécution</span>
-</span><span id="__span-0-410"><a id="__codelineno-0-410" name="__codelineno-0-410"></a>    <span class="n">n_queries_planned</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-411"><a id="__codelineno-0-411" name="__codelineno-0-411"></a>    <span class="n">n_queries_remaining</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-412"><a id="__codelineno-0-412" name="__codelineno-0-412"></a>    <span class="n">n_tables_created</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-413"><a id="__codelineno-0-413" name="__codelineno-0-413"></a>    <span class="n">n_structures_fetched</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-414"><a id="__codelineno-0-414" name="__codelineno-0-414"></a>    <span class="n">duration_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-</span><span id="__span-0-415"><a id="__codelineno-0-415" name="__codelineno-0-415"></a>    <span class="c1"># Tamponnage du registre et des écritures DuckLake</span>
-</span><span id="__span-0-416"><a id="__codelineno-0-416" name="__codelineno-0-416"></a>    <span class="n">n_registry_flushes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-417"><a id="__codelineno-0-417" name="__codelineno-0-417"></a>    <span class="n">n_write_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-418"><a id="__codelineno-0-418" name="__codelineno-0-418"></a>    <span class="n">rows_pending_at_stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-419"><a id="__codelineno-0-419" name="__codelineno-0-419"></a>    <span class="c1"># Requêtes dont les données ont réellement changé (conditionnement de l'aval)</span>
-</span><span id="__span-0-420"><a id="__codelineno-0-420" name="__codelineno-0-420"></a>    <span class="n">n_modified</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-421"><a id="__codelineno-0-421" name="__codelineno-0-421"></a>    <span class="c1"># Temps passé dans le rappel de l'appelant (suivi d'expérience)</span>
-</span><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a>    <span class="n">callback_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
-</span><span id="__span-0-423"><a id="__codelineno-0-423" name="__codelineno-0-423"></a>    <span class="c1"># Détail par requête (principe « les diagnostics sont des données »)</span>
-</span><span id="__span-0-424"><a id="__codelineno-0-424" name="__codelineno-0-424"></a>    <span class="n">queries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">QueryReport</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-</span><span id="__span-0-425"><a id="__codelineno-0-425" name="__codelineno-0-425"></a>
-</span><span id="__span-0-426"><a id="__codelineno-0-426" name="__codelineno-0-426"></a>    <span class="c1"># Agrégats dérivés du détail par requête</span>
-</span><span id="__span-0-427"><a id="__codelineno-0-427" name="__codelineno-0-427"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">aggregates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-</span><span id="__span-0-428"><a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="w">        </span><span class="sd">"""Sum the per-query diagnostics into run-level counters.</span>
-</span><span id="__span-0-429"><a id="__codelineno-0-429" name="__codelineno-0-429"></a>
-</span><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">        Returns:</span>
-</span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">            Mapping of aggregate names to values: sub-requests issued and</span>
-</span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">            failed, no-record answers, rows fetched before and after</span>
-</span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">            post-filtering, duplicates, HTTP requests, failures, seconds and</span>
-</span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">            bytes, rate-limit waits, and last-update checks (provider lookups,</span>
-</span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">            cache hits, unresolved lookups).</span>
-</span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a>
-</span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">        Examples:</span>
-</span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">            &gt;&gt;&gt; report = DownloadReport(queries=[QueryReport(rows_written=5)])</span>
-</span><span id="__span-0-439"><a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">            &gt;&gt;&gt; report.aggregates()["n_requests"]</span>
-</span><span id="__span-0-440"><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">            0.0</span>
-</span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">            &gt;&gt;&gt; hit = QueryReport(freshness=FreshnessStats(n_cache_hits=1))</span>
-</span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">            &gt;&gt;&gt; DownloadReport(queries=[hit, hit]).aggregates()["n_freshness_cache_hits"]</span>
-</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            2.0</span>
-</span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">        """</span>
-</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a>        <span class="c1"># Champs sommés, exprimés comme des chemins dans le rapport par requête</span>
-</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="n">paths</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>            <span class="s2">"n_requests"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_requests"</span><span class="p">),</span>
-</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>            <span class="s2">"n_request_errors"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_request_errors"</span><span class="p">),</span>
-</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>            <span class="s2">"n_no_records"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_no_records"</span><span class="p">),</span>
-</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a>            <span class="s2">"n_empty_responses"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_empty_responses"</span><span class="p">),</span>
-</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a>            <span class="s2">"rows_fetched"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"rows_fetched"</span><span class="p">),</span>
-</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>            <span class="s2">"rows_after_filter"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"rows_after_filter"</span><span class="p">),</span>
-</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a>            <span class="s2">"n_duplicates"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_duplicates"</span><span class="p">),</span>
-</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a>            <span class="s2">"n_http_requests"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"n_requests"</span><span class="p">),</span>
-</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a>            <span class="s2">"n_http_failures"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"n_failures"</span><span class="p">),</span>
-</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a>            <span class="s2">"http_seconds"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"total_seconds"</span><span class="p">),</span>
-</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>            <span class="s2">"http_bytes"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"total_bytes"</span><span class="p">),</span>
-</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a>            <span class="s2">"rate_limit_wait_seconds"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"total_wait_seconds"</span><span class="p">),</span>
-</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>            <span class="s2">"n_rate_limit_acquisitions"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"n_acquisitions"</span><span class="p">),</span>
-</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>            <span class="s2">"n_freshness_checks"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_checks"</span><span class="p">),</span>
-</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a>            <span class="s2">"n_freshness_cache_hits"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_cache_hits"</span><span class="p">),</span>
-</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a>            <span class="s2">"n_freshness_unresolved"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_unresolved"</span><span class="p">),</span>
-</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a>        <span class="p">}</span>
-</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="c1"># Somme sur l'ensemble des requêtes traitées</span>
-</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a>        <span class="k">return</span> <span class="p">{</span>
-</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a>            <span class="n">name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span>
-</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a>                <span class="nb">sum</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">group</span><span class="p">),</span> <span class="n">attribute</span><span class="p">)</span> <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queries</span><span class="p">)</span>
-</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>            <span class="p">)</span>
-</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a>            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a>        <span class="p">}</span>
-</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a>
-</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a>    <span class="c1"># Mise en forme des métriques du run</span>
-</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"download"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="w">        </span><span class="sd">"""Flatten the run diagnostics into dotted metric keys.</span>
-</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a>
-</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">        The per-query detail is *not* expanded here — it belongs in</span>
-</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="sd">        :meth:`to_frame`, logged as a table — but its aggregates are.</span>
-</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a>
-</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">        Args:</span>
-</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">            prefix: Prefix prepended to every metric name.</span>
-</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a>
-</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">        Returns:</span>
-</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="sd">            Mapping of dotted metric names to finite floats.</span>
-</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a>
-</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a><span class="sd">        Examples:</span>
-</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">            &gt;&gt;&gt; DownloadReport(processed=2).to_metrics()["download.processed"]</span>
-</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">            2.0</span>
-</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">        """</span>
-</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a>        <span class="c1"># Compteurs de run, hors détail par requête</span>
-</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a>        <span class="n">summary</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>            <span class="n">report_field</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>            <span class="k">for</span> <span class="n">report_field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a>            <span class="k">if</span> <span class="n">report_field</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"queries"</span>
-</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="p">}</span>
-</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="n">metrics</span> <span class="o">=</span> <span class="n">flatten_metrics</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
-</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="c1"># Agrégats du détail par requête</span>
-</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">flatten_metrics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregates</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">))</span>
-</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>        <span class="k">return</span> <span class="n">metrics</span>
-</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a>
-</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="c1"># Mise en forme tabulaire du détail par requête</span>
-</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a><span class="w">        </span><span class="sd">"""Render the per-query diagnostics as a table.</span>
-</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>
-</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="sd">        Directly consumable by a tracker's ``log_table``, and readable on its</span>
-</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="sd">        own when investigating a partial run.</span>
-</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a>
-</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">        Returns:</span>
-</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">            One row per processed query, nested reports flattened into dotted</span>
-</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">            column names.</span>
-</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">        """</span>
-</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a>        <span class="c1"># Aplatissement de chaque rapport de requête, valeurs textuelles incluses</span>
-</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a>        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">_walk</span><span class="p">(</span><span class="n">asdict</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queries</span><span class="p">]</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a>        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-365">365</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-366">366</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-367">367</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-368">368</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-369">369</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-370">370</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-371">371</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-372">372</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-373">373</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-374">374</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-375">375</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-376">376</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-377">377</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-378">378</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-379">379</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-380">380</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-381">381</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-382">382</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-383">383</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-384">384</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-385">385</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-386">386</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-387">387</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-388">388</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-389">389</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-390">390</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-391">391</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-392">392</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-393">393</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-394">394</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-395">395</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-396">396</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-397">397</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-398">398</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-399">399</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-400">400</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-401">401</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-402">402</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-403">403</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-404">404</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-405">405</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-406">406</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-407">407</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-408">408</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-409">409</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-410">410</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-411">411</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-412">412</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-413">413</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-414">414</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-415">415</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-416">416</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-417">417</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-418">418</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-419">419</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-420">420</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-421">421</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-422">422</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-423">423</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-424">424</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-425">425</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-426">426</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-442">442</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-443">443</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-444">444</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-445">445</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-446">446</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-447">447</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-448">448</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-449">449</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-450">450</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-451">451</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-452">452</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-453">453</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-454">454</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-455">455</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-456">456</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-457">457</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-458">458</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-460">460</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-461">461</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-462">462</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-463">463</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-498">498</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-505">505</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-508">508</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-511">511</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-512">512</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport--source--__codelineno-0-513">513</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.reports.DownloadReport--source--__span-0-365"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-365" name="statflows.core.reports.DownloadReport--source--__codelineno-0-365"></a><span class="nd">@dataclass</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-366"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-366" name="statflows.core.reports.DownloadReport--source--__codelineno-0-366"></a><span class="k">class</span><span class="w"> </span><span class="nc">DownloadReport</span><span class="p">:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-367"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-367" name="statflows.core.reports.DownloadReport--source--__codelineno-0-367"></a><span class="w">    </span><span class="sd">"""Summary of a download run.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-368"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-368" name="statflows.core.reports.DownloadReport--source--__codelineno-0-368"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-369"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-369" name="statflows.core.reports.DownloadReport--source--__codelineno-0-369"></a><span class="sd">    The five historical counters are kept as they were; the run now also</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-370"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-370" name="statflows.core.reports.DownloadReport--source--__codelineno-0-370"></a><span class="sd">    carries its per-query detail, so a consuming project can log both run-level</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-371"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-371" name="statflows.core.reports.DownloadReport--source--__codelineno-0-371"></a><span class="sd">    metrics and a per-query table.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-372"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-372" name="statflows.core.reports.DownloadReport--source--__codelineno-0-372"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-373"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-373" name="statflows.core.reports.DownloadReport--source--__codelineno-0-373"></a><span class="sd">    Attributes:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-374"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-374" name="statflows.core.reports.DownloadReport--source--__codelineno-0-374"></a><span class="sd">        processed: Number of queries processed.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-375"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-375" name="statflows.core.reports.DownloadReport--source--__codelineno-0-375"></a><span class="sd">        rows_written: Total rows written/upserted into DuckLake.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-376"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-376" name="statflows.core.reports.DownloadReport--source--__codelineno-0-376"></a><span class="sd">        empty: Number of queries that returned no new data.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-377"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-377" name="statflows.core.reports.DownloadReport--source--__codelineno-0-377"></a><span class="sd">        errors: Number of queries that failed.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-378"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-378" name="statflows.core.reports.DownloadReport--source--__codelineno-0-378"></a><span class="sd">        stopped_early: Whether the run stopped on the graceful-shutdown</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-379"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-379" name="statflows.core.reports.DownloadReport--source--__codelineno-0-379"></a><span class="sd">            deadline before processing every query.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-380"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-380" name="statflows.core.reports.DownloadReport--source--__codelineno-0-380"></a><span class="sd">        n_queries_planned: Number of queries handed to the run.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-381"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-381" name="statflows.core.reports.DownloadReport--source--__codelineno-0-381"></a><span class="sd">        n_queries_remaining: Queries left unprocessed on an early stop.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-382"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-382" name="statflows.core.reports.DownloadReport--source--__codelineno-0-382"></a><span class="sd">        n_tables_created: Schemas created during the run (vs. upserted).</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-383"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-383" name="statflows.core.reports.DownloadReport--source--__codelineno-0-383"></a><span class="sd">        n_structures_fetched: Dataflow structures downloaded (registry misses).</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-384"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-384" name="statflows.core.reports.DownloadReport--source--__codelineno-0-384"></a><span class="sd">        duration_seconds: Wall-clock duration of the whole run.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-385"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-385" name="statflows.core.reports.DownloadReport--source--__codelineno-0-385"></a><span class="sd">        n_registry_flushes: Times the last-download registry was persisted</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-386"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-386" name="statflows.core.reports.DownloadReport--source--__codelineno-0-386"></a><span class="sd">            (one per flush, whatever the number of fragments rewritten).</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-387"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-387" name="statflows.core.reports.DownloadReport--source--__codelineno-0-387"></a><span class="sd">        n_write_batches: DuckLake write calls (one snapshot transaction each);</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-388"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-388" name="statflows.core.reports.DownloadReport--source--__codelineno-0-388"></a><span class="sd">            equal to the number of non-empty queries without write batching.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-389"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-389" name="statflows.core.reports.DownloadReport--source--__codelineno-0-389"></a><span class="sd">        rows_pending_at_stop: Rows still buffered, unwritten, when the run</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-390"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-390" name="statflows.core.reports.DownloadReport--source--__codelineno-0-390"></a><span class="sd">            ended. Always ``0`` unless the final flush itself was interrupted;</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-391"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-391" name="statflows.core.reports.DownloadReport--source--__codelineno-0-391"></a><span class="sd">            any other value means data was fetched but neither written nor</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-392"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-392" name="statflows.core.reports.DownloadReport--source--__codelineno-0-392"></a><span class="sd">            recorded (those queries will simply be downloaded again).</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-393"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-393" name="statflows.core.reports.DownloadReport--source--__codelineno-0-393"></a><span class="sd">        n_modified: Number of queries whose write actually inserted or</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-394"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-394" name="statflows.core.reports.DownloadReport--source--__codelineno-0-394"></a><span class="sd">            updated rows — ``0`` means downstream steps have nothing to</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-395"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-395" name="statflows.core.reports.DownloadReport--source--__codelineno-0-395"></a><span class="sd">            recompute.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-396"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-396" name="statflows.core.reports.DownloadReport--source--__codelineno-0-396"></a><span class="sd">        callback_seconds: Cumulated wall-clock time spent in the caller's</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-397"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-397" name="statflows.core.reports.DownloadReport--source--__codelineno-0-397"></a><span class="sd">            ``on_query_complete`` callback (e.g. streaming metrics to an</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-398"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-398" name="statflows.core.reports.DownloadReport--source--__codelineno-0-398"></a><span class="sd">            experiment tracker) — time the run spends outside the provider and</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-399"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-399" name="statflows.core.reports.DownloadReport--source--__codelineno-0-399"></a><span class="sd">            outside DuckLake.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-400"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-400" name="statflows.core.reports.DownloadReport--source--__codelineno-0-400"></a><span class="sd">        queries: Per-query diagnostics, in completion order (a buffered query</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-401"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-401" name="statflows.core.reports.DownloadReport--source--__codelineno-0-401"></a><span class="sd">            completes when its write batch is committed or fails).</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-402"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-402" name="statflows.core.reports.DownloadReport--source--__codelineno-0-402"></a><span class="sd">    """</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-403"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-403" name="statflows.core.reports.DownloadReport--source--__codelineno-0-403"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-404"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-404" name="statflows.core.reports.DownloadReport--source--__codelineno-0-404"></a>    <span class="n">processed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-405"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-405" name="statflows.core.reports.DownloadReport--source--__codelineno-0-405"></a>    <span class="n">rows_written</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-406"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-406" name="statflows.core.reports.DownloadReport--source--__codelineno-0-406"></a>    <span class="n">empty</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-407"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-407" name="statflows.core.reports.DownloadReport--source--__codelineno-0-407"></a>    <span class="n">errors</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-408"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-408" name="statflows.core.reports.DownloadReport--source--__codelineno-0-408"></a>    <span class="n">stopped_early</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-409"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-409" name="statflows.core.reports.DownloadReport--source--__codelineno-0-409"></a>    <span class="c1"># Contexte de l'exécution</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-410"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-410" name="statflows.core.reports.DownloadReport--source--__codelineno-0-410"></a>    <span class="n">n_queries_planned</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-411"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-411" name="statflows.core.reports.DownloadReport--source--__codelineno-0-411"></a>    <span class="n">n_queries_remaining</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-412"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-412" name="statflows.core.reports.DownloadReport--source--__codelineno-0-412"></a>    <span class="n">n_tables_created</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-413"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-413" name="statflows.core.reports.DownloadReport--source--__codelineno-0-413"></a>    <span class="n">n_structures_fetched</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-414"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-414" name="statflows.core.reports.DownloadReport--source--__codelineno-0-414"></a>    <span class="n">duration_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-415"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-415" name="statflows.core.reports.DownloadReport--source--__codelineno-0-415"></a>    <span class="c1"># Tamponnage du registre et des écritures DuckLake</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-416"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-416" name="statflows.core.reports.DownloadReport--source--__codelineno-0-416"></a>    <span class="n">n_registry_flushes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-417"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-417" name="statflows.core.reports.DownloadReport--source--__codelineno-0-417"></a>    <span class="n">n_write_batches</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-418"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-418" name="statflows.core.reports.DownloadReport--source--__codelineno-0-418"></a>    <span class="n">rows_pending_at_stop</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-419"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-419" name="statflows.core.reports.DownloadReport--source--__codelineno-0-419"></a>    <span class="c1"># Requêtes dont les données ont réellement changé (conditionnement de l'aval)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-420"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-420" name="statflows.core.reports.DownloadReport--source--__codelineno-0-420"></a>    <span class="n">n_modified</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-421"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-421" name="statflows.core.reports.DownloadReport--source--__codelineno-0-421"></a>    <span class="c1"># Temps passé dans le rappel de l'appelant (suivi d'expérience)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-422"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-422" name="statflows.core.reports.DownloadReport--source--__codelineno-0-422"></a>    <span class="n">callback_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-423"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-423" name="statflows.core.reports.DownloadReport--source--__codelineno-0-423"></a>    <span class="c1"># Détail par requête (principe « les diagnostics sont des données »)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-424"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-424" name="statflows.core.reports.DownloadReport--source--__codelineno-0-424"></a>    <span class="n">queries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">QueryReport</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-425"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-425" name="statflows.core.reports.DownloadReport--source--__codelineno-0-425"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-426"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-426" name="statflows.core.reports.DownloadReport--source--__codelineno-0-426"></a>    <span class="c1"># Agrégats dérivés du détail par requête</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-427"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-427" name="statflows.core.reports.DownloadReport--source--__codelineno-0-427"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">aggregates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-428"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-428" name="statflows.core.reports.DownloadReport--source--__codelineno-0-428"></a><span class="w">        </span><span class="sd">"""Sum the per-query diagnostics into run-level counters.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-429"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-429" name="statflows.core.reports.DownloadReport--source--__codelineno-0-429"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-430"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-430" name="statflows.core.reports.DownloadReport--source--__codelineno-0-430"></a><span class="sd">        Returns:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-431"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-431" name="statflows.core.reports.DownloadReport--source--__codelineno-0-431"></a><span class="sd">            Mapping of aggregate names to values: sub-requests issued and</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-432"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-432" name="statflows.core.reports.DownloadReport--source--__codelineno-0-432"></a><span class="sd">            failed, no-record answers, rows fetched before and after</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-433"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-433" name="statflows.core.reports.DownloadReport--source--__codelineno-0-433"></a><span class="sd">            post-filtering, duplicates, HTTP requests, failures, seconds and</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-434"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-434" name="statflows.core.reports.DownloadReport--source--__codelineno-0-434"></a><span class="sd">            bytes, rate-limit waits, and last-update checks (provider lookups,</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-435"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-435" name="statflows.core.reports.DownloadReport--source--__codelineno-0-435"></a><span class="sd">            cache hits, unresolved lookups).</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-436"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-436" name="statflows.core.reports.DownloadReport--source--__codelineno-0-436"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-437"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-437" name="statflows.core.reports.DownloadReport--source--__codelineno-0-437"></a><span class="sd">        Examples:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-438"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-438" name="statflows.core.reports.DownloadReport--source--__codelineno-0-438"></a><span class="sd">            &gt;&gt;&gt; report = DownloadReport(queries=[QueryReport(rows_written=5)])</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-439"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-439" name="statflows.core.reports.DownloadReport--source--__codelineno-0-439"></a><span class="sd">            &gt;&gt;&gt; report.aggregates()["n_requests"]</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-440"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-440" name="statflows.core.reports.DownloadReport--source--__codelineno-0-440"></a><span class="sd">            0.0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-441"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-441" name="statflows.core.reports.DownloadReport--source--__codelineno-0-441"></a><span class="sd">            &gt;&gt;&gt; hit = QueryReport(freshness=FreshnessStats(n_cache_hits=1))</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-442"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-442" name="statflows.core.reports.DownloadReport--source--__codelineno-0-442"></a><span class="sd">            &gt;&gt;&gt; DownloadReport(queries=[hit, hit]).aggregates()["n_freshness_cache_hits"]</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-443"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-443" name="statflows.core.reports.DownloadReport--source--__codelineno-0-443"></a><span class="sd">            2.0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-444"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-444" name="statflows.core.reports.DownloadReport--source--__codelineno-0-444"></a><span class="sd">        """</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-445"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-445" name="statflows.core.reports.DownloadReport--source--__codelineno-0-445"></a>        <span class="c1"># Champs sommés, exprimés comme des chemins dans le rapport par requête</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-446"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-446" name="statflows.core.reports.DownloadReport--source--__codelineno-0-446"></a>        <span class="n">paths</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-447"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-447" name="statflows.core.reports.DownloadReport--source--__codelineno-0-447"></a>            <span class="s2">"n_requests"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_requests"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-448"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-448" name="statflows.core.reports.DownloadReport--source--__codelineno-0-448"></a>            <span class="s2">"n_request_errors"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_request_errors"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-449"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-449" name="statflows.core.reports.DownloadReport--source--__codelineno-0-449"></a>            <span class="s2">"n_no_records"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_no_records"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-450"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-450" name="statflows.core.reports.DownloadReport--source--__codelineno-0-450"></a>            <span class="s2">"n_empty_responses"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_empty_responses"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-451"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-451" name="statflows.core.reports.DownloadReport--source--__codelineno-0-451"></a>            <span class="s2">"rows_fetched"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"rows_fetched"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-452"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-452" name="statflows.core.reports.DownloadReport--source--__codelineno-0-452"></a>            <span class="s2">"rows_after_filter"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"rows_after_filter"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-453"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-453" name="statflows.core.reports.DownloadReport--source--__codelineno-0-453"></a>            <span class="s2">"n_duplicates"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_duplicates"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-454"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-454" name="statflows.core.reports.DownloadReport--source--__codelineno-0-454"></a>            <span class="s2">"n_http_requests"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"n_requests"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-455"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-455" name="statflows.core.reports.DownloadReport--source--__codelineno-0-455"></a>            <span class="s2">"n_http_failures"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"n_failures"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-456"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-456" name="statflows.core.reports.DownloadReport--source--__codelineno-0-456"></a>            <span class="s2">"http_seconds"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"total_seconds"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-457"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-457" name="statflows.core.reports.DownloadReport--source--__codelineno-0-457"></a>            <span class="s2">"http_bytes"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"total_bytes"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-458"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-458" name="statflows.core.reports.DownloadReport--source--__codelineno-0-458"></a>            <span class="s2">"rate_limit_wait_seconds"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"total_wait_seconds"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-459"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-459" name="statflows.core.reports.DownloadReport--source--__codelineno-0-459"></a>            <span class="s2">"n_rate_limit_acquisitions"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"n_acquisitions"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-460"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-460" name="statflows.core.reports.DownloadReport--source--__codelineno-0-460"></a>            <span class="s2">"n_freshness_checks"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_checks"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-461"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-461" name="statflows.core.reports.DownloadReport--source--__codelineno-0-461"></a>            <span class="s2">"n_freshness_cache_hits"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_cache_hits"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-462"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-462" name="statflows.core.reports.DownloadReport--source--__codelineno-0-462"></a>            <span class="s2">"n_freshness_unresolved"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_unresolved"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-463"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-463" name="statflows.core.reports.DownloadReport--source--__codelineno-0-463"></a>        <span class="p">}</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-464"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-464" name="statflows.core.reports.DownloadReport--source--__codelineno-0-464"></a>        <span class="c1"># Somme sur l'ensemble des requêtes traitées</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-465"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-465" name="statflows.core.reports.DownloadReport--source--__codelineno-0-465"></a>        <span class="k">return</span> <span class="p">{</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-466"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-466" name="statflows.core.reports.DownloadReport--source--__codelineno-0-466"></a>            <span class="n">name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-467"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-467" name="statflows.core.reports.DownloadReport--source--__codelineno-0-467"></a>                <span class="nb">sum</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">group</span><span class="p">),</span> <span class="n">attribute</span><span class="p">)</span> <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queries</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-468"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-468" name="statflows.core.reports.DownloadReport--source--__codelineno-0-468"></a>            <span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-469"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-469" name="statflows.core.reports.DownloadReport--source--__codelineno-0-469"></a>            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-470"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-470" name="statflows.core.reports.DownloadReport--source--__codelineno-0-470"></a>        <span class="p">}</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-471"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-471" name="statflows.core.reports.DownloadReport--source--__codelineno-0-471"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-472"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-472" name="statflows.core.reports.DownloadReport--source--__codelineno-0-472"></a>    <span class="c1"># Mise en forme des métriques du run</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-473"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-473" name="statflows.core.reports.DownloadReport--source--__codelineno-0-473"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"download"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-474"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-474" name="statflows.core.reports.DownloadReport--source--__codelineno-0-474"></a><span class="w">        </span><span class="sd">"""Flatten the run diagnostics into dotted metric keys.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-475"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-475" name="statflows.core.reports.DownloadReport--source--__codelineno-0-475"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-476"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-476" name="statflows.core.reports.DownloadReport--source--__codelineno-0-476"></a><span class="sd">        The per-query detail is *not* expanded here — it belongs in</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-477"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-477" name="statflows.core.reports.DownloadReport--source--__codelineno-0-477"></a><span class="sd">        :meth:`to_frame`, logged as a table — but its aggregates are.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-478"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-478" name="statflows.core.reports.DownloadReport--source--__codelineno-0-478"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-479"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-479" name="statflows.core.reports.DownloadReport--source--__codelineno-0-479"></a><span class="sd">        Args:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-480"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-480" name="statflows.core.reports.DownloadReport--source--__codelineno-0-480"></a><span class="sd">            prefix: Prefix prepended to every metric name.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-481"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-481" name="statflows.core.reports.DownloadReport--source--__codelineno-0-481"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-482"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-482" name="statflows.core.reports.DownloadReport--source--__codelineno-0-482"></a><span class="sd">        Returns:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-483"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-483" name="statflows.core.reports.DownloadReport--source--__codelineno-0-483"></a><span class="sd">            Mapping of dotted metric names to finite floats.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-484"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-484" name="statflows.core.reports.DownloadReport--source--__codelineno-0-484"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-485"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-485" name="statflows.core.reports.DownloadReport--source--__codelineno-0-485"></a><span class="sd">        Examples:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-486"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-486" name="statflows.core.reports.DownloadReport--source--__codelineno-0-486"></a><span class="sd">            &gt;&gt;&gt; DownloadReport(processed=2).to_metrics()["download.processed"]</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-487"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-487" name="statflows.core.reports.DownloadReport--source--__codelineno-0-487"></a><span class="sd">            2.0</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-488"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-488" name="statflows.core.reports.DownloadReport--source--__codelineno-0-488"></a><span class="sd">        """</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-489"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-489" name="statflows.core.reports.DownloadReport--source--__codelineno-0-489"></a>        <span class="c1"># Compteurs de run, hors détail par requête</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-490"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-490" name="statflows.core.reports.DownloadReport--source--__codelineno-0-490"></a>        <span class="n">summary</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-491"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-491" name="statflows.core.reports.DownloadReport--source--__codelineno-0-491"></a>            <span class="n">report_field</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-492"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-492" name="statflows.core.reports.DownloadReport--source--__codelineno-0-492"></a>            <span class="k">for</span> <span class="n">report_field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-493"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-493" name="statflows.core.reports.DownloadReport--source--__codelineno-0-493"></a>            <span class="k">if</span> <span class="n">report_field</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"queries"</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-494"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-494" name="statflows.core.reports.DownloadReport--source--__codelineno-0-494"></a>        <span class="p">}</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-495"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-495" name="statflows.core.reports.DownloadReport--source--__codelineno-0-495"></a>        <span class="n">metrics</span> <span class="o">=</span> <span class="n">flatten_metrics</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-496"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-496" name="statflows.core.reports.DownloadReport--source--__codelineno-0-496"></a>        <span class="c1"># Agrégats du détail par requête</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-497"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-497" name="statflows.core.reports.DownloadReport--source--__codelineno-0-497"></a>        <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">flatten_metrics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregates</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">))</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-498"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-498" name="statflows.core.reports.DownloadReport--source--__codelineno-0-498"></a>        <span class="k">return</span> <span class="n">metrics</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-499"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-499" name="statflows.core.reports.DownloadReport--source--__codelineno-0-499"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-500"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-500" name="statflows.core.reports.DownloadReport--source--__codelineno-0-500"></a>    <span class="c1"># Mise en forme tabulaire du détail par requête</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-501"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-501" name="statflows.core.reports.DownloadReport--source--__codelineno-0-501"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-502"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-502" name="statflows.core.reports.DownloadReport--source--__codelineno-0-502"></a><span class="w">        </span><span class="sd">"""Render the per-query diagnostics as a table.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-503"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-503" name="statflows.core.reports.DownloadReport--source--__codelineno-0-503"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-504"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-504" name="statflows.core.reports.DownloadReport--source--__codelineno-0-504"></a><span class="sd">        Directly consumable by a tracker's ``log_table``, and readable on its</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-505"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-505" name="statflows.core.reports.DownloadReport--source--__codelineno-0-505"></a><span class="sd">        own when investigating a partial run.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-506"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-506" name="statflows.core.reports.DownloadReport--source--__codelineno-0-506"></a>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-507"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-507" name="statflows.core.reports.DownloadReport--source--__codelineno-0-507"></a><span class="sd">        Returns:</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-508"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-508" name="statflows.core.reports.DownloadReport--source--__codelineno-0-508"></a><span class="sd">            One row per processed query, nested reports flattened into dotted</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-509"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-509" name="statflows.core.reports.DownloadReport--source--__codelineno-0-509"></a><span class="sd">            column names.</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-510"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-510" name="statflows.core.reports.DownloadReport--source--__codelineno-0-510"></a><span class="sd">        """</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-511"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-511" name="statflows.core.reports.DownloadReport--source--__codelineno-0-511"></a>        <span class="c1"># Aplatissement de chaque rapport de requête, valeurs textuelles incluses</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-512"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-512" name="statflows.core.reports.DownloadReport--source--__codelineno-0-512"></a>        <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">_walk</span><span class="p">(</span><span class="n">asdict</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queries</span><span class="p">]</span>
+</span><span id="statflows.core.reports.DownloadReport--source--__span-0-513"><a id="statflows.core.reports.DownloadReport--source--__codelineno-0-513" name="statflows.core.reports.DownloadReport--source--__codelineno-0-513"></a>        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 
@@ -3509,93 +3509,93 @@ completes when its write batch is committed or fails).</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>statflows/core/reports.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span>
-<span class="normal"><a href="#__codelineno-0-429">429</a></span>
-<span class="normal"><a href="#__codelineno-0-430">430</a></span>
-<span class="normal"><a href="#__codelineno-0-431">431</a></span>
-<span class="normal"><a href="#__codelineno-0-432">432</a></span>
-<span class="normal"><a href="#__codelineno-0-433">433</a></span>
-<span class="normal"><a href="#__codelineno-0-434">434</a></span>
-<span class="normal"><a href="#__codelineno-0-435">435</a></span>
-<span class="normal"><a href="#__codelineno-0-436">436</a></span>
-<span class="normal"><a href="#__codelineno-0-437">437</a></span>
-<span class="normal"><a href="#__codelineno-0-438">438</a></span>
-<span class="normal"><a href="#__codelineno-0-439">439</a></span>
-<span class="normal"><a href="#__codelineno-0-440">440</a></span>
-<span class="normal"><a href="#__codelineno-0-441">441</a></span>
-<span class="normal"><a href="#__codelineno-0-442">442</a></span>
-<span class="normal"><a href="#__codelineno-0-443">443</a></span>
-<span class="normal"><a href="#__codelineno-0-444">444</a></span>
-<span class="normal"><a href="#__codelineno-0-445">445</a></span>
-<span class="normal"><a href="#__codelineno-0-446">446</a></span>
-<span class="normal"><a href="#__codelineno-0-447">447</a></span>
-<span class="normal"><a href="#__codelineno-0-448">448</a></span>
-<span class="normal"><a href="#__codelineno-0-449">449</a></span>
-<span class="normal"><a href="#__codelineno-0-450">450</a></span>
-<span class="normal"><a href="#__codelineno-0-451">451</a></span>
-<span class="normal"><a href="#__codelineno-0-452">452</a></span>
-<span class="normal"><a href="#__codelineno-0-453">453</a></span>
-<span class="normal"><a href="#__codelineno-0-454">454</a></span>
-<span class="normal"><a href="#__codelineno-0-455">455</a></span>
-<span class="normal"><a href="#__codelineno-0-456">456</a></span>
-<span class="normal"><a href="#__codelineno-0-457">457</a></span>
-<span class="normal"><a href="#__codelineno-0-458">458</a></span>
-<span class="normal"><a href="#__codelineno-0-459">459</a></span>
-<span class="normal"><a href="#__codelineno-0-460">460</a></span>
-<span class="normal"><a href="#__codelineno-0-461">461</a></span>
-<span class="normal"><a href="#__codelineno-0-462">462</a></span>
-<span class="normal"><a href="#__codelineno-0-463">463</a></span>
-<span class="normal"><a href="#__codelineno-0-464">464</a></span>
-<span class="normal"><a href="#__codelineno-0-465">465</a></span>
-<span class="normal"><a href="#__codelineno-0-466">466</a></span>
-<span class="normal"><a href="#__codelineno-0-467">467</a></span>
-<span class="normal"><a href="#__codelineno-0-468">468</a></span>
-<span class="normal"><a href="#__codelineno-0-469">469</a></span>
-<span class="normal"><a href="#__codelineno-0-470">470</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-427"><a id="__codelineno-0-427" name="__codelineno-0-427"></a><span class="k">def</span><span class="w"> </span><span class="nf">aggregates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-</span><span id="__span-0-428"><a id="__codelineno-0-428" name="__codelineno-0-428"></a><span class="w">    </span><span class="sd">"""Sum the per-query diagnostics into run-level counters.</span>
-</span><span id="__span-0-429"><a id="__codelineno-0-429" name="__codelineno-0-429"></a>
-</span><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="sd">        Mapping of aggregate names to values: sub-requests issued and</span>
-</span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a><span class="sd">        failed, no-record answers, rows fetched before and after</span>
-</span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">        post-filtering, duplicates, HTTP requests, failures, seconds and</span>
-</span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a><span class="sd">        bytes, rate-limit waits, and last-update checks (provider lookups,</span>
-</span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="sd">        cache hits, unresolved lookups).</span>
-</span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a>
-</span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">        &gt;&gt;&gt; report = DownloadReport(queries=[QueryReport(rows_written=5)])</span>
-</span><span id="__span-0-439"><a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">        &gt;&gt;&gt; report.aggregates()["n_requests"]</span>
-</span><span id="__span-0-440"><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">        0.0</span>
-</span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        &gt;&gt;&gt; hit = QueryReport(freshness=FreshnessStats(n_cache_hits=1))</span>
-</span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">        &gt;&gt;&gt; DownloadReport(queries=[hit, hit]).aggregates()["n_freshness_cache_hits"]</span>
-</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">        2.0</span>
-</span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">    """</span>
-</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a>    <span class="c1"># Champs sommés, exprimés comme des chemins dans le rapport par requête</span>
-</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>    <span class="n">paths</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>        <span class="s2">"n_requests"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_requests"</span><span class="p">),</span>
-</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>        <span class="s2">"n_request_errors"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_request_errors"</span><span class="p">),</span>
-</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>        <span class="s2">"n_no_records"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_no_records"</span><span class="p">),</span>
-</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a>        <span class="s2">"n_empty_responses"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_empty_responses"</span><span class="p">),</span>
-</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="s2">"rows_fetched"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"rows_fetched"</span><span class="p">),</span>
-</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>        <span class="s2">"rows_after_filter"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"rows_after_filter"</span><span class="p">),</span>
-</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a>        <span class="s2">"n_duplicates"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_duplicates"</span><span class="p">),</span>
-</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="s2">"n_http_requests"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"n_requests"</span><span class="p">),</span>
-</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a>        <span class="s2">"n_http_failures"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"n_failures"</span><span class="p">),</span>
-</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="s2">"http_seconds"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"total_seconds"</span><span class="p">),</span>
-</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>        <span class="s2">"http_bytes"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"total_bytes"</span><span class="p">),</span>
-</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a>        <span class="s2">"rate_limit_wait_seconds"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"total_wait_seconds"</span><span class="p">),</span>
-</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>        <span class="s2">"n_rate_limit_acquisitions"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"n_acquisitions"</span><span class="p">),</span>
-</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>        <span class="s2">"n_freshness_checks"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_checks"</span><span class="p">),</span>
-</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a>        <span class="s2">"n_freshness_cache_hits"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_cache_hits"</span><span class="p">),</span>
-</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a>        <span class="s2">"n_freshness_unresolved"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_unresolved"</span><span class="p">),</span>
-</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="p">}</span>
-</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a>    <span class="c1"># Somme sur l'ensemble des requêtes traitées</span>
-</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a>    <span class="k">return</span> <span class="p">{</span>
-</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a>        <span class="n">name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span>
-</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a>            <span class="nb">sum</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">group</span><span class="p">),</span> <span class="n">attribute</span><span class="p">)</span> <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queries</span><span class="p">)</span>
-</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>        <span class="p">)</span>
-</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="p">}</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-427">427</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-428">428</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-429">429</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-430">430</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-433">433</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-434">434</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-435">435</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-436">436</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-437">437</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-438">438</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-439">439</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-440">440</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-441">441</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-442">442</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-443">443</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-444">444</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-445">445</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-446">446</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-447">447</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-448">448</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-449">449</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-450">450</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-451">451</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-452">452</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-453">453</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-454">454</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-455">455</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-456">456</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-457">457</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-458">458</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-459">459</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-460">460</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-461">461</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-462">462</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-463">463</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-464">464</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-465">465</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-466">466</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-467">467</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-470">470</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-427"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-427" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-427"></a><span class="k">def</span><span class="w"> </span><span class="nf">aggregates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-428"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-428" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-428"></a><span class="w">    </span><span class="sd">"""Sum the per-query diagnostics into run-level counters.</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-429"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-429" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-429"></a>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-430"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-430" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-430"></a><span class="sd">    Returns:</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-431"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-431" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-431"></a><span class="sd">        Mapping of aggregate names to values: sub-requests issued and</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-432"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-432" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-432"></a><span class="sd">        failed, no-record answers, rows fetched before and after</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-433"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-433" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-433"></a><span class="sd">        post-filtering, duplicates, HTTP requests, failures, seconds and</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-434"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-434" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-434"></a><span class="sd">        bytes, rate-limit waits, and last-update checks (provider lookups,</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-435"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-435" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-435"></a><span class="sd">        cache hits, unresolved lookups).</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-436"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-436" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-436"></a>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-437"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-437" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-437"></a><span class="sd">    Examples:</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-438"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-438" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-438"></a><span class="sd">        &gt;&gt;&gt; report = DownloadReport(queries=[QueryReport(rows_written=5)])</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-439"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-439" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-439"></a><span class="sd">        &gt;&gt;&gt; report.aggregates()["n_requests"]</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-440"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-440" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-440"></a><span class="sd">        0.0</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-441"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-441" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-441"></a><span class="sd">        &gt;&gt;&gt; hit = QueryReport(freshness=FreshnessStats(n_cache_hits=1))</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-442"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-442" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-442"></a><span class="sd">        &gt;&gt;&gt; DownloadReport(queries=[hit, hit]).aggregates()["n_freshness_cache_hits"]</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-443"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-443" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-443"></a><span class="sd">        2.0</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-444"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-444" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-444"></a><span class="sd">    """</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-445"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-445" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-445"></a>    <span class="c1"># Champs sommés, exprimés comme des chemins dans le rapport par requête</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-446"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-446" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-446"></a>    <span class="n">paths</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-447"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-447" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-447"></a>        <span class="s2">"n_requests"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_requests"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-448"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-448" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-448"></a>        <span class="s2">"n_request_errors"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_request_errors"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-449"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-449" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-449"></a>        <span class="s2">"n_no_records"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_no_records"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-450"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-450" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-450"></a>        <span class="s2">"n_empty_responses"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_empty_responses"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-451"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-451" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-451"></a>        <span class="s2">"rows_fetched"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"rows_fetched"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-452"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-452" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-452"></a>        <span class="s2">"rows_after_filter"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"rows_after_filter"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-453"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-453" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-453"></a>        <span class="s2">"n_duplicates"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"fetch"</span><span class="p">,</span> <span class="s2">"n_duplicates"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-454"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-454" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-454"></a>        <span class="s2">"n_http_requests"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"n_requests"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-455"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-455" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-455"></a>        <span class="s2">"n_http_failures"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"n_failures"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-456"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-456" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-456"></a>        <span class="s2">"http_seconds"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"total_seconds"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-457"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-457" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-457"></a>        <span class="s2">"http_bytes"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"http"</span><span class="p">,</span> <span class="s2">"total_bytes"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-458"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-458" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-458"></a>        <span class="s2">"rate_limit_wait_seconds"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"total_wait_seconds"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-459"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-459" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-459"></a>        <span class="s2">"n_rate_limit_acquisitions"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"rate_limit"</span><span class="p">,</span> <span class="s2">"n_acquisitions"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-460"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-460" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-460"></a>        <span class="s2">"n_freshness_checks"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_checks"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-461"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-461" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-461"></a>        <span class="s2">"n_freshness_cache_hits"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_cache_hits"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-462"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-462" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-462"></a>        <span class="s2">"n_freshness_unresolved"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"freshness"</span><span class="p">,</span> <span class="s2">"n_unresolved"</span><span class="p">),</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-463"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-463" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-463"></a>    <span class="p">}</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-464"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-464" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-464"></a>    <span class="c1"># Somme sur l'ensemble des requêtes traitées</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-465"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-465" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-465"></a>    <span class="k">return</span> <span class="p">{</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-466"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-466" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-466"></a>        <span class="n">name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-467"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-467" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-467"></a>            <span class="nb">sum</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">group</span><span class="p">),</span> <span class="n">attribute</span><span class="p">)</span> <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queries</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-468"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-468" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-468"></a>        <span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-469"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-469" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-469"></a>        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+</span><span id="statflows.core.reports.DownloadReport.aggregates--source--__span-0-470"><a id="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-470" name="statflows.core.reports.DownloadReport.aggregates--source--__codelineno-0-470"></a>    <span class="p">}</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3655,31 +3655,31 @@ own when investigating a partial run.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>statflows/core/reports.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span>
-<span class="normal"><a href="#__codelineno-0-505">505</a></span>
-<span class="normal"><a href="#__codelineno-0-506">506</a></span>
-<span class="normal"><a href="#__codelineno-0-507">507</a></span>
-<span class="normal"><a href="#__codelineno-0-508">508</a></span>
-<span class="normal"><a href="#__codelineno-0-509">509</a></span>
-<span class="normal"><a href="#__codelineno-0-510">510</a></span>
-<span class="normal"><a href="#__codelineno-0-511">511</a></span>
-<span class="normal"><a href="#__codelineno-0-512">512</a></span>
-<span class="normal"><a href="#__codelineno-0-513">513</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a><span class="w">    </span><span class="sd">"""Render the per-query diagnostics as a table.</span>
-</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>
-</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a><span class="sd">    Directly consumable by a tracker's ``log_table``, and readable on its</span>
-</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a><span class="sd">    own when investigating a partial run.</span>
-</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a>
-</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="sd">        One row per processed query, nested reports flattened into dotted</span>
-</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">        column names.</span>
-</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">    """</span>
-</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a>    <span class="c1"># Aplatissement de chaque rapport de requête, valeurs textuelles incluses</span>
-</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a>    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">_walk</span><span class="p">(</span><span class="n">asdict</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queries</span><span class="p">]</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a>    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-505">505</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-508">508</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-509">509</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-510">510</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-511">511</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-512">512</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-513">513</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-501"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-501" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-501"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_frame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-502"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-502" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-502"></a><span class="w">    </span><span class="sd">"""Render the per-query diagnostics as a table.</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-503"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-503" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-503"></a>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-504"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-504" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-504"></a><span class="sd">    Directly consumable by a tracker's ``log_table``, and readable on its</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-505"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-505" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-505"></a><span class="sd">    own when investigating a partial run.</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-506"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-506" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-506"></a>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-507"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-507" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-507"></a><span class="sd">    Returns:</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-508"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-508" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-508"></a><span class="sd">        One row per processed query, nested reports flattened into dotted</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-509"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-509" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-509"></a><span class="sd">        column names.</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-510"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-510" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-510"></a><span class="sd">    """</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-511"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-511" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-511"></a>    <span class="c1"># Aplatissement de chaque rapport de requête, valeurs textuelles incluses</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-512"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-512" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-512"></a>    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">_walk</span><span class="p">(</span><span class="n">asdict</span><span class="p">(</span><span class="n">query</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">query</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">queries</span><span class="p">]</span>
+</span><span id="statflows.core.reports.DownloadReport.to_frame--source--__span-0-513"><a id="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-513" name="statflows.core.reports.DownloadReport.to_frame--source--__codelineno-0-513"></a>    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3766,57 +3766,57 @@ own when investigating a partial run.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>statflows/core/reports.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-473">473</a></span>
-<span class="normal"><a href="#__codelineno-0-474">474</a></span>
-<span class="normal"><a href="#__codelineno-0-475">475</a></span>
-<span class="normal"><a href="#__codelineno-0-476">476</a></span>
-<span class="normal"><a href="#__codelineno-0-477">477</a></span>
-<span class="normal"><a href="#__codelineno-0-478">478</a></span>
-<span class="normal"><a href="#__codelineno-0-479">479</a></span>
-<span class="normal"><a href="#__codelineno-0-480">480</a></span>
-<span class="normal"><a href="#__codelineno-0-481">481</a></span>
-<span class="normal"><a href="#__codelineno-0-482">482</a></span>
-<span class="normal"><a href="#__codelineno-0-483">483</a></span>
-<span class="normal"><a href="#__codelineno-0-484">484</a></span>
-<span class="normal"><a href="#__codelineno-0-485">485</a></span>
-<span class="normal"><a href="#__codelineno-0-486">486</a></span>
-<span class="normal"><a href="#__codelineno-0-487">487</a></span>
-<span class="normal"><a href="#__codelineno-0-488">488</a></span>
-<span class="normal"><a href="#__codelineno-0-489">489</a></span>
-<span class="normal"><a href="#__codelineno-0-490">490</a></span>
-<span class="normal"><a href="#__codelineno-0-491">491</a></span>
-<span class="normal"><a href="#__codelineno-0-492">492</a></span>
-<span class="normal"><a href="#__codelineno-0-493">493</a></span>
-<span class="normal"><a href="#__codelineno-0-494">494</a></span>
-<span class="normal"><a href="#__codelineno-0-495">495</a></span>
-<span class="normal"><a href="#__codelineno-0-496">496</a></span>
-<span class="normal"><a href="#__codelineno-0-497">497</a></span>
-<span class="normal"><a href="#__codelineno-0-498">498</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"download"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="w">    </span><span class="sd">"""Flatten the run diagnostics into dotted metric keys.</span>
-</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a>
-</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">    The per-query detail is *not* expanded here — it belongs in</span>
-</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="sd">    :meth:`to_frame`, logged as a table — but its aggregates are.</span>
-</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a>
-</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">        prefix: Prefix prepended to every metric name.</span>
-</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a>
-</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="sd">        Mapping of dotted metric names to finite floats.</span>
-</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a>
-</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">        &gt;&gt;&gt; DownloadReport(processed=2).to_metrics()["download.processed"]</span>
-</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">        2.0</span>
-</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">    """</span>
-</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="c1"># Compteurs de run, hors détail par requête</span>
-</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="n">summary</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="n">report_field</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>        <span class="k">for</span> <span class="n">report_field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a>        <span class="k">if</span> <span class="n">report_field</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"queries"</span>
-</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="p">}</span>
-</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>    <span class="n">metrics</span> <span class="o">=</span> <span class="n">flatten_metrics</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
-</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="c1"># Agrégats du détail par requête</span>
-</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">flatten_metrics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregates</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">))</span>
-</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="k">return</span> <span class="n">metrics</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-498">498</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-473"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-473" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-473"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"download"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-474"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-474" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-474"></a><span class="w">    </span><span class="sd">"""Flatten the run diagnostics into dotted metric keys.</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-475"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-475" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-475"></a>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-476"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-476" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-476"></a><span class="sd">    The per-query detail is *not* expanded here — it belongs in</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-477"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-477" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-477"></a><span class="sd">    :meth:`to_frame`, logged as a table — but its aggregates are.</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-478"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-478" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-478"></a>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-479"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-479" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-479"></a><span class="sd">    Args:</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-480"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-480" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-480"></a><span class="sd">        prefix: Prefix prepended to every metric name.</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-481"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-481" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-481"></a>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-482"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-482" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-482"></a><span class="sd">    Returns:</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-483"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-483" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-483"></a><span class="sd">        Mapping of dotted metric names to finite floats.</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-484"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-484" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-484"></a>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-485"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-485" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-485"></a><span class="sd">    Examples:</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-486"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-486" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-486"></a><span class="sd">        &gt;&gt;&gt; DownloadReport(processed=2).to_metrics()["download.processed"]</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-487"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-487" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-487"></a><span class="sd">        2.0</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-488"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-488" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-488"></a><span class="sd">    """</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-489"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-489" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-489"></a>    <span class="c1"># Compteurs de run, hors détail par requête</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-490"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-490" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-490"></a>    <span class="n">summary</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-491"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-491" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-491"></a>        <span class="n">report_field</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">report_field</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-492"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-492" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-492"></a>        <span class="k">for</span> <span class="n">report_field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-493"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-493" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-493"></a>        <span class="k">if</span> <span class="n">report_field</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s2">"queries"</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-494"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-494" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-494"></a>    <span class="p">}</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-495"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-495" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-495"></a>    <span class="n">metrics</span> <span class="o">=</span> <span class="n">flatten_metrics</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-496"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-496" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-496"></a>    <span class="c1"># Agrégats du détail par requête</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-497"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-497" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-497"></a>    <span class="n">metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">flatten_metrics</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aggregates</span><span class="p">(),</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">))</span>
+</span><span id="statflows.core.reports.DownloadReport.to_metrics--source--__span-0-498"><a id="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-498" name="statflows.core.reports.DownloadReport.to_metrics--source--__codelineno-0-498"></a>    <span class="k">return</span> <span class="n">metrics</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

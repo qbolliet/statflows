@@ -2818,33 +2818,33 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>statflows/sources/unsd/formats.py</code></summary>
-                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span>
-<span class="normal"><a href="#__codelineno-0-54">54</a></span>
-<span class="normal"><a href="#__codelineno-0-55">55</a></span>
-<span class="normal"><a href="#__codelineno-0-56">56</a></span>
-<span class="normal"><a href="#__codelineno-0-57">57</a></span>
-<span class="normal"><a href="#__codelineno-0-58">58</a></span>
-<span class="normal"><a href="#__codelineno-0-59">59</a></span>
-<span class="normal"><a href="#__codelineno-0-60">60</a></span>
-<span class="normal"><a href="#__codelineno-0-61">61</a></span>
-<span class="normal"><a href="#__codelineno-0-62">62</a></span>
-<span class="normal"><a href="#__codelineno-0-63">63</a></span>
-<span class="normal"><a href="#__codelineno-0-64">64</a></span>
-<span class="normal"><a href="#__codelineno-0-65">65</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="k">class</span><span class="w"> </span><span class="nc">UNSDResponseFormat</span><span class="p">(</span><span class="n">SDMXResponseFormat</span><span class="p">):</span>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="w">    </span><span class="sd">"""File formats published by the UNSD classifications file server.</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    Attributes:</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">        XLSX: Excel workbook, recent vintages (HS2017 and HS2022 sources).</span>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">        XLS: Legacy Excel workbook, older vintages (HS1996 to HS2012 sources).</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">        CSV: Comma-separated table (cross-classification tables).</span>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">        TXT: Text table (cross-classification tables).</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    """</span>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a>
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>    <span class="n">XLSX</span> <span class="o">=</span> <span class="s2">"xlsx"</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="n">XLS</span> <span class="o">=</span> <span class="s2">"xls"</span>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="n">CSV</span> <span class="o">=</span> <span class="s2">"csv"</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="n">TXT</span> <span class="o">=</span> <span class="s2">"txt"</span>
+                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-52">52</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-54">54</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-55">55</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-56">56</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-57">57</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-58">58</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-59">59</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-60">60</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-65">65</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-52"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-52" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-52"></a><span class="k">class</span><span class="w"> </span><span class="nc">UNSDResponseFormat</span><span class="p">(</span><span class="n">SDMXResponseFormat</span><span class="p">):</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-53"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-53" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-53"></a><span class="w">    </span><span class="sd">"""File formats published by the UNSD classifications file server.</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-54"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-54" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-54"></a>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-55"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-55" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-55"></a><span class="sd">    Attributes:</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-56"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-56" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-56"></a><span class="sd">        XLSX: Excel workbook, recent vintages (HS2017 and HS2022 sources).</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-57"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-57" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-57"></a><span class="sd">        XLS: Legacy Excel workbook, older vintages (HS1996 to HS2012 sources).</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-58"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-58" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-58"></a><span class="sd">        CSV: Comma-separated table (cross-classification tables).</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-59"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-59" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-59"></a><span class="sd">        TXT: Text table (cross-classification tables).</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-60"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-60" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-60"></a><span class="sd">    """</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-61"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-61" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-61"></a>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-62"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-62" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-62"></a>    <span class="n">XLSX</span> <span class="o">=</span> <span class="s2">"xlsx"</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-63"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-63" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-63"></a>    <span class="n">XLS</span> <span class="o">=</span> <span class="s2">"xls"</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-64"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-64" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-64"></a>    <span class="n">CSV</span> <span class="o">=</span> <span class="s2">"csv"</span>
+</span><span id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__span-0-65"><a id="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-65" name="statflows.sources.unsd.formats.UNSDResponseFormat--source--__codelineno-0-65"></a>    <span class="n">TXT</span> <span class="o">=</span> <span class="s2">"txt"</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 

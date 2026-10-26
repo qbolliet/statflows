@@ -2869,57 +2869,57 @@ process keeps writing.</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>statflows/storage/ducklake/tables.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-364">364</a></span>
-<span class="normal"><a href="#__codelineno-0-365">365</a></span>
-<span class="normal"><a href="#__codelineno-0-366">366</a></span>
-<span class="normal"><a href="#__codelineno-0-367">367</a></span>
-<span class="normal"><a href="#__codelineno-0-368">368</a></span>
-<span class="normal"><a href="#__codelineno-0-369">369</a></span>
-<span class="normal"><a href="#__codelineno-0-370">370</a></span>
-<span class="normal"><a href="#__codelineno-0-371">371</a></span>
-<span class="normal"><a href="#__codelineno-0-372">372</a></span>
-<span class="normal"><a href="#__codelineno-0-373">373</a></span>
-<span class="normal"><a href="#__codelineno-0-374">374</a></span>
-<span class="normal"><a href="#__codelineno-0-375">375</a></span>
-<span class="normal"><a href="#__codelineno-0-376">376</a></span>
-<span class="normal"><a href="#__codelineno-0-377">377</a></span>
-<span class="normal"><a href="#__codelineno-0-378">378</a></span>
-<span class="normal"><a href="#__codelineno-0-379">379</a></span>
-<span class="normal"><a href="#__codelineno-0-380">380</a></span>
-<span class="normal"><a href="#__codelineno-0-381">381</a></span>
-<span class="normal"><a href="#__codelineno-0-382">382</a></span>
-<span class="normal"><a href="#__codelineno-0-383">383</a></span>
-<span class="normal"><a href="#__codelineno-0-384">384</a></span>
-<span class="normal"><a href="#__codelineno-0-385">385</a></span>
-<span class="normal"><a href="#__codelineno-0-386">386</a></span>
-<span class="normal"><a href="#__codelineno-0-387">387</a></span>
-<span class="normal"><a href="#__codelineno-0-388">388</a></span>
-<span class="normal"><a href="#__codelineno-0-389">389</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a><span class="k">def</span><span class="w"> </span><span class="nf">current_snapshot</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">DuckDBPyConnection</span><span class="p">,</span> <span class="n">catalog_alias</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="w">    </span><span class="sd">"""Return the latest snapshot id of an attached DuckLake catalog.</span>
-</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a>
-</span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="sd">    Read it once at the start of a downstream step to pin every read of the</span>
-</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">    step at that snapshot (``... AT (VERSION =&gt; snapshot)``) and pass it as</span>
-</span><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">    ``until_snapshot`` to :func:`changes_since`: the step then computes on,</span>
-</span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="sd">    and records as its watermark, exactly the same state, even while another</span>
-</span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a><span class="sd">    process keeps writing.</span>
-</span><span id="__span-0-372"><a id="__codelineno-0-372" name="__codelineno-0-372"></a>
-</span><span id="__span-0-373"><a id="__codelineno-0-373" name="__codelineno-0-373"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a><span class="sd">        conn: Open DuckLake connection.</span>
-</span><span id="__span-0-375"><a id="__codelineno-0-375" name="__codelineno-0-375"></a><span class="sd">        catalog_alias: Alias under which the catalog is attached.</span>
-</span><span id="__span-0-376"><a id="__codelineno-0-376" name="__codelineno-0-376"></a>
-</span><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-378"><a id="__codelineno-0-378" name="__codelineno-0-378"></a><span class="sd">        The snapshot id, or ``None`` when the catalog has none.</span>
-</span><span id="__span-0-379"><a id="__codelineno-0-379" name="__codelineno-0-379"></a>
-</span><span id="__span-0-380"><a id="__codelineno-0-380" name="__codelineno-0-380"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-381"><a id="__codelineno-0-381" name="__codelineno-0-381"></a><span class="sd">        &gt;&gt;&gt; pinned = current_snapshot(conn, "db")  # doctest: +SKIP</span>
-</span><span id="__span-0-382"><a id="__codelineno-0-382" name="__codelineno-0-382"></a><span class="sd">        &gt;&gt;&gt; changes = changes_since(conn, "db", "s1", watermark,</span>
-</span><span id="__span-0-383"><a id="__codelineno-0-383" name="__codelineno-0-383"></a><span class="sd">        ...                         until_snapshot=pinned)  # doctest: +SKIP</span>
-</span><span id="__span-0-384"><a id="__codelineno-0-384" name="__codelineno-0-384"></a><span class="sd">    """</span>
-</span><span id="__span-0-385"><a id="__codelineno-0-385" name="__codelineno-0-385"></a>    <span class="c1"># Requête SQL</span>
-</span><span id="__span-0-386"><a id="__codelineno-0-386" name="__codelineno-0-386"></a>    <span class="n">row</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-</span><span id="__span-0-387"><a id="__codelineno-0-387" name="__codelineno-0-387"></a>        <span class="sa">f</span><span class="s2">"SELECT * FROM ducklake_current_snapshot(</span><span class="si">{</span><span class="n">_sql_string</span><span class="p">(</span><span class="n">catalog_alias</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span>
-</span><span id="__span-0-388"><a id="__codelineno-0-388" name="__codelineno-0-388"></a>    <span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
-</span><span id="__span-0-389"><a id="__codelineno-0-389" name="__codelineno-0-389"></a>    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-364">364</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-365">365</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-366">366</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-367">367</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-368">368</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-369">369</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-370">370</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-371">371</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-372">372</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-373">373</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-374">374</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-375">375</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-376">376</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-377">377</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-378">378</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-379">379</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-380">380</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-381">381</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-382">382</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-383">383</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-384">384</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-385">385</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-386">386</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-387">387</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-388">388</a></span>
+<span class="normal"><a href="#statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-389">389</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-364"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-364" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-364"></a><span class="k">def</span><span class="w"> </span><span class="nf">current_snapshot</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">DuckDBPyConnection</span><span class="p">,</span> <span class="n">catalog_alias</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-365"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-365" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-365"></a><span class="w">    </span><span class="sd">"""Return the latest snapshot id of an attached DuckLake catalog.</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-366"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-366" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-366"></a>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-367"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-367" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-367"></a><span class="sd">    Read it once at the start of a downstream step to pin every read of the</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-368"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-368" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-368"></a><span class="sd">    step at that snapshot (``... AT (VERSION =&gt; snapshot)``) and pass it as</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-369"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-369" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-369"></a><span class="sd">    ``until_snapshot`` to :func:`changes_since`: the step then computes on,</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-370"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-370" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-370"></a><span class="sd">    and records as its watermark, exactly the same state, even while another</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-371"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-371" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-371"></a><span class="sd">    process keeps writing.</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-372"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-372" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-372"></a>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-373"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-373" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-373"></a><span class="sd">    Args:</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-374"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-374" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-374"></a><span class="sd">        conn: Open DuckLake connection.</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-375"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-375" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-375"></a><span class="sd">        catalog_alias: Alias under which the catalog is attached.</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-376"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-376" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-376"></a>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-377"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-377" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-377"></a><span class="sd">    Returns:</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-378"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-378" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-378"></a><span class="sd">        The snapshot id, or ``None`` when the catalog has none.</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-379"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-379" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-379"></a>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-380"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-380" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-380"></a><span class="sd">    Examples:</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-381"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-381" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-381"></a><span class="sd">        &gt;&gt;&gt; pinned = current_snapshot(conn, "db")  # doctest: +SKIP</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-382"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-382" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-382"></a><span class="sd">        &gt;&gt;&gt; changes = changes_since(conn, "db", "s1", watermark,</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-383"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-383" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-383"></a><span class="sd">        ...                         until_snapshot=pinned)  # doctest: +SKIP</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-384"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-384" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-384"></a><span class="sd">    """</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-385"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-385" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-385"></a>    <span class="c1"># Requête SQL</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-386"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-386" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-386"></a>    <span class="n">row</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-387"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-387" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-387"></a>        <span class="sa">f</span><span class="s2">"SELECT * FROM ducklake_current_snapshot(</span><span class="si">{</span><span class="n">_sql_string</span><span class="p">(</span><span class="n">catalog_alias</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-388"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-388" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-388"></a>    <span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+</span><span id="statflows.storage.ducklake.tables.current_snapshot--source--__span-0-389"><a id="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-389" name="statflows.storage.ducklake.tables.current_snapshot--source--__codelineno-0-389"></a>    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

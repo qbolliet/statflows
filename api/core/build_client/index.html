@@ -2927,79 +2927,79 @@ coerced into an enum member where the constructor expects an enum
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>statflows/core/factory.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-468">468</a></span>
-<span class="normal"><a href="#__codelineno-0-469">469</a></span>
-<span class="normal"><a href="#__codelineno-0-470">470</a></span>
-<span class="normal"><a href="#__codelineno-0-471">471</a></span>
-<span class="normal"><a href="#__codelineno-0-472">472</a></span>
-<span class="normal"><a href="#__codelineno-0-473">473</a></span>
-<span class="normal"><a href="#__codelineno-0-474">474</a></span>
-<span class="normal"><a href="#__codelineno-0-475">475</a></span>
-<span class="normal"><a href="#__codelineno-0-476">476</a></span>
-<span class="normal"><a href="#__codelineno-0-477">477</a></span>
-<span class="normal"><a href="#__codelineno-0-478">478</a></span>
-<span class="normal"><a href="#__codelineno-0-479">479</a></span>
-<span class="normal"><a href="#__codelineno-0-480">480</a></span>
-<span class="normal"><a href="#__codelineno-0-481">481</a></span>
-<span class="normal"><a href="#__codelineno-0-482">482</a></span>
-<span class="normal"><a href="#__codelineno-0-483">483</a></span>
-<span class="normal"><a href="#__codelineno-0-484">484</a></span>
-<span class="normal"><a href="#__codelineno-0-485">485</a></span>
-<span class="normal"><a href="#__codelineno-0-486">486</a></span>
-<span class="normal"><a href="#__codelineno-0-487">487</a></span>
-<span class="normal"><a href="#__codelineno-0-488">488</a></span>
-<span class="normal"><a href="#__codelineno-0-489">489</a></span>
-<span class="normal"><a href="#__codelineno-0-490">490</a></span>
-<span class="normal"><a href="#__codelineno-0-491">491</a></span>
-<span class="normal"><a href="#__codelineno-0-492">492</a></span>
-<span class="normal"><a href="#__codelineno-0-493">493</a></span>
-<span class="normal"><a href="#__codelineno-0-494">494</a></span>
-<span class="normal"><a href="#__codelineno-0-495">495</a></span>
-<span class="normal"><a href="#__codelineno-0-496">496</a></span>
-<span class="normal"><a href="#__codelineno-0-497">497</a></span>
-<span class="normal"><a href="#__codelineno-0-498">498</a></span>
-<span class="normal"><a href="#__codelineno-0-499">499</a></span>
-<span class="normal"><a href="#__codelineno-0-500">500</a></span>
-<span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_client</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a><span class="w">    </span><span class="sd">"""Instantiate the client of a provider.</span>
-</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a>
-</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a><span class="sd">    Shortcut for ``ClientFactory(provider, options)()`` restricted to the</span>
-</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a><span class="sd">    provider aliases. Use :class:`ClientFactory` to build a client from a</span>
-</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="sd">    dotted path, keep the recipe (e.g. to send it to another process) or pass</span>
-</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="sd">    credentials kept out of its ``repr``.</span>
-</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a>
-</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a><span class="sd">        provider: ``"eurostat"``, ``"oecd"``, ``"comtrade"`` or ``"unsd"``.</span>
-</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a><span class="sd">        **options: Keyword arguments of the client constructor; a string is</span>
-</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a><span class="sd">            coerced into an enum member where the constructor expects an enum</span>
-</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a><span class="sd">            (e.g. ``api_version="v2_1"``).</span>
-</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a>
-</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a><span class="sd">        A new provider client instance (typed after the provider when it is</span>
-</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a><span class="sd">        given as a literal).</span>
-</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a>
-</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a><span class="sd">        ValueError: For an unknown provider or an invalid enum value.</span>
-</span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="sd">        TypeError: If the client constructor does not accept an option.</span>
-</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a>
-</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a><span class="sd">    Examples:</span>
-</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a><span class="sd">        &gt;&gt;&gt; client = build_client("unsd", timeout=30)</span>
-</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a><span class="sd">        &gt;&gt;&gt; type(client).__name__</span>
-</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a><span class="sd">        'UNSDClient'</span>
-</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a><span class="sd">        &gt;&gt;&gt; client.close()</span>
-</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a><span class="sd">    """</span>
-</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>    <span class="c1"># Restriction aux alias de fournisseurs connus</span>
-</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="k">if</span> <span class="n">provider</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CLIENT_PATHS</span><span class="p">:</span>
-</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a>            <span class="sa">f</span><span class="s2">"Unknown provider '</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">'; known providers: "</span>
-</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">CLIENT_PATHS</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span>
-</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a>        <span class="p">)</span>
-</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a>
-</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="c1"># Construction déléguée à la fabrique (validation et coercition)</span>
-</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a>    <span class="k">return</span> <span class="n">ClientFactory</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">options</span><span class="p">)()</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-468">468</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-469">469</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-470">470</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-471">471</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-472">472</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-473">473</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-474">474</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-475">475</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-476">476</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-477">477</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-478">478</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-479">479</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-480">480</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-481">481</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-482">482</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-483">483</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-484">484</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-485">485</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-486">486</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-487">487</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-488">488</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-489">489</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-490">490</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-491">491</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-492">492</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-493">493</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-494">494</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-495">495</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-496">496</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-498">498</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#statflows.core.factory.build_client--source--__codelineno-0-504">504</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.factory.build_client--source--__span-0-468"><a id="statflows.core.factory.build_client--source--__codelineno-0-468" name="statflows.core.factory.build_client--source--__codelineno-0-468"></a><span class="k">def</span><span class="w"> </span><span class="nf">build_client</span><span class="p">(</span><span class="n">provider</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-469"><a id="statflows.core.factory.build_client--source--__codelineno-0-469" name="statflows.core.factory.build_client--source--__codelineno-0-469"></a><span class="w">    </span><span class="sd">"""Instantiate the client of a provider.</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-470"><a id="statflows.core.factory.build_client--source--__codelineno-0-470" name="statflows.core.factory.build_client--source--__codelineno-0-470"></a>
+</span><span id="statflows.core.factory.build_client--source--__span-0-471"><a id="statflows.core.factory.build_client--source--__codelineno-0-471" name="statflows.core.factory.build_client--source--__codelineno-0-471"></a><span class="sd">    Shortcut for ``ClientFactory(provider, options)()`` restricted to the</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-472"><a id="statflows.core.factory.build_client--source--__codelineno-0-472" name="statflows.core.factory.build_client--source--__codelineno-0-472"></a><span class="sd">    provider aliases. Use :class:`ClientFactory` to build a client from a</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-473"><a id="statflows.core.factory.build_client--source--__codelineno-0-473" name="statflows.core.factory.build_client--source--__codelineno-0-473"></a><span class="sd">    dotted path, keep the recipe (e.g. to send it to another process) or pass</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-474"><a id="statflows.core.factory.build_client--source--__codelineno-0-474" name="statflows.core.factory.build_client--source--__codelineno-0-474"></a><span class="sd">    credentials kept out of its ``repr``.</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-475"><a id="statflows.core.factory.build_client--source--__codelineno-0-475" name="statflows.core.factory.build_client--source--__codelineno-0-475"></a>
+</span><span id="statflows.core.factory.build_client--source--__span-0-476"><a id="statflows.core.factory.build_client--source--__codelineno-0-476" name="statflows.core.factory.build_client--source--__codelineno-0-476"></a><span class="sd">    Args:</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-477"><a id="statflows.core.factory.build_client--source--__codelineno-0-477" name="statflows.core.factory.build_client--source--__codelineno-0-477"></a><span class="sd">        provider: ``"eurostat"``, ``"oecd"``, ``"comtrade"`` or ``"unsd"``.</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-478"><a id="statflows.core.factory.build_client--source--__codelineno-0-478" name="statflows.core.factory.build_client--source--__codelineno-0-478"></a><span class="sd">        **options: Keyword arguments of the client constructor; a string is</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-479"><a id="statflows.core.factory.build_client--source--__codelineno-0-479" name="statflows.core.factory.build_client--source--__codelineno-0-479"></a><span class="sd">            coerced into an enum member where the constructor expects an enum</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-480"><a id="statflows.core.factory.build_client--source--__codelineno-0-480" name="statflows.core.factory.build_client--source--__codelineno-0-480"></a><span class="sd">            (e.g. ``api_version="v2_1"``).</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-481"><a id="statflows.core.factory.build_client--source--__codelineno-0-481" name="statflows.core.factory.build_client--source--__codelineno-0-481"></a>
+</span><span id="statflows.core.factory.build_client--source--__span-0-482"><a id="statflows.core.factory.build_client--source--__codelineno-0-482" name="statflows.core.factory.build_client--source--__codelineno-0-482"></a><span class="sd">    Returns:</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-483"><a id="statflows.core.factory.build_client--source--__codelineno-0-483" name="statflows.core.factory.build_client--source--__codelineno-0-483"></a><span class="sd">        A new provider client instance (typed after the provider when it is</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-484"><a id="statflows.core.factory.build_client--source--__codelineno-0-484" name="statflows.core.factory.build_client--source--__codelineno-0-484"></a><span class="sd">        given as a literal).</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-485"><a id="statflows.core.factory.build_client--source--__codelineno-0-485" name="statflows.core.factory.build_client--source--__codelineno-0-485"></a>
+</span><span id="statflows.core.factory.build_client--source--__span-0-486"><a id="statflows.core.factory.build_client--source--__codelineno-0-486" name="statflows.core.factory.build_client--source--__codelineno-0-486"></a><span class="sd">    Raises:</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-487"><a id="statflows.core.factory.build_client--source--__codelineno-0-487" name="statflows.core.factory.build_client--source--__codelineno-0-487"></a><span class="sd">        ValueError: For an unknown provider or an invalid enum value.</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-488"><a id="statflows.core.factory.build_client--source--__codelineno-0-488" name="statflows.core.factory.build_client--source--__codelineno-0-488"></a><span class="sd">        TypeError: If the client constructor does not accept an option.</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-489"><a id="statflows.core.factory.build_client--source--__codelineno-0-489" name="statflows.core.factory.build_client--source--__codelineno-0-489"></a>
+</span><span id="statflows.core.factory.build_client--source--__span-0-490"><a id="statflows.core.factory.build_client--source--__codelineno-0-490" name="statflows.core.factory.build_client--source--__codelineno-0-490"></a><span class="sd">    Examples:</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-491"><a id="statflows.core.factory.build_client--source--__codelineno-0-491" name="statflows.core.factory.build_client--source--__codelineno-0-491"></a><span class="sd">        &gt;&gt;&gt; client = build_client("unsd", timeout=30)</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-492"><a id="statflows.core.factory.build_client--source--__codelineno-0-492" name="statflows.core.factory.build_client--source--__codelineno-0-492"></a><span class="sd">        &gt;&gt;&gt; type(client).__name__</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-493"><a id="statflows.core.factory.build_client--source--__codelineno-0-493" name="statflows.core.factory.build_client--source--__codelineno-0-493"></a><span class="sd">        'UNSDClient'</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-494"><a id="statflows.core.factory.build_client--source--__codelineno-0-494" name="statflows.core.factory.build_client--source--__codelineno-0-494"></a><span class="sd">        &gt;&gt;&gt; client.close()</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-495"><a id="statflows.core.factory.build_client--source--__codelineno-0-495" name="statflows.core.factory.build_client--source--__codelineno-0-495"></a><span class="sd">    """</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-496"><a id="statflows.core.factory.build_client--source--__codelineno-0-496" name="statflows.core.factory.build_client--source--__codelineno-0-496"></a>    <span class="c1"># Restriction aux alias de fournisseurs connus</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-497"><a id="statflows.core.factory.build_client--source--__codelineno-0-497" name="statflows.core.factory.build_client--source--__codelineno-0-497"></a>    <span class="k">if</span> <span class="n">provider</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CLIENT_PATHS</span><span class="p">:</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-498"><a id="statflows.core.factory.build_client--source--__codelineno-0-498" name="statflows.core.factory.build_client--source--__codelineno-0-498"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-499"><a id="statflows.core.factory.build_client--source--__codelineno-0-499" name="statflows.core.factory.build_client--source--__codelineno-0-499"></a>            <span class="sa">f</span><span class="s2">"Unknown provider '</span><span class="si">{</span><span class="n">provider</span><span class="si">}</span><span class="s2">'; known providers: "</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-500"><a id="statflows.core.factory.build_client--source--__codelineno-0-500" name="statflows.core.factory.build_client--source--__codelineno-0-500"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">CLIENT_PATHS</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-501"><a id="statflows.core.factory.build_client--source--__codelineno-0-501" name="statflows.core.factory.build_client--source--__codelineno-0-501"></a>        <span class="p">)</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-502"><a id="statflows.core.factory.build_client--source--__codelineno-0-502" name="statflows.core.factory.build_client--source--__codelineno-0-502"></a>
+</span><span id="statflows.core.factory.build_client--source--__span-0-503"><a id="statflows.core.factory.build_client--source--__codelineno-0-503" name="statflows.core.factory.build_client--source--__codelineno-0-503"></a>    <span class="c1"># Construction déléguée à la fabrique (validation et coercition)</span>
+</span><span id="statflows.core.factory.build_client--source--__span-0-504"><a id="statflows.core.factory.build_client--source--__codelineno-0-504" name="statflows.core.factory.build_client--source--__codelineno-0-504"></a>    <span class="k">return</span> <span class="n">ClientFactory</span><span class="p">(</span><span class="n">provider</span><span class="p">,</span> <span class="n">options</span><span class="p">)()</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

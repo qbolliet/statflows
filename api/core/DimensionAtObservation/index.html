@@ -2765,25 +2765,25 @@
 
               <details class="mkdocstrings-source">
                 <summary>Source code in <code>statflows/core/sdmx.py</code></summary>
-                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
-<span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
-<span class="normal"><a href="#__codelineno-0-96"> 96</a></span>
-<span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
-<span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
-<span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
-<span class="normal"><a href="#__codelineno-0-100">100</a></span>
-<span class="normal"><a href="#__codelineno-0-101">101</a></span>
-<span class="normal"><a href="#__codelineno-0-102">102</a></span>
-<span class="normal"><a href="#__codelineno-0-103">103</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="k">class</span><span class="w"> </span><span class="nc">DimensionAtObservation</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="w">    </span><span class="sd">"""Dimension at observation level options.</span>
-</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>
-</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="sd">    Attributes:</span>
-</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a><span class="sd">        ALL_DIMENSIONS: Flat representation of observations.</span>
-</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="sd">        TIME_PERIOD: Time series view with observations grouped by time.</span>
-</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="sd">    """</span>
-</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>
-</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="n">ALL_DIMENSIONS</span> <span class="o">=</span> <span class="s2">"AllDimensions"</span>
-</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="n">TIME_PERIOD</span> <span class="o">=</span> <span class="s2">"TIME_PERIOD"</span>
+                <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-94"> 94</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-95"> 95</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-96"> 96</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-97"> 97</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-98"> 98</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-99"> 99</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-100">100</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-101">101</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-103">103</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-94"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-94" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-94"></a><span class="k">class</span><span class="w"> </span><span class="nc">DimensionAtObservation</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-95"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-95" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-95"></a><span class="w">    </span><span class="sd">"""Dimension at observation level options.</span>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-96"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-96" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-96"></a>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-97"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-97" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-97"></a><span class="sd">    Attributes:</span>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-98"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-98" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-98"></a><span class="sd">        ALL_DIMENSIONS: Flat representation of observations.</span>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-99"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-99" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-99"></a><span class="sd">        TIME_PERIOD: Time series view with observations grouped by time.</span>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-100"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-100" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-100"></a><span class="sd">    """</span>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-101"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-101" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-101"></a>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-102"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-102" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-102"></a>    <span class="n">ALL_DIMENSIONS</span> <span class="o">=</span> <span class="s2">"AllDimensions"</span>
+</span><span id="statflows.core.sdmx.DimensionAtObservation--source--__span-0-103"><a id="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-103" name="statflows.core.sdmx.DimensionAtObservation--source--__codelineno-0-103"></a>    <span class="n">TIME_PERIOD</span> <span class="o">=</span> <span class="s2">"TIME_PERIOD"</span>
 </span></code></pre></div></td></tr></table></div>
               </details>
 
