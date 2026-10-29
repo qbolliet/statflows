@@ -51,3 +51,16 @@ def test_table_argument_is_keyword_only() -> None:
             fact_table_exists(conn, "memory", "main", "t")  # type: ignore[misc]
     finally:
         conn.close()
+
+
+def test_fact_table_exists_releases_its_result() -> None:
+    import duckdb
+    import pandas as pd
+
+    conn = duckdb.connect(":memory:")
+    try:
+        fact_table_exists(conn, "memory", "main", table="t")
+        # DuckDB 2.0 : un résultat laissé ouvert ferait lever ResourceInUseException
+        conn.register("v", pd.DataFrame({"a": [1]}))
+    finally:
+        conn.close()

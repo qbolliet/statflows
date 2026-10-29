@@ -29,8 +29,8 @@ s3 = [
     "s3fs>=0.4.2",
 ]
 ducklake = [
-    "dt-ducklake-manager>=0.6.0",
-    "duckdb>=1.4",
+    "dt-ducklake-manager>=0.6.1",
+    "duckdb>=2.0",
 ]
 unsd = [
     "openpyxl>=3.1",
@@ -38,8 +38,8 @@ unsd = [
 ]
 all = [
     "boto3>=1.43.34",
-    "dt-ducklake-manager>=0.6.0",
-    "duckdb>=1.4",
+    "dt-ducklake-manager>=0.6.1",
+    "duckdb>=2.0",
     "openpyxl>=3.1",
     "s3fs>=0.4.2",
     "xlrd>=2.0.1",
@@ -56,7 +56,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-dt-ducklake-manager = { git = "https://github.com/qbolliet/dt-ducklake-manager", tag = "v0.6.0" }
+dt-ducklake-manager = { git = "https://github.com/qbolliet/dt-ducklake-manager", tag = "v0.6.1" }
 
 [dependency-groups]
 dev = [

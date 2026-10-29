@@ -202,3 +202,16 @@ def test_changes_since_rejects_bad_bounds_and_columns(ducklake_conn) -> None:
         changes_since(conn, alias, "s1", current, until_snapshot=current - 1)
     with pytest.raises(ValueError, match="not found"):
         changes_since(conn, alias, "s1", current - 1, key_columns=["missing"])
+
+
+def test_snapshot_readers_release_their_result(ducklake_conn) -> None:
+    conn, alias = ducklake_conn
+    _write(conn, alias, BASE)
+
+    # DuckDB 2.0 : un résultat laissé ouvert ferait lever ResourceInUseException
+    # au register() suivant sur la connexion
+    current_snapshot(conn, alias)
+    conn.register("after_current_snapshot", _frame(BASE))
+    # Premier passage sans clés : la requête d'agrégat est la dernière exécutée
+    changes_since(conn, alias, "s1", None)
+    conn.register("after_changes_since", _frame(BASE))
