@@ -66,13 +66,15 @@ def fact_table_exists(
         False
         >>> conn.close()
     """
-    # Introspection des tables du catalogue attaché
-    row = conn.execute(
+    # Introspection des tables du catalogue attaché. Lecture intégrale (fetchall) :
+    # depuis DuckDB 2.0, un fetchone() laisse le résultat ouvert et le register()
+    # ou sql() suivant sur la connexion lève ResourceInUseException
+    rows = conn.execute(
         "SELECT count(*) FROM duckdb_tables() "
         "WHERE database_name = ? AND schema_name = ? AND table_name = ?",
         [catalog_alias, schema, table],
-    ).fetchone()
-    return bool(row and row[0] > 0)
+    ).fetchall()
+    return bool(rows and rows[0][0] > 0)
 
 
 # Fonction auxiliaire : options de commit DuckLake renseignées
@@ -382,11 +384,11 @@ def current_snapshot(conn: duckdb.DuckDBPyConnection, catalog_alias: str) -> int
         >>> changes = changes_since(conn, "db", "s1", watermark,
         ...                         until_snapshot=pinned)  # doctest: +SKIP
     """
-    # Requête SQL
-    row = conn.execute(
+    # Requête SQL, lue intégralement pour libérer le résultat (cf. fact_table_exists)
+    rows = conn.execute(
         f"SELECT * FROM ducklake_current_snapshot({_sql_string(catalog_alias)})"
-    ).fetchone()
-    return int(row[0]) if row is not None and row[0] is not None else None
+    ).fetchall()
+    return int(rows[0][0]) if rows and rows[0][0] is not None else None
 
 
 # Fonction de résolution insensible à la casse de colonnes demandées
@@ -535,9 +537,9 @@ def changes_since(
     # Premier passage : toutes les lignes présentes à la borne comptent comme insérées
     if since_snapshot is None:
         source = f"{qualified} AT (VERSION => {current})"
-        count, minimum = conn.execute(
-            f"SELECT count(*), {min_expr} FROM {source}"
-        ).fetchone() or (0, None)
+        # Lecture intégrale pour libérer le résultat (cf. fact_table_exists)
+        rows = conn.execute(f"SELECT count(*), {min_expr} FROM {source}").fetchall()
+        count, minimum = rows[0] if rows else (0, None)
         changed_keys = (
             frozenset(
                 conn.execute(f"SELECT DISTINCT {keys_sql} FROM {source}").fetchall()
